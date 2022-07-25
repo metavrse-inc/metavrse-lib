@@ -574,10 +574,10 @@
     }
 
     // init
-    let cssdom = Module.canvas.parentElement.querySelector(`#css_${object.item.key}`);
+    let cssdom = Module.canvas.parentElement?.querySelector(`#css_${object.item.key}`);
     if (cssdom) Module.canvas.parentElement.removeChild(cssdom);
     
-    let obj = ParentElement.querySelector(`#key_${object.item.key}`);
+    let obj = ParentElement?.querySelector(`#key_${object.item.key}`);
     if (obj) ParentElement.removeChild(obj);
 
     // add
@@ -599,8 +599,8 @@
     object.DOMElement.style.display = "none";
 
 
-    ParentElement.appendChild(obj);
-    Module.canvas.parentElement.appendChild(cssdom);
+    ParentElement?.appendChild(obj);
+    Module.canvas.parentElement?.appendChild(cssdom);
 
     if (object.parent) object.parent.children.set(child.key, object);
 
@@ -751,10 +751,10 @@
             sceneprops.sceneIndex.delete(object.item.key);
             if (object.parent) object.parent.children.delete(object.item.key);
 
-            let obj = ParentElement.querySelector(`#key_${object.item.key}`);
+            let obj = ParentElement?.querySelector(`#key_${object.item.key}`);
             if (obj) ParentElement.removeChild(obj);
 
-            let cssobj = Module.canvas.parentElement.querySelector(`#css_${object.item.key}`);
+            let cssobj = Module.canvas.parentElement?.querySelector(`#css_${object.item.key}`);
             if (cssobj) Module.canvas.parentElement.removeChild(cssobj);
 
             // scene.removeObject(object.item.key);

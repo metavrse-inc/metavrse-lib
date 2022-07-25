@@ -281,7 +281,7 @@ module.exports = (payload) => {
     // TODO: Check if files loaded from zip in new structure loads properly in publish mode
     if (renderCSS) {
       // init
-      let cssdom = Module.canvas.parentElement.querySelector(`#css_world`);
+      let cssdom = Module.canvas.parentElement?.querySelector(`#css_world`);
       if (!cssdom) {
         cssdom = document.createElement('style');
         cssdom.id = 'css_world';
@@ -347,7 +347,7 @@ module.exports = (payload) => {
   addToRedraw('css');
 
   // init
-  let cssdom = Module.canvas.parentElement.querySelector(`#css_world`);
+  let cssdom = Module.canvas.parentElement?.querySelector(`#css_world`);
   if (!cssdom) {
     cssdom = document.createElement('style');
     cssdom.id = 'css_world';
