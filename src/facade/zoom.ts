@@ -1,5 +1,11 @@
 import { mat4, vec3 } from 'gl-matrix';
-import { CherryProjectManager, CherryViewer, Vector3 } from '../types';
+import {
+  CherryObjectByPixel,
+  CherryProjectManager,
+  CherrySurfaceSceneObject,
+  CherryViewer,
+  Vector3,
+} from '../types';
 
 export const zoomFacade = (
   pm: CherryProjectManager,
@@ -59,7 +65,27 @@ export const zoomFacade = (
     cherryViewer.controls.position = [distance, distance, distance];
   };
 
+  const zoomToMesh = (
+    sceneObject: CherrySurfaceSceneObject,
+    objectByPixel: CherryObjectByPixel
+  ) => {
+    const DISTANCE_FROM_OBJECT = 0.1;
+
+    const { x, y, z } = objectByPixel;
+    const objectPtrKey = pm.objects[sceneObject.$$.ptr].key;
+
+    if (!objectPtrKey) return;
+
+    const object = pm.getObject(objectPtrKey);
+    if (object.item.type === 'object') {
+      cherryViewer.controls.target = [x, y, z];
+      cherryViewer.controls.distance = DISTANCE_FROM_OBJECT;
+      cherryViewer.ProjectManager.isDirty = true;
+    }
+  };
+
   return {
     zoomToObject,
+    zoomToMesh,
   };
 };
