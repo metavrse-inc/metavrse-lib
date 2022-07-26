@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.9.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.8.0...v1.9.0) (2022-07-26)
+
+
+### Features
+
+* MET-2540 Add zoom to mesh logic to facade ([343e6f0](https://github.com/startupdevhouse/metavrse-lib/commit/343e6f060b9b6e7a35aa6eb83d8753f8a5ae4a87))
+
 ## [1.8.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.7.0...v1.8.0) (2022-07-26)
 
 
