@@ -31,6 +31,10 @@ const ALLOWED_TREE_TYPES = [
   'camera',
 ];
 
+const ALLOWED_HTML_HUD_TYPES: string[] = [
+  'HTMLElement'
+]
+
 export const restructureData = (
   nodes: OldTreeNode[],
   entities: Record<CherryKey, OldData>,
@@ -47,8 +51,10 @@ export const restructureData = (
 
   const deepTreeIteration = (data: OldTreeNode[]): any[] => {
     let hasConfig = false;
+    let hasHtmlHud = false
     const newTree: TreeNode[] = [];
     const newConfigurationsTree: any[] = [];
+    const newHTMLHudTree: any[] = []
 
     data.forEach((node) => {
       const entity = entities[node.key];
@@ -65,13 +71,28 @@ export const restructureData = (
         node,
         entity
       );
+      const newHtmlHud = createNewHtmlHud(primitiveKey, node, entity)
 
       if (node.children && node.children?.length > 0) {
-        const [tree, configurations, config] = deepTreeIteration(node.children);
+        const [tree, configurations, htmlHud, config, _hasHtmlHud] = deepTreeIteration(node.children);
 
         hasConfig = config;
+        hasHtmlHud = _hasHtmlHud
         newNode.children = tree;
         newConfiguration.children = configurations;
+        newHtmlHud.children = htmlHud
+      }
+
+      if (ALLOWED_HTML_HUD_TYPES.includes(node.type)) {
+        hasHtmlHud = node.type === 'HTMLElement'
+        newHTMLHudTree.push(newHtmlHud)
+
+        newEntities[node.key] = {
+          ...(entity as Entity),
+          key: node.key,
+          skey: node.skey,
+          type: node.type,
+        };
       }
 
       if (ALLOWED_CONFIGURATION_TYPES.includes(node.type)) {
@@ -99,18 +120,22 @@ export const restructureData = (
       if (node.type === 'object-group' && hasConfig) {
         newConfigurationsTree.push(newConfiguration);
       }
+
+      if (node.type === 'object-group' && hasHtmlHud) {
+        newHTMLHudTree.push(newHtmlHud)
+      }
     });
 
-    return [newTree, newConfigurationsTree, hasConfig];
+    return [newTree, newConfigurationsTree, newHTMLHudTree, hasConfig, hasHtmlHud];
   };
 
-  const [newTree, newConfigurationsTree] = deepTreeIteration(nodes);
+  const [newTree, newConfigurationsTree, newHTMLHudTree] = deepTreeIteration(nodes);
 
   return {
     lastDataId: incrementalId,
     newTree,
     newEntities,
-    newHTMLHudTree: [],
+    newHTMLHudTree,
     newConfigurationsTree,
   };
 };
@@ -144,6 +169,36 @@ const createNewConfiguration = (
 
   return newNode;
 };
+
+const createNewHtmlHud = (
+  primitiveKey: string | undefined,
+  node: OldTreeNode,
+  entity: OldData
+): HTMLHudNode => {
+  let newNode = {
+    key: node.key,
+    type: node.type,
+    title: node.title,
+    children: [],
+    visible: entity && entity.visible !== undefined ? entity.visible : true,
+  } as HTMLHudNode;
+
+  if (primitiveKey) {
+    newNode = {
+      ...newNode,
+      id: primitiveKey,
+    };
+  }
+
+  if (node.skey) {
+    newNode = {
+      ...newNode,
+      skey: node.skey,
+    };
+  }
+
+  return newNode;
+}
 
 const createNewNode = (
   primitiveKey: string | undefined,
