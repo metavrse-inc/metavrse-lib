@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.10.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.9.0...v1.10.0) (2022-07-26)
+
+
+### Features
+
+* add proper type to entity ([6151e93](https://github.com/startupdevhouse/metavrse-lib/commit/6151e939587d2e73b43a677540facfdc012ea454))
+
 ## [1.9.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.8.0...v1.9.0) (2022-07-26)
 
 
