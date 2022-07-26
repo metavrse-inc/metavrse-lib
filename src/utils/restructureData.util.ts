@@ -91,7 +91,6 @@ export const restructureData = (
           ...(entity as Entity),
           key: node.key,
           skey: node.skey,
-          type: node.type,
         };
       }
 
