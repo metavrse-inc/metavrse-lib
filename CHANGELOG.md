@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.7.0...v1.8.0) (2022-07-26)
+
+
+### Features
+
+* restructure old projects HTML hud for new structure ([df1efa9](https://github.com/startupdevhouse/metavrse-lib/commit/df1efa912a18ba3498f6129013c6fbf215eecdc3))
+
 ## [1.7.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.6.2...v1.7.0) (2022-07-18)
 
 
