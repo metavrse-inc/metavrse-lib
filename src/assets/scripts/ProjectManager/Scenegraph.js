@@ -274,7 +274,7 @@ module.exports = () => {
       sceneprops.project.data['scene'][sceneprops.project.data.selected_scene]
         .data;
 
-    children.forEach((child) => {
+    children?.forEach((child) => {
       var obj;
 
       if (child.parent) {
