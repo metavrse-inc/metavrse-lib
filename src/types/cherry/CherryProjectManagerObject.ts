@@ -58,7 +58,10 @@ export type GetterSetterPropertyType =
   | 'fps'
   | 'fxaa'
   | 'orientation'
-  | 'hudscale';
+  | 'hudscale'
+
+  // HTML Hud
+  | 'data';
 
 export type ProjectManagerObjectPropertyType =
   | string
@@ -117,6 +120,7 @@ export type CherryProjectManagerObject = {
   mesh: {
     get: (index: number, property: ShaderParameterType) => CherryMesh;
     set: (index: number, property: ShaderParameterType, value: unknown) => void;
+    removeProp: (selector: string, property: string) => void
   };
   finalTransformation: Float32Array;
   finalVisibility: boolean;
@@ -159,4 +163,6 @@ export type CherryProjectManagerObject = {
   fps: number;
   fxaa: number;
   orientation: number;
+
+  data: Record<string, string>
 };

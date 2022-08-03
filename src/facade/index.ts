@@ -549,6 +549,11 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     return pm.getObject(videoKey);
   };
 
+  const removeCssProp = (key: string, selector: string, prop: string) => {
+    const obj = pm.getObject(key);
+    obj.mesh.removeProp(selector, prop)
+  }
+
   return {
     addHTMLTagToHud,
     addObjectToScene,
@@ -567,6 +572,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setAssets,
     setObjectMaterial,
     setObjectProperty,
+    removeCssProp,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
   };
