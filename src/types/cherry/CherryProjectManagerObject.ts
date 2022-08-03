@@ -164,4 +164,8 @@ export type CherryProjectManagerObject = {
   fps: number;
   fxaa: number;
   orientation: number;
+
+  text?: string
+  type?: string
+  class?: string
 };
