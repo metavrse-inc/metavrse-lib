@@ -58,7 +58,12 @@ export type GetterSetterPropertyType =
   | 'fps'
   | 'fxaa'
   | 'orientation'
-  | 'hudscale';
+  | 'hudscale'
+
+  //  HTML Hud
+  | 'text'
+  | 'type'
+  | 'class';
 
 export type ProjectManagerObjectPropertyType =
   | string
