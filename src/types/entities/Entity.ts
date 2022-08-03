@@ -53,6 +53,7 @@ export type Entity = {
     src: string;
     type: string;
   }>;
+  class?: string
 
   // Configuration
   parentOpts?: {
