@@ -554,6 +554,21 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     obj.mesh.removeProp(selector, prop)
   }
 
+  const renameCssValue = (key: string, selector: string, property: string, value: string) => {
+    const obj = pm.getObject(key);
+    obj.mesh.set(selector, property, value)
+  }
+
+  const renameCssProperty = (key: string, selector: string, currentProperty: string, newProperty: string) => {
+    const obj = pm.getObject(key);
+    obj.mesh.renameOption(selector, currentProperty, newProperty)
+  }
+
+  const renameCssSelector = (key: string, selector: string, newSelector: string) => {
+    const obj = pm.getObject(key);
+    obj.mesh.renameMesh(selector, newSelector)
+  }
+
   return {
     addHTMLTagToHud,
     addObjectToScene,
@@ -573,6 +588,9 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setObjectMaterial,
     setObjectProperty,
     removeCssProp,
+    renameCssValue,
+    renameCssSelector,
+    renameCssProperty,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
   };
