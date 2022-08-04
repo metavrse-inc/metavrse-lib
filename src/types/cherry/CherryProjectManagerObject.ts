@@ -165,7 +165,7 @@ export type CherryProjectManagerObject = {
   fxaa: number;
   orientation: number;
 
-  text?: string
-  type?: string
-  class?: string
+  text: string
+  type: string
+  class: string
 };
