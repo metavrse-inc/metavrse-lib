@@ -58,7 +58,12 @@ export type GetterSetterPropertyType =
   | 'fps'
   | 'fxaa'
   | 'orientation'
-  | 'hudscale';
+  | 'hudscale'
+
+  //  HTML Hud
+  | 'text'
+  | 'type'
+  | 'class';
 
 export type ProjectManagerObjectPropertyType =
   | string
@@ -159,4 +164,8 @@ export type CherryProjectManagerObject = {
   fps: number;
   fxaa: number;
   orientation: number;
+
+  text: string
+  type: string
+  class: string
 };
