@@ -60,7 +60,10 @@ export type GetterSetterPropertyType =
   | 'orientation'
   | 'hudscale'
 
-  // HTML Hud
+  //  HTML Hud
+  | 'text'
+  | 'type'
+  | 'class'
   | 'data';
 
 export type ProjectManagerObjectPropertyType =
@@ -166,5 +169,8 @@ export type CherryProjectManagerObject = {
   fxaa: number;
   orientation: number;
 
+  text: string
+  type: string
+  class: string
   data: Record<string, string>
 };

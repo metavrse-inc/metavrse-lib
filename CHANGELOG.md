@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.11.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.11.0...v1.11.1) (2022-08-04)
+
+
+### Bug Fixes
+
+* MET-2610 make some props not optional ([3c61e28](https://github.com/startupdevhouse/metavrse-lib/commit/3c61e28bfeeaa07f5fff38706d785c294f863b0b))
+
+## [1.11.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.10.1...v1.11.0) (2022-08-03)
+
+
+### Features
+
+* MET-2607 add missing fields to Entity and HTML Hud Entity ([e6c657c](https://github.com/startupdevhouse/metavrse-lib/commit/e6c657cd5adcb25dcfd23a18af110586823c263e))
+
 ### [1.10.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.10.0...v1.10.1) (2022-07-28)
 
 
