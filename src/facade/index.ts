@@ -549,12 +549,12 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     return pm.getObject(videoKey);
   };
 
-  const removeCssProp = (key: string, selector: string, prop: string) => {
+  const removeCssDeclaration = (key: string, selector: string, prop: string) => {
     const obj = pm.getObject(key);
     obj.mesh.removeProp(selector, prop)
   }
 
-  const renameCssValue = (key: string, selector: string, property: string, value: string) => {
+  const updateCssValue = (key: string, selector: string, property: string, value: string) => {
     const obj = pm.getObject(key);
     obj.mesh.set(selector, property, value)
   }
@@ -587,8 +587,8 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setAssets,
     setObjectMaterial,
     setObjectProperty,
-    removeCssProp,
-    renameCssValue,
+    removeCssDeclaration,
+    updateCssValue,
     renameCssSelector,
     renameCssProperty,
     ...gizmoFacade(cherryViewer),
