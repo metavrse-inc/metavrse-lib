@@ -137,3 +137,4 @@ export * from './gizmo/Gizmo'
  */
 
 export * from './htmlHud/CssStyles'
+export * from './htmlHud/HudProperty'

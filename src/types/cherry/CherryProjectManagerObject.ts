@@ -127,6 +127,11 @@ export type CherryProjectManagerObject = {
     renameOption: (selector: string, currentProperty: string, newProperty: string) => void
     renameMesh: (selector: string, newSelector: string) => void
   };
+  props: {
+    remove: (prop: string) => void
+    set: (prop: string, newValue: string) => void
+    rename: (oldProp: string, newProp: string) => void
+  }
   finalTransformation: Float32Array;
   finalVisibility: boolean;
   parentOpts: { visible: boolean; transforms: Vector3; transform: any };
