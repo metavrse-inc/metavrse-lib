@@ -576,7 +576,6 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
   const updatePropValue = (key: string, prop: string, newValue: string) => {
     const obj = pm.getObject(key);
-    console.log(prop, newValue)
     obj.props.set(prop, newValue)
   }
 
