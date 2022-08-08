@@ -1,3 +1,4 @@
+import type * as CSS from 'csstype';
 import { Code } from '../common/Code';
 import {
   CherryAnimation,
@@ -122,7 +123,7 @@ export type CherryProjectManagerObject = {
   /** @description Use to retrive mesh specify by index or update mesh by it index */
   mesh: {
     get: (index: number, property: ShaderParameterType) => CherryMesh;
-    set: (index: number | string, property: ShaderParameterType | string, value: unknown) => void;
+    set: (index: number | string, property: ShaderParameterType | CSS.Properties, value: unknown) => void;
     removeProp: (selector: string, property: string) => void
     renameOption: (selector: string, currentProperty: string, newProperty: string) => void
     renameMesh: (selector: string, newSelector: string) => void
