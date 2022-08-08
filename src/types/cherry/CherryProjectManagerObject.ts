@@ -120,7 +120,7 @@ export type CherryProjectManagerObject = {
   controller: string;
   frame: number;
   code: Code;
-  /** @description Use to retrive mesh specify by index or update mesh by it index */
+  /** @description Use to retrieve mesh specify by index or update mesh by it index. Used also for managing CSS properties/values in HTML Hud */
   mesh: {
     get: (index: number, property: ShaderParameterType) => CherryMesh;
     set: (index: number | string, property: ShaderParameterType | CSS.Properties, value: unknown) => void;
@@ -128,6 +128,7 @@ export type CherryProjectManagerObject = {
     renameOption: (selector: string, currentProperty: string, newProperty: string) => void
     renameMesh: (selector: string, newSelector: string) => void
   };
+  /** @description Use to manage props in HTML HUD (eg. src for image, etc) */
   props: {
     remove: (prop: string) => void
     set: (prop: string, newValue: string) => void
@@ -178,5 +179,7 @@ export type CherryProjectManagerObject = {
   text: string
   type: string
   class: string
+
+  // Used to hold CSS declarations for HTML Hud
   data: Record<string, string>
 };
