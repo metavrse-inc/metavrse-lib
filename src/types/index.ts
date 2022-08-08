@@ -131,3 +131,10 @@ export * from './scripts/MegaController/MegaControllerPostCameraJS';
  */
 
 export * from './gizmo/Gizmo'
+
+/**
+ * HTML Hud types
+ */
+
+export * from './htmlHud/CssStyles'
+export * from './htmlHud/HudProperty'
