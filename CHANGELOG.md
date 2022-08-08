@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.12.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.11.1...v1.12.0) (2022-08-08)
+
+
+### Features
+
+* MET-2610 add methods to interact with css ([ece0dcd](https://github.com/startupdevhouse/metavrse-lib/commit/ece0dcde00c95f2935bf0fefc68ae42207f945b9))
+* MET-2610 add more types ([28855fc](https://github.com/startupdevhouse/metavrse-lib/commit/28855fc9b86991db884bf44b6b1fe12375f4a0f1))
+* MET-2610 allow to remove style ([b012467](https://github.com/startupdevhouse/metavrse-lib/commit/b0124672c2b06129c24b2657b49bb6a5a7e5be96))
+* MET-2612 add to facade methods to change props ([c86f961](https://github.com/startupdevhouse/metavrse-lib/commit/c86f96101e10e1c5b23128fc042c2da1277f96b9))
+
 ### [1.11.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.11.0...v1.11.1) (2022-08-04)
 
 
