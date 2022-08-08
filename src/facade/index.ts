@@ -26,6 +26,7 @@ import { CherryObjectByPixel, CherrySurfaceSceneObject, Vector3 } from '..';
 import { gizmoFacade } from './gizmo';
 import { ConfigurationNode, HTMLHudNode } from '../types';
 import { zoomFacade } from './zoom';
+import { htmlFacade } from './htmlHud';
 
 export const cherryFacade = (cherryViewer: CherryViewer) => {
   const pm = cherryViewer.ProjectManager;
@@ -550,42 +551,6 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     return pm.getObject(videoKey);
   };
 
-  const removeCssDeclaration = (key: string, selector: string, prop: string) => {
-    const obj = pm.getObject(key);
-    obj?.mesh.removeProp(selector, prop)
-  }
-
-  const updateCssValue = (key: string, selector: string, property: CSS.Properties, value: string) => {
-    const obj = pm.getObject(key);
-    obj?.mesh.set(selector, property, value)
-  }
-
-  const renameCssProperty = (key: string, selector: string, currentProperty: string, newProperty: string) => {
-    const obj = pm.getObject(key);
-    obj?.mesh.renameOption(selector, currentProperty, newProperty)
-  }
-
-  const renameCssSelector = (key: string, selector: string, newSelector: string) => {
-    const obj = pm.getObject(key);
-    obj?.mesh.renameMesh(selector, newSelector)
-  }
-
-  const removeHtmlProp = (key: string, prop: string) => {
-    const obj = pm.getObject(key);
-    obj?.props.remove(prop)
-  }
-
-  const updateHtmlPropValue = (key: string, prop: string, newValue: string) => {
-    const obj = pm.getObject(key);
-    obj?.props.set(prop, newValue)
-  }
-
-  const renameHtmlProp = (key: string, oldProp: string, newProp: string) => {
-    const obj = pm.getObject(key);
-    obj?.props.rename(oldProp, newProp)
-  }
-
-
   return {
     addHTMLTagToHud,
     addObjectToScene,
@@ -604,15 +569,9 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setAssets,
     setObjectMaterial,
     setObjectProperty,
-    removeCssDeclaration,
-    updateCssValue,
-    renameCssSelector,
-    renameCssProperty,
-    removeHtmlProp,
-    updateHtmlPropValue,
-    renameHtmlProp,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
+    ...htmlFacade(pm)
   };
 };
 
