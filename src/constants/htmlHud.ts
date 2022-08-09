@@ -41,6 +41,7 @@ export const HTML_HUD_EMPTY_ELEMENTS = <const>[
   'source',
   'track',
   'wbr',
+  'object-group'
 ];
 
 export const HTML_HUD_EMPTY_ELEMENTS_DROP_TYPES = createDropTypes(
