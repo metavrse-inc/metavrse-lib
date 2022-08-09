@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.13.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.12.0...v1.13.0) (2022-08-09)
+
+
+### Features
+
+* add code prop to HTMLElement with get and set ([c035dfe](https://github.com/startupdevhouse/metavrse-lib/commit/c035dfed10a0dfeccc2106a6a89ea3769f153f52))
+
 ## [1.12.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.11.1...v1.12.0) (2022-08-08)
 
 
