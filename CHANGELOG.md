@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.13.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.13.0...v1.13.1) (2022-08-09)
+
+
+### Bug Fixes
+
+* add object-group as empty element ([7571adf](https://github.com/startupdevhouse/metavrse-lib/commit/7571adff0320399e30a1f9cc37ea88125e3cddda))
+
 ## [1.13.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.12.0...v1.13.0) (2022-08-09)
 
 
