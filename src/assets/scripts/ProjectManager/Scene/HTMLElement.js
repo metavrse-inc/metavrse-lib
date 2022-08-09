@@ -706,6 +706,7 @@
         type: { get: () => { return getProperty('type')[1]; }, set: (v) => { setProperty('type', v); } },
         class: { get: () => { return getProperty('class')[1]; }, set: (v) => { setProperty('class', v); } },
         text: { get: () => { return getProperty('text')[1]; }, set: (v) => { setProperty('text', v); } },
+        code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); } },
     })
 
     Object.assign(object, {
