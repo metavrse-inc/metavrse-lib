@@ -1,5 +1,3 @@
-const { mergeConfigurationsIntoTree } = require('../../..');
-
 /**
  * URL Loader Helper component
  * Will download and extract project package
@@ -186,6 +184,33 @@ module.exports = (opt) => {
     };
 
     internalFetch(headers);
+  };
+
+  const mergeConfigurationsIntoTree = (tree, configurations) => {
+    const deep = (draft, config) => {
+      draft.forEach((node) => {
+        if (node.type === 'object-group') {
+          const found = config.find((elem) => {
+            return elem.key === node.key;
+          });
+
+          if (found) {
+            if (found.children.length) {
+              deep(node.children, found.children);
+              const configs = found.children.filter(
+                (e) => e.type === 'configuration'
+              );
+
+              // Temporary solution for types
+              node.children = [...node.children, ...configs];
+            }
+          }
+        }
+      });
+    };
+    const copy = JSON.parse(JSON.stringify(tree));
+
+    return deep(copy, configurations);
   };
 
   // Temporary name, you can change it

@@ -6,10 +6,14 @@ import { TreeNode } from '../nodes/TreeNode';
 import { World } from '../world/World';
 import { CherryKey } from './CherryKey';
 
+type WorldNode = {
+  type: 'world';
+};
+
 type Scenes = Record<
   string,
   {
-    tree: Array<TreeNode | HTMLHudNode | ConfigurationNode>;
+    tree: Array<TreeNode | HTMLHudNode | ConfigurationNode | WorldNode>;
     data: Record<CherryKey, Entity | World>;
   }
 >;
