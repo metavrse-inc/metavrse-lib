@@ -1,7 +1,6 @@
 import { mat3, mat4, quat, ReadonlyMat3, vec3 } from 'gl-matrix';
 import { CherryKey, CherryViewer, Vector3 } from '../../types';
 
-
 export const getNewRotate = (direction: Vector3, up: Vector3): ReadonlyMat3 => {
   const xAxis = vec3.create();
   vec3.cross(xAxis, up, direction);
@@ -67,13 +66,12 @@ export const updatePosition = (
   key: CherryKey
 ): Vector3 => {
   const object = viewer.ProjectManager.getObject(key);
-  const [, position]: [string, Vector3] =
-  object.getProperty('position', key) || vec3.create();
+  const [, position] = object.getProperty('position', key) || vec3.create();
   const { distance } = viewer.controls;
   const pixelDensity = viewer.pixelDensity;
   const [vectorX, vectorY, vectorZ] = vector;
 
-  const positionCopy: Vector3 = [...position];
+  const positionCopy: any = [...(position as vec3)];
 
   positionCopy[0] += vectorX * (distance / pixelDensity);
   positionCopy[1] += vectorY * (distance / pixelDensity);

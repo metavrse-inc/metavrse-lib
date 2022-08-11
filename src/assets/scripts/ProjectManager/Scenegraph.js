@@ -115,7 +115,7 @@ module.exports = () => {
 
   const render = (opts) => {
     // deprecating
-    // if (!isEmpty(sceneprops.redraw)) processRedraw(opts);
+    //if (!isEmpty(sceneprops.redraw)) processRedraw(opts);
     // deprecating
 
     const local_redraws = new Map(redraws);
@@ -139,7 +139,6 @@ module.exports = () => {
           sceneprops.project.data.selected_scene
         ];
       var d_assets = sceneprops.project.data['assets'];
-
       try {
         // TODO: future version 1.1
         // pass sceneprops.project.data['scene'] instead of selected scene
@@ -147,8 +146,9 @@ module.exports = () => {
         if (
           sceneprops.worldController &&
           typeof sceneprops.worldController.onInit === 'function'
-        )
+        ) {
           sceneprops.worldController.onInit(d_scene, d_assets);
+        }
       } catch (e) {
         sceneprops.worldController = undefined;
         console.log('world error - ' + e.message);
@@ -277,6 +277,11 @@ module.exports = () => {
     children?.forEach((child) => {
       var obj;
 
+      if (child.type === 'object-group') {
+        obj = sceneprops.sceneIndex.get(child.key);
+        child.parent = obj.parent;
+      }
+
       if (child.parent) {
         parent = child.parent;
       }
@@ -391,20 +396,13 @@ module.exports = () => {
     const scene =
       sceneprops.project.data['scene'][sceneprops.project.data.selected_scene];
     const tree = scene.tree;
-    const configurations = scene.configurations;
 
     objectControllerkeys.clear();
     sceneprops.configurations.clear();
     sceneprops.config_idx = 0;
 
-    if (/^\d+\.\d+\..+$/.test(sceneprops.project.data.version)) {
-      parseScene(tree, undefined, [], opt);
-      parseSceneConfigurations(configurations, undefined, opt);
-    } else {
-      const configs = parseScene(tree, undefined, [], opt);
-      parseSceneConfigurations(configs, undefined, opt);
-    }
-
+    const configs = parseScene(tree, undefined, [], opt);
+    parseSceneConfigurations(configs, undefined, opt);
     if (treeGenerated) {
       try {
         treeGenerated();
@@ -598,7 +596,6 @@ module.exports = () => {
     sceneprops.worldController = undefined;
     sceneprops.assetIndex.clear();
     loadPaths(sceneprops.project.data['assets'].tree);
-
     // Load world controller
     // TODO: Change version check so it use semver library
     if (/^\d+\.\d+\..+$/.test(p.data.version)) {

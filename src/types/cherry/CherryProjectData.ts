@@ -1,3 +1,4 @@
+import { ConfigurationNode } from '..';
 import { Asset } from '../assets/Asset';
 import { Entity } from '../entities/Entity';
 import { HTMLHudNode } from '../nodes/HTMLHudNode';
@@ -8,7 +9,7 @@ import { CherryKey } from './CherryKey';
 type Scenes = Record<
   string,
   {
-    tree: Array<TreeNode | HTMLHudNode>;
+    tree: Array<TreeNode | HTMLHudNode | ConfigurationNode>;
     data: Record<CherryKey, Entity | World>;
   }
 >;
