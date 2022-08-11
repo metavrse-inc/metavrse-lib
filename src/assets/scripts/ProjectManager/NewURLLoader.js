@@ -1,3 +1,5 @@
+const { mergeConfigurationsIntoTree } = require('../../..');
+
 /**
  * URL Loader Helper component
  * Will download and extract project package
@@ -208,6 +210,10 @@ module.exports = (opt) => {
       const tree = readJsonFile(`scenes/${startingScene}/tree.json`);
       const entities = readJsonFile(`scenes/${startingScene}/entities.json`);
       const world = readJsonFile(`scenes/${startingScene}/world.json`);
+      const configurations = readJsonFile(
+        `scenes/${startingScene}/configurations.json`
+      );
+      const hudTree = readJsonFile(`scenes/${startingScene}/hud-tree.json`);
 
       // Create project data for json files in zip
       const projectData = {
@@ -216,7 +222,10 @@ module.exports = (opt) => {
           title: project.title,
           scene: {
             [project.startingScene]: {
-              tree: [...tree],
+              tree: [
+                ...mergeConfigurationsIntoTree(tree, configurations),
+                ...hudTree,
+              ],
               data: {
                 world,
                 ...entities,

@@ -277,6 +277,11 @@ module.exports = () => {
     children?.forEach((child) => {
       var obj;
 
+      if (child.type === 'object-group') {
+        obj = sceneprops.sceneIndex.get(child.key);
+        child.parent = obj.parent;
+      }
+
       if (child.parent) {
         parent = child.parent;
       }
@@ -391,20 +396,13 @@ module.exports = () => {
     const scene =
       sceneprops.project.data['scene'][sceneprops.project.data.selected_scene];
     const tree = scene.tree;
-    const configurations = scene.configurations;
 
     objectControllerkeys.clear();
     sceneprops.configurations.clear();
     sceneprops.config_idx = 0;
 
-    // if (/^\d+\.\d+\..+$/.test(sceneprops.project.data.version)) {
-    //   parseScene(tree, undefined, [], opt);
-    //   parseSceneConfigurations(configurations, undefined, opt);
-    // } else {
     const configs = parseScene(tree, undefined, [], opt);
     parseSceneConfigurations(configs, undefined, opt);
-    // }
-
     if (treeGenerated) {
       try {
         treeGenerated();
