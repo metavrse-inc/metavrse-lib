@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.15.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.14.1...v1.15.0) (2022-08-16)
+
+
+### Features
+
+* MET-2271 add HTML Hud to projectData ([988265e](https://github.com/startupdevhouse/metavrse-lib/commit/988265ed1c359912c1a4bc998422862d116fe37e))
+* MET-2271 adjust getFile method to fetch assets in publish ([4a3a403](https://github.com/startupdevhouse/metavrse-lib/commit/4a3a403d80010697e70f1148bda6489775acf990))
+
+
+### Bug Fixes
+
+* MET-2271 add missing return ([471d4ad](https://github.com/startupdevhouse/metavrse-lib/commit/471d4adf0cac0dafee828e01704360422faebd8f))
+
 ### [1.14.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.14.0...v1.14.1) (2022-08-11)
 
 ## [1.14.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.13.1...v1.14.0) (2022-08-11)
