@@ -186,6 +186,33 @@ module.exports = (opt) => {
     internalFetch(headers);
   };
 
+  const mergeConfigurationsIntoTree = (tree, configurations) => {
+    const deep = (draft, config) => {
+      draft.forEach((node) => {
+        if (node.type === 'object-group') {
+          const found = config.find((elem) => {
+            return elem.key === node.key;
+          });
+
+          if (found) {
+            if (found.children.length) {
+              deep(node.children, found.children);
+              const configs = found.children.filter(
+                (e) => e.type === 'configuration'
+              );
+
+              // Temporary solution for types
+              node.children = [...node.children, ...configs];
+            }
+          }
+        }
+      });
+    };
+    const copy = JSON.parse(JSON.stringify(tree));
+
+    return deep(copy, configurations);
+  };
+
   // Temporary name, you can change it
   const tempMethodName = async (url, password, options, cb) => {
     fetchData(url, password, options, async (data) => {
@@ -208,7 +235,10 @@ module.exports = (opt) => {
       const tree = readJsonFile(`scenes/${startingScene}/tree.json`);
       const entities = readJsonFile(`scenes/${startingScene}/entities.json`);
       const world = readJsonFile(`scenes/${startingScene}/world.json`);
-      const htmlHudTree = readJsonFile(`scenes/${startingScene}/hud-tree.json`)
+      const configurations = readJsonFile(
+        `scenes/${startingScene}/configurations.json`
+      );
+      const hudTree = readJsonFile(`scenes/${startingScene}/hud-tree.json`);
 
       // Create project data for json files in zip
       const projectData = {
@@ -217,7 +247,10 @@ module.exports = (opt) => {
           title: project.title,
           scene: {
             [project.startingScene]: {
-              tree: [...tree, ...htmlHudTree],
+              tree: [
+                ...mergeConfigurationsIntoTree(tree, configurations),
+                ...hudTree,
+              ],
               data: {
                 world,
                 ...entities,

@@ -1,6 +1,6 @@
 {
   "name": "@startupdevhouse/metavrse-lib",
-  "version": "1.13.1",
+  "version": "1.14.1",
   "description": "",
   "main": "dist/metavrse-lib.esm.js",
   "module": "dist/metavrse-lib.esm.js",
@@ -31,12 +31,14 @@
   },
   "homepage": "https://github.com/startupdevhouse/metavrse-lib#readme",
   "peerDependencies": {
-    "@babel/runtime": "7.16.7"
+    "@babel/runtime": "7.16.7",
+    "immer": "^9.0.6"
   },
   "dependencies": {
     "csstype": "^3.1.0",
     "gl-matrix": "^3.4.3",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "immer": "^9.0.6"
   },
   "devDependencies": {
     "@digitalroute/cz-conventional-changelog-for-jira": "^7.0.0",

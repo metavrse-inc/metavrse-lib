@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.14.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.14.0...v1.14.1) (2022-08-11)
+
+## [1.14.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.13.1...v1.14.0) (2022-08-11)
+
+
+### Features
+
+* MET-2567 reflect configurations in publish ([930a465](https://github.com/startupdevhouse/metavrse-lib/commit/930a46519e9af04d851575f99769bf66d365ebf3))
+
+
+### Bug Fixes
+
+* MET-2525 fix types for updatePosition method ([8cbf314](https://github.com/startupdevhouse/metavrse-lib/commit/8cbf31412c080c8fb8ae183d4ca05ec1f66dacd8))
+
 ### [1.13.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.13.0...v1.13.1) (2022-08-09)
 
 
