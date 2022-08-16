@@ -208,6 +208,7 @@ module.exports = (opt) => {
       const tree = readJsonFile(`scenes/${startingScene}/tree.json`);
       const entities = readJsonFile(`scenes/${startingScene}/entities.json`);
       const world = readJsonFile(`scenes/${startingScene}/world.json`);
+      const htmlHudTree = readJsonFile(`scenes/${startingScene}/hud-tree.json`)
 
       // Create project data for json files in zip
       const projectData = {
@@ -216,7 +217,7 @@ module.exports = (opt) => {
           title: project.title,
           scene: {
             [project.startingScene]: {
-              tree: [...tree],
+              tree: [...tree, ...htmlHudTree],
               data: {
                 world,
                 ...entities,
