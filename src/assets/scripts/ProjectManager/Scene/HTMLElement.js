@@ -33,13 +33,20 @@
     const getFile = (file, buffer) => {
         try {
             const archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
+            const path = Module.ProjectManager.path;
+            const projectVersion = Module.ProjectManager.project.data.version;
             var _f;
             if (file.includes("assets/")) {
                 _f = surface.readBinary(file);
             } else if (!scene.hasFSZip()) {
-                _f = surface.readBinary(Module.ProjectManager.path + file);
+                _f = surface.readBinary(path + file);
             } else {
+              // If zip file exists load files based on version
+              if (/^\d+\.\d+\..+$/.test(projectVersion)) {
+                _f = archive.fopen(path + file);
+              } else {
                 _f = archive.fopen(file);
+              }
             }
 
             if (buffer) return _f;

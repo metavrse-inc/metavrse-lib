@@ -207,6 +207,8 @@ module.exports = (opt) => {
           }
         }
       });
+
+      return draft
     };
     const copy = JSON.parse(JSON.stringify(tree));
 
