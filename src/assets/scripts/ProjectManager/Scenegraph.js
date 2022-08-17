@@ -274,7 +274,7 @@ module.exports = () => {
       sceneprops.project.data['scene'][sceneprops.project.data.selected_scene]
         .data;
 
-    children?.forEach((child) => {
+    children.forEach((child) => {
       var obj;
 
       if (child.type === 'object-group') {
@@ -357,10 +357,6 @@ module.exports = () => {
         if (child.children) {
           parseSceneConfigurations(child.children, obj, opt, payload.key);
         }
-      } else if (child.type === 'object-group') {
-        if (child.children) {
-          parseSceneConfigurations(child.children, obj, opt, payload.key);
-        }
       }
     });
   };
@@ -406,7 +402,9 @@ module.exports = () => {
     if (treeGenerated) {
       try {
         treeGenerated();
-      } catch (e) {}
+      } catch (e) {
+        console.log('constructGraph() ', e);
+      }
     }
   };
 
