@@ -33,12 +33,19 @@ module.exports = (payload) => {
           ? Module.ProjectManager.archive
           : undefined;
       var _f;
+      const projectVersion = Module.ProjectManager.project.data.version;
+      const path = Module.ProjectManager.path;
 
       if (file.includes('assets/')) {
         _f = surface.readBinary(file);
       } else if (!scene.hasFSZip()) {
-        _f = surface.readBinary(Module.ProjectManager.path + file);
+        _f = surface.readBinary(path + file);
       } else {
+        if (/^\d+\.\d+\..+$/.test(projectVersion)) {
+          _f = archive.fopen(path + file);
+        } else {
+          _f = archive.fopen(file);
+        }
         _f = archive.fopen(file);
       }
 
@@ -521,6 +528,10 @@ module.exports = (payload) => {
 
   Object.assign(object, {
     insertIntoBucket,
+    rerenderCss: () => {
+      // eslint-disable-next-line no-self-assign
+      world.css = world.css
+    },
     clearRender: () => {
       renderList = [];
     },

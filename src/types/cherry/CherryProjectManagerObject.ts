@@ -60,6 +60,7 @@ export type GetterSetterPropertyType =
   | 'fxaa'
   | 'orientation'
   | 'hudscale'
+  | 'css'
 
   //  HTML Hud
   | 'text'
@@ -175,6 +176,8 @@ export type CherryProjectManagerObject = {
   fps: number;
   fxaa: number;
   orientation: number;
+  css: CherryKey
+  rerenderCss: () => void
 
   text: string
   type: string

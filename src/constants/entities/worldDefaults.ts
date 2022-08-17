@@ -23,4 +23,5 @@ export const worldDefaults: World = {
   fxaa: 1,
   hudscale: 1,
   orientation: 0,
+  css: ''
 };

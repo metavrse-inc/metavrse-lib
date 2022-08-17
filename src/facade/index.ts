@@ -27,6 +27,7 @@ import { gizmoFacade } from './gizmo';
 import { ConfigurationNode, HTMLHudNode } from '../types';
 import { zoomFacade } from './zoom';
 import { htmlFacade } from './htmlHud';
+import * as Module from 'module';
 
 export const cherryFacade = (cherryViewer: CherryViewer) => {
   const pm = cherryViewer.ProjectManager;
@@ -297,6 +298,10 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     try {
       const object = pm.getObject(key);
       (object[propertyName] as ProjectManagerObjectPropertyType) = value;
+
+      if (propertyName === 'css') {
+        object.rerenderCss()
+      }
     } catch (error: any) {
       console.log('facade->setObjectProperty:', error.message);
     }
