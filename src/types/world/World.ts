@@ -29,4 +29,5 @@ export type World = {
   fxaa: number;
   orientation: number;
   hudscale: number;
+  css: CherryKey
 };
