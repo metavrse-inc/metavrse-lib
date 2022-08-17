@@ -548,8 +548,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     parent?: HTMLHudNode
   ) => {
     const parentObject = parent ? pm.getObject(parent.key) : null;
-    const currentObject = pm.addObject(node, entities, parentObject);
-    const currentEntity = entities[node.key];
+    pm.addObject(node, entities, parentObject);
   };
 
   const getVideoObject = (videoKey: string) => {
@@ -576,7 +575,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setObjectProperty,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
-    ...htmlFacade(pm)
+    ...htmlFacade(pm),
   };
 };
 
