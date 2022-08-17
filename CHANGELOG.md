@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.16.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.16.0...v1.16.1) (2022-08-17)
+
+
+### Bug Fixes
+
+* MET-2559 remove parent and index properties form config ([df4af68](https://github.com/startupdevhouse/metavrse-lib/commit/df4af68f55c00b6437a921c6e3e85ae71997da9f))
+
 ## [1.16.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.15.0...v1.16.0) (2022-08-17)
 
 
