@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.16.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.15.0...v1.16.0) (2022-08-17)
+
+
+### Features
+
+* MET-2270 rerender CSS while it was changed ([4d55054](https://github.com/startupdevhouse/metavrse-lib/commit/4d55054dbf38c7b097c4abede4edeb2a2b57ac6b))
+
+
+### Bug Fixes
+
+* MET-2270 add missing default ([aeecb01](https://github.com/startupdevhouse/metavrse-lib/commit/aeecb018a3d656cbb8b885f4f56e3997593e89d8))
+
 ## [1.15.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.14.1...v1.15.0) (2022-08-16)
 
 
