@@ -46,7 +46,6 @@ module.exports = (payload) => {
         } else {
           _f = archive.fopen(file);
         }
-        _f = archive.fopen(file);
       }
 
       if (buffer) return _f;
