@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.16.2](https://github.com/startupdevhouse/metavrse-lib/compare/v1.16.1...v1.16.2) (2022-08-19)
+
+
+### Bug Fixes
+
+* MET-2567 fix configurations in publish ([b1b4e60](https://github.com/startupdevhouse/metavrse-lib/commit/b1b4e609298d76b5fc45fd4910f7534ef42a420d))
+
 ### [1.16.1](https://github.com/startupdevhouse/metavrse-lib/compare/v1.16.0...v1.16.1) (2022-08-17)
 
 
