@@ -301,7 +301,6 @@ module.exports = (payload) => {
 
         let uftFile = getFile(controller, true);
         csstext = new TextDecoder('utf-8').decode(new Uint8Array(uftFile));
-        console.log('here', csstext)
       } catch (e) {
         console.error(e);
       }
