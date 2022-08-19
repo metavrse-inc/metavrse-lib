@@ -12,5 +12,6 @@ export type MegaControllerConfigurationFolders = {
     file: string;
     toggled: boolean;
     aftercamera: boolean;
+    title: string;
   };
 };
