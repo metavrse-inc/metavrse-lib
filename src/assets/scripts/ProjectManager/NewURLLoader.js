@@ -187,32 +187,83 @@ module.exports = (opt) => {
   };
 
   const mergeConfigurationsIntoTree = (tree, configurations) => {
-    const deep = (draft, config) => {
-      draft.forEach((node) => {
-        if (node.type === 'object-group') {
-          const found = config.find((elem) => {
-            return elem.key === node.key;
-          });
+    const flattenTree = (tree) => {
+      const flatten = [];
 
-          if (found) {
-            if (found.children.length) {
-              deep(node.children, found.children);
-              const configs = found.children.filter(
-                (e) => e.type === 'configuration'
-              );
+      const deepSearch = (nodes, parentKey) => {
+        nodes.forEach((node, index) => {
+          let newNode = null;
+          let buildNode = null;
 
-              // Temporary solution for types
-              node.children = [...node.children, ...configs];
-            }
+          if (node) {
+            newNode = {
+              ...node,
+              children: [],
+            };
+
+            buildNode = {
+              ...newNode,
+              index,
+              parent: parentKey,
+            };
           }
+
+          flatten.push(buildNode);
+
+          if (node.children.length) {
+            deepSearch(node.children, node.key);
+          }
+        });
+      };
+
+      deepSearch(tree, '');
+
+      return flatten;
+    };
+
+    const createTree = (flattenArray, parent = '') => {
+      const newArr = [];
+
+      flattenArray.forEach((c) => {
+        if (parent === c.parent) {
+          const { key, skey, title, type, id, visible } = c;
+          const newNode = { key, skey, title, type, visible };
+          if (id) {
+            newNode.id = id;
+          }
+          newArr.push({
+            ...newNode,
+            children: [...createTree(flattenArray, c.key)],
+          });
         }
       });
 
-      return draft
+      return newArr;
     };
-    const copy = JSON.parse(JSON.stringify(tree));
 
-    return deep(copy, configurations);
+    const merge = (tree, configurations) => {
+      let newFlattenTree = [];
+      const flatTree = flattenTree(tree);
+      const flatConfs = flattenTree(configurations);
+
+      if (configurations.length) {
+        newFlattenTree = flatTree;
+
+        const treeMap = new Map(flatTree.map((c) => [c.key, c]));
+
+        flatConfs.forEach((t) => {
+          if (!treeMap.has(t.key)) {
+            newFlattenTree.push(t);
+          }
+        });
+      } else {
+        newFlattenTree = flatTree;
+      }
+
+      return createTree(newFlattenTree);
+    };
+
+    return merge(tree, configurations);
   };
 
   // Temporary name, you can change it
