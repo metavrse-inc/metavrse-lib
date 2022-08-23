@@ -300,7 +300,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
       (object[propertyName] as ProjectManagerObjectPropertyType) = value;
 
       if (propertyName === 'css') {
-        object.rerenderCss()
+        object.rerenderCss();
       }
     } catch (error: any) {
       console.log('facade->setObjectProperty:', error.message);
@@ -482,10 +482,11 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
   const addObjectToScene = (
     node: TreeNode | HTMLHudNode | ConfigurationNode,
     entities: Entities,
-    parent?: TreeNode | HTMLHudNode | ConfigurationNode
+    parent?: TreeNode | HTMLHudNode | ConfigurationNode,
+    key?: CherryKey
   ) => {
     const parentObject = parent ? pm.getObject(parent.key) : null;
-    const currentObject = pm.addObject(node, entities, parentObject);
+    const currentObject = pm.addObject(node, entities, parentObject, key);
     const currentEntity = entities[node.key];
 
     if (node.type === NODE_TYPES.light) {
