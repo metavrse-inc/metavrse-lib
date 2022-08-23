@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.16.4](https://github.com/startupdevhouse/metavrse-lib/compare/v1.16.3...v1.16.4) (2022-08-23)
+
+
+### Bug Fixes
+
+* MET-2666 fix issue with parentOpt undefined ([7b77259](https://github.com/startupdevhouse/metavrse-lib/commit/7b77259899d504bec42833cbc92d4ac7743af420))
+
 ### [1.16.3](https://github.com/startupdevhouse/metavrse-lib/compare/v1.16.2...v1.16.3) (2022-08-19)
 
 
