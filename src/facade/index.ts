@@ -310,6 +310,24 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
   /**
    *
    * @param key
+   * @param propertyName
+   * @param value
+   */
+  const removeConfigurationProperty = (
+    key: CherryKey,
+    propertyName: GetterSetterPropertyType
+  ) => {
+    try {
+      const object = pm.getObject(key);
+      object.removeLink(propertyName);
+    } catch (error: any) {
+      console.log('facade->removeConfigurationProperty:', error.message);
+    }
+  };
+
+  /**
+   *
+   * @param key
    * @param index
    * @param property
    * @param value
@@ -574,6 +592,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setAssets,
     setObjectMaterial,
     setObjectProperty,
+    removeConfigurationProperty,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
     ...htmlFacade(pm),

@@ -91,7 +91,7 @@ export type CherryProjectManagerObject = {
   toggleLink: () => void;
   setProperty: (prop: string, value: any, key?: CherryKey) => void;
   getProperty: (prop: string, key: CherryKey) => [string, Vector3];
-  removeLink: { (): void; (prop: string, key: CherryKey): boolean };
+  removeLink: { (): void; (prop: string, key?: CherryKey): boolean };
   clearRender: () => void;
   remove: () => void;
 
@@ -124,17 +124,25 @@ export type CherryProjectManagerObject = {
   /** @description Use to retrieve mesh specify by index or update mesh by it index. Used also for managing CSS properties/values in HTML Hud */
   mesh: {
     get: (index: number, property: ShaderParameterType) => CherryMesh;
-    set: (index: number | string, property: ShaderParameterType | CSS.Properties, value: unknown) => void;
-    removeProp: (selector: string, property: string) => void
-    renameOption: (selector: string, currentProperty: string, newProperty: string) => void
-    renameMesh: (selector: string, newSelector: string) => void
+    set: (
+      index: number | string,
+      property: ShaderParameterType | CSS.Properties,
+      value: unknown
+    ) => void;
+    removeProp: (selector: string, property: string) => void;
+    renameOption: (
+      selector: string,
+      currentProperty: string,
+      newProperty: string
+    ) => void;
+    renameMesh: (selector: string, newSelector: string) => void;
   };
   /** @description Use to manage props in HTML HUD (eg. src for image, etc) */
   props: {
-    remove: (prop: string) => void
-    set: (prop: string, newValue: string) => void
-    rename: (oldProp: string, newProp: string) => void
-  }
+    remove: (prop: string) => void;
+    set: (prop: string, newValue: string) => void;
+    rename: (oldProp: string, newProp: string) => void;
+  };
   finalTransformation: Float32Array;
   finalVisibility: boolean;
   parentOpts: { visible: boolean; transforms: Vector3; transform: any };
@@ -176,13 +184,13 @@ export type CherryProjectManagerObject = {
   fps: number;
   fxaa: number;
   orientation: number;
-  css: CherryKey
-  rerenderCss: () => void
+  css: CherryKey;
+  rerenderCss: () => void;
 
-  text: string
-  type: string
-  class: string
+  text: string;
+  type: string;
+  class: string;
 
   // Used to hold CSS declarations for HTML Hud
-  data: Record<string, string>
+  data: Record<string, string>;
 };
