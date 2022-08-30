@@ -53,7 +53,7 @@ export type Entity = {
     src: string;
     type: string;
   }>;
-  class?: string
+  class?: string;
 
   // Configuration
   parentOpts?: {
@@ -69,5 +69,5 @@ export type Entity = {
       type: TreeNodeType;
       data?: Record<number, EntityMaterial>;
     }
-  | { type: ConfigurationNodeType }
+  | { type: ConfigurationNodeType; data?: Record<number, EntityMaterial> }
 );
