@@ -295,7 +295,6 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     try {
       const object = pm.getObject(key) as any;
       object[propertyName] = value;
-      console.log(key, propertyName, value, object);
 
       if (propertyName === 'css') {
         object.rerenderCss();
@@ -553,7 +552,6 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
           lightobj.setTransformMatrix(m);
         };
 
-        // light.clearChangeHandlers();
         light.addChangeListener((type: string) => {
           switch (type) {
             case 'removed':
