@@ -13,6 +13,7 @@ import { Entity } from '../types/entities/Entity';
 import { NODE_TYPES } from './../constants';
 import { vec3, mat4 } from 'gl-matrix';
 import {
+  CherryProjectManagerObject,
   GetterSetterPropertyType,
   ProjectManagerObjectPropertyType,
 } from '../types/cherry/CherryProjectManagerObject';
@@ -290,14 +291,10 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
    * @param propertyName
    * @param value
    */
-  const setObjectProperty = (
-    key: CherryKey,
-    propertyName: GetterSetterPropertyType,
-    value: ProjectManagerObjectPropertyType
-  ) => {
+  const setObjectProperty = (key: CherryKey, propertyName: any, value: any) => {
     try {
-      const object = pm.getObject(key);
-      (object[propertyName] as ProjectManagerObjectPropertyType) = value;
+      const object = pm.getObject(key) as any;
+      object[propertyName] = value;
 
       if (propertyName === 'css') {
         object.rerenderCss();
@@ -368,6 +365,28 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
     for (const id of ids) {
       object.mesh.set(id, property, null);
+    }
+  };
+
+  /**
+   *
+   * @param key
+   * @param ids
+   * @param property
+   */
+  const removeConfigurationMaterial = (
+    key: CherryKey,
+    ids: number[],
+    property: ShaderParameterType
+  ) => {
+    const object = pm.getObject(key);
+
+    if (!ids.length) {
+      return;
+    }
+
+    for (const id of ids) {
+      object.mesh.remove(id, property);
     }
   };
 
@@ -503,58 +522,61 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     parent?: TreeNode | HTMLHudNode | ConfigurationNode,
     key?: CherryKey
   ) => {
-    const parentObject = parent ? pm.getObject(parent.key) : null;
-    const currentObject = pm.addObject(node, entities, parentObject, key);
-    const currentEntity = entities[node.key];
+    try {
+      const parentObject = parent ? pm.getObject(parent.key) : null;
+      const currentObject = pm.addObject(node, entities, parentObject, key);
+      const currentEntity = entities[node.key];
 
-    if (node.type === NODE_TYPES.light) {
-      const { key } = node;
-      const light = pm.getObject(key);
-      let lightobj = scene.getObject(key);
+      if (node.type === NODE_TYPES.light) {
+        const { key } = node;
+        const light = pm.getObject(key);
+        let lightobj = scene.getObject(key);
 
-      if (!lightobj) {
-        lightobj = scene.addObject(key, '/assets/sun.c3b');
-        pm.objects[lightobj.$$.ptr] = { key };
-        lightobj.setParameter('front_facing', true);
-        lightobj.setParameter('visible', light.parentOpts.visible);
+        if (!lightobj) {
+          lightobj = scene.addObject(key, '/assets/sun.c3b');
+          pm.objects[lightobj.$$.ptr] = { key };
+          lightobj.setParameter('front_facing', true);
+          lightobj.setParameter('visible', light.parentOpts.visible);
+        }
+
+        const updatePosition = () => {
+          const vec = vec3.fromValues(
+            light.finalPosition[0],
+            light.finalPosition[1],
+            light.finalPosition[2]
+          );
+          const scale = vec3.fromValues(1 / 100, 1 / 100, 1 / 100);
+          const m = mat4.create();
+          mat4.translate(m, m, vec);
+          mat4.scale(m, m, scale);
+          lightobj.setTransformMatrix(m);
+        };
+
+        light.addChangeListener((type: string) => {
+          switch (type) {
+            case 'removed':
+              scene.removeObject(key);
+              break;
+            case 'transform':
+              updatePosition();
+              break;
+            case 'visible':
+              lightobj.setParameter('visible', light.parentOpts.visible);
+              break;
+          }
+        });
+
+        updatePosition();
       }
 
-      const updatePosition = () => {
-        const vec = vec3.fromValues(
-          light.finalPosition[0],
-          light.finalPosition[1],
-          light.finalPosition[2]
-        );
-        const scale = vec3.fromValues(1 / 100, 1 / 100, 1 / 100);
-        const m = mat4.create();
-        mat4.translate(m, m, vec);
-        mat4.scale(m, m, scale);
-        lightobj.setTransformMatrix(m);
-      };
-
-      // light.clearChangeHandlers();
-      light.addChangeListener((type: string) => {
-        switch (type) {
-          case 'removed':
-            scene.removeObject(key);
-            break;
-          case 'transform':
-            updatePosition();
-            break;
-          case 'visible':
-            lightobj.setParameter('visible', light.parentOpts.visible);
-            break;
-        }
-      });
-
-      updatePosition();
+      return {
+        ...currentEntity,
+        autoscale: currentObject.autoscale,
+        pivot: currentObject.pivot,
+      } as Entity;
+    } catch (e) {
+      console.log(e);
     }
-
-    return {
-      ...currentEntity,
-      autoscale: currentObject.autoscale,
-      pivot: currentObject.pivot,
-    } as Entity;
   };
 
   const removeObjectFromScene = (key: CherryKey) => {
@@ -593,6 +615,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setObjectMaterial,
     setObjectProperty,
     removeConfigurationProperty,
+    removeConfigurationMaterial,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
     ...htmlFacade(pm),

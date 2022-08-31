@@ -130,6 +130,7 @@ export type CherryProjectManagerObject = {
       value: unknown
     ) => void;
     removeProp: (selector: string, property: string) => void;
+    remove: (index: number | string, property: ShaderParameterType) => void;
     renameOption: (
       selector: string,
       currentProperty: string,
