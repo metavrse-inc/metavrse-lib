@@ -1,5 +1,5 @@
 {
-  "name": "@startupdevhouse/metavrse-lib",
+  "name": "@metavrse-inc/metavrse-lib",
   "version": "1.18.2",
   "description": "",
   "main": "dist/metavrse-lib.esm.js",
@@ -23,13 +23,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/startupdevhouse/metavrse-lib.git"
+    "url": "git+https://github.com/metavrse-inc/metavrse-lib.git"
   },
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/startupdevhouse/metavrse-lib/issues"
+    "url": "https://github.com/metavrse-inc/metavrse-lib/issues"
   },
-  "homepage": "https://github.com/startupdevhouse/metavrse-lib#readme",
+  "homepage": "https://github.com/metavrse-inc/metavrse-lib#readme",
   "peerDependencies": {
     "@babel/runtime": "7.16.7",
     "immer": "^9.0.6"
