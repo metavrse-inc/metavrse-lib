@@ -51,6 +51,6 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: Deploy package
-        run: npm publish --access public
+        run: npm adduser && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
