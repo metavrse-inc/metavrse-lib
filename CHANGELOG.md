@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.18.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.17.0...v1.18.0) (2022-08-31)
+
+
+### Features
+
+* MET-2261 mesh panel ([5138f36](https://github.com/startupdevhouse/metavrse-lib/commit/5138f36729700a04a2cb49eb593d7fc9062e119a))
+
 ## [1.17.0](https://github.com/startupdevhouse/metavrse-lib/compare/v1.16.4...v1.17.0) (2022-08-24)
 
 
