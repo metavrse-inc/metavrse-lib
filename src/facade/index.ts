@@ -13,6 +13,7 @@ import { Entity } from '../types/entities/Entity';
 import { NODE_TYPES } from './../constants';
 import { vec3, mat4 } from 'gl-matrix';
 import {
+  CherryProjectManagerObject,
   GetterSetterPropertyType,
   ProjectManagerObjectPropertyType,
 } from '../types/cherry/CherryProjectManagerObject';
@@ -290,14 +291,11 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
    * @param propertyName
    * @param value
    */
-  const setObjectProperty = (
-    key: CherryKey,
-    propertyName: GetterSetterPropertyType,
-    value: ProjectManagerObjectPropertyType
-  ) => {
+  const setObjectProperty = (key: CherryKey, propertyName: any, value: any) => {
     try {
-      const object = pm.getObject(key);
-      (object[propertyName] as ProjectManagerObjectPropertyType) = value;
+      const object = pm.getObject(key) as any;
+      object[propertyName] = value;
+      console.log(key, propertyName, value, object);
 
       if (propertyName === 'css') {
         object.rerenderCss();
