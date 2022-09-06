@@ -596,6 +596,16 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     return pm.getObject(videoKey);
   };
 
+  const getConfigurationVisibility = (entityKey: string) => {
+    const obj = pm.getObject(entityKey);
+
+    if (!obj) {
+      return false
+    }
+
+    return obj.parent.parentOpts.visible;
+  }
+
   return {
     addHTMLTagToHud,
     addObjectToScene,
@@ -616,6 +626,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setObjectProperty,
     removeConfigurationProperty,
     removeConfigurationMaterial,
+    getConfigurationVisibility,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
     ...htmlFacade(pm),
