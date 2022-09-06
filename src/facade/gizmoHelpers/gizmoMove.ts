@@ -66,7 +66,14 @@ export const updatePosition = (
   key: CherryKey
 ): Vector3 => {
   const object = viewer.ProjectManager.getObject(key);
-  const [, position] = object.getProperty('position', key) || vec3.create();
+
+  let position = null
+  if (object.position) {
+    position = object.position
+  } else {
+    position = object.getProperty('position', key)[1] || vec3.create() ;
+  }
+
   const { distance } = viewer.controls;
   const pixelDensity = viewer.pixelDensity;
   const [vectorX, vectorY, vectorZ] = vector;
