@@ -68,10 +68,13 @@ export const updatePosition = (
   const object = viewer.ProjectManager.getObject(key);
 
   let position = null
+
   if (object.position) {
     position = object.position
+  } else if (object.getProperty) {
+    position = object.getProperty('position', key)[1];
   } else {
-    position = object.getProperty('position', key)[1] || vec3.create() ;
+    position = [0, 0, 0];
   }
 
   const { distance } = viewer.controls;
