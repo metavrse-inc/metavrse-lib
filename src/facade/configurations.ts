@@ -1,7 +1,11 @@
-import { CherryProjectManager } from '../types';
+import { CherryKey, CherryProjectManager } from '../types';
 
 export const configurationsFacade = (pm: CherryProjectManager) => {
-  const getConfigurationVisibility = (entityKey: string) => {
+  const getConfigurationVisibility = (entityKey: CherryKey | undefined) => {
+    if (!entityKey) {
+      return false
+    }
+
     const obj = pm.getObject(entityKey);
 
     if (!obj) {

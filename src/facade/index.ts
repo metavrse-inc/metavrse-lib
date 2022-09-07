@@ -596,7 +596,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
   const getVideoObject = (videoKey: string) => {
     return pm.getObject(videoKey);
   };
-  
+
   return {
     addHTMLTagToHud,
     addObjectToScene,
