@@ -1,4 +1,3 @@
-import type * as CSS from 'csstype';
 import {
   CherryMesh,
   CherryMeshGroup,
@@ -12,11 +11,6 @@ import { Asset } from '../types/assets/Asset';
 import { Entity } from '../types/entities/Entity';
 import { NODE_TYPES } from './../constants';
 import { vec3, mat4 } from 'gl-matrix';
-import {
-  CherryProjectManagerObject,
-  GetterSetterPropertyType,
-  ProjectManagerObjectPropertyType,
-} from '../types/cherry/CherryProjectManagerObject';
 import { ShaderValue, ShaderValueType } from '../types/facade/ShaderValueType';
 import { TreeNode } from '../types/nodes/TreeNode';
 import { Entities } from '../types/entities/Entities';
@@ -29,6 +23,7 @@ import { ConfigurationNode, HTMLHudNode } from '../types';
 import { zoomFacade } from './zoom';
 import { htmlFacade } from './htmlHud';
 import * as Module from 'module';
+import { configurationsFacade } from './configurations';
 
 export const cherryFacade = (cherryViewer: CherryViewer) => {
   const pm = cherryViewer.ProjectManager;
@@ -307,24 +302,6 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
   /**
    *
    * @param key
-   * @param propertyName
-   * @param value
-   */
-  const removeConfigurationProperty = (
-    key: CherryKey,
-    propertyName: GetterSetterPropertyType
-  ) => {
-    try {
-      const object = pm.getObject(key);
-      object.removeLink(propertyName);
-    } catch (error: any) {
-      console.log('facade->removeConfigurationProperty:', error.message);
-    }
-  };
-
-  /**
-   *
-   * @param key
    * @param index
    * @param property
    * @param value
@@ -365,28 +342,6 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
     for (const id of ids) {
       object.mesh.set(id, property, null);
-    }
-  };
-
-  /**
-   *
-   * @param key
-   * @param ids
-   * @param property
-   */
-  const removeConfigurationMaterial = (
-    key: CherryKey,
-    ids: number[],
-    property: ShaderParameterType
-  ) => {
-    const object = pm.getObject(key);
-
-    if (!ids.length) {
-      return;
-    }
-
-    for (const id of ids) {
-      object.mesh.remove(id, property);
     }
   };
 
@@ -614,11 +569,10 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setAssets,
     setObjectMaterial,
     setObjectProperty,
-    removeConfigurationProperty,
-    removeConfigurationMaterial,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
     ...htmlFacade(pm),
+    ...configurationsFacade(pm)
   };
 };
 
