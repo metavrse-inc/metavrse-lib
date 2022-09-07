@@ -29,6 +29,7 @@ import { ConfigurationNode, HTMLHudNode } from '../types';
 import { zoomFacade } from './zoom';
 import { htmlFacade } from './htmlHud';
 import * as Module from 'module';
+import { configurationsFacade } from './configurations';
 
 export const cherryFacade = (cherryViewer: CherryViewer) => {
   const pm = cherryViewer.ProjectManager;
@@ -595,17 +596,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
   const getVideoObject = (videoKey: string) => {
     return pm.getObject(videoKey);
   };
-
-  const getConfigurationVisibility = (entityKey: string) => {
-    const obj = pm.getObject(entityKey);
-
-    if (!obj) {
-      return false
-    }
-
-    return obj.parent.parentOpts.visible;
-  }
-
+  
   return {
     addHTMLTagToHud,
     addObjectToScene,
@@ -626,10 +617,10 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     setObjectProperty,
     removeConfigurationProperty,
     removeConfigurationMaterial,
-    getConfigurationVisibility,
     ...gizmoFacade(cherryViewer),
     ...zoomFacade(pm, cherryViewer),
     ...htmlFacade(pm),
+    ...configurationsFacade(pm)
   };
 };
 
