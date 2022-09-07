@@ -421,21 +421,20 @@ module.exports = (payload) => {
         isLoading = v;
       },
     },
-
-    controller: {
-      get: () => {
-        return getProperty('controller');
-      },
-      set: (v) => {
-        setProperty('controller', v);
-      },
-    },
     frame: {
       get: () => {
         return getProperty('frame');
       },
       set: (v) => {
         setProperty('frame', v);
+      },
+    },
+    code: {
+      get: () => {
+        return getProperty('code')[1];
+      },
+      set: (v) => {
+        setProperty('code', v);
       },
     },
   });
