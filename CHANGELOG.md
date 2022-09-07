@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.19.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.18.4...v1.19.0) (2022-09-07)
+
+
+### Features
+
+* MET-2674 add method to check if config is enabled ([ddffb63](https://github.com/metavrse-inc/metavrse-lib/commit/ddffb6329ea6bae11f3a4620b8e0ecf78c2acd14))
+* MET-2674 allow to move element using gizmo while in config ([8c091a1](https://github.com/metavrse-inc/metavrse-lib/commit/8c091a171a1de0daa03e4dc72ec9ca772628fc37))
+
+
+### Bug Fixes
+
+* change way of getting position ([8ea2d3c](https://github.com/metavrse-inc/metavrse-lib/commit/8ea2d3cb342bc02d652030e40d7436e227f7ff73))
+
 ### [1.18.4](https://github.com/metavrse-inc/metavrse-lib/compare/v1.18.3...v1.18.4) (2022-08-31)
 
 ### [1.18.3](https://github.com/metavrse-inc/metavrse-lib/compare/v1.18.2...v1.18.3) (2022-08-31)
