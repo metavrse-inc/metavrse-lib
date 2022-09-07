@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.20.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.19.0...v1.20.0) (2022-09-07)
+
+
+### Features
+
+* MET-2264 Add configurations to components panel ([a130629](https://github.com/metavrse-inc/metavrse-lib/commit/a1306295e4328466c3343b6224a2d0fe8a90a9c7))
+
 ## [1.19.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.18.4...v1.19.0) (2022-09-07)
 
 
