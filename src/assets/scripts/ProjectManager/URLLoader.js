@@ -135,22 +135,22 @@ module.exports = (opt) => {
 
     if (Module.FS) Module.FS.createPath('/', fullpath, true, true);
 
-    Module.toggleNativeLoader(true);
-    loadingBar.visible = false;
+    // Module.toggleNativeLoader(true);
+    // loadingBar.visible = false;
 
     if (Module.canvas) {
       // console.log('pulling indexdb')
-      idbReady().then(() => {
-        pullFilesIDB().then((res) => {
-          if (!res) {
-            requestAnimationFrame((ts) => {
-              downloadPackage(uri, callback, password);
-            });
-          } else {
-            checkHead(uri, callback, password);
-          }
-        });
+      // idbReady().then(()=>{
+      pullFilesIDB().then((res) => {
+        if (!res) {
+          requestAnimationFrame((ts) => {
+            downloadPackage(uri, callback, password);
+          });
+        } else {
+          checkHead(uri, callback, password);
+        }
       });
+      // })
     } else {
       checkHead(uri, callback, password);
     }
@@ -221,11 +221,10 @@ module.exports = (opt) => {
         const security = res.headers['security'];
         const authenticated = res.headers['authenticated'];
         const heroShot = res.headers['hero-shot'];
-        if (heroShot && !(security == 'Password' && !authenticated)) {
+        if (heroShot && !(security == 'Password' && !Boolean(authenticated))) {
           try {
-            let img = await axios.get(heroShot, {
-              responseType: 'arraybuffer',
-            });
+            let https = heroShot.replace('http://', 'https://');
+            let img = await axios.get(https, { responseType: 'arraybuffer' });
             if (img.status == 200) {
               loadingBar.setHeroShot(img.data);
             }
@@ -238,7 +237,7 @@ module.exports = (opt) => {
 
         await sleep(350);
 
-        if (security == 'Password' && !authenticated) {
+        if (security == 'Password' && !Boolean(authenticated)) {
           Module.secure_url = uri;
           const p_url = parseURL(uri);
 
@@ -271,21 +270,25 @@ module.exports = (opt) => {
                 let project = JSON.parse(f);
 
                 loadingBar.toggleHeroShot(true);
-                Module.toggleNativeLoader(true);
+                // Module.toggleNativeLoader(true);
 
-                requestAnimationFrame((ts) => {
-                  requestAnimationFrame((ts) => {
-                    if (project != undefined && next) {
-                      next({ fullpath, project });
-                    }
+                if (loadingBar && loadingBar.label) {
+                  loadingBar.label = 'LOADING';
+                }
 
-                    loadingBar.remove();
-                    loadingBar = undefined;
-                    requestAnimationFrame(() => {
-                      Module.toggleNativeLoader(false);
-                    });
-                  });
-                });
+                // requestAnimationFrame((ts) => {
+                //   requestAnimationFrame((ts) => {
+                if (project != undefined && next) {
+                  next({ fullpath, project });
+                }
+
+                // loadingBar.remove();
+                // loadingBar = undefined;
+                // requestAnimationFrame(() => {
+                // Module.toggleNativeLoader(false);
+                //     });
+                //   })
+                // });
               } catch (e) {
                 console.log(JSON.stringify(e.message));
                 downloadPackage(uri, next, password);
@@ -300,6 +303,8 @@ module.exports = (opt) => {
   };
 
   const downloadPackage = (uri, next, password) => {
+    if (loadingBar && loadingBar.label) loadingBar.label = 'DOWNLOADING';
+
     let config = {
       responseType: 'arraybuffer',
       onDownloadProgress: function (e) {
@@ -378,8 +383,8 @@ module.exports = (opt) => {
 
       let response = await fetchWithCallback(cached_url, config);
 
-      Module.toggleNativeLoader(true);
-      loadingBar.visible = false;
+      // Module.toggleNativeLoader(true);
+      // loadingBar.visible = false;
 
       if (Module.canvas) {
         let localdb = await idb.openDB('workspace', 21, {
@@ -418,17 +423,47 @@ module.exports = (opt) => {
       ajaxRequest = axios.CancelToken.source();
       config['cancelToken'] = ajaxRequest.token;
       const response = await axios.get(cached_url, config);
-      return {
+      var res = {
         headers: {
           'last-modified': response.headers['last-modified'],
         },
         data: new Uint8Array(response.data),
       };
+
+      if (Module.canvas) {
+        let localdb = await idb.openDB('workspace', 21, {
+          upgrade(db) {
+            db.createObjectStore('FILE_DATA');
+          },
+        });
+        let tx = localdb.transaction('FILE_DATA', 'readwrite');
+
+        // clear current data
+        await tx.store.delete(IDBKeyRange.bound(fullpath, fullpath + '\uffff'));
+
+        // add new data
+        await tx.store.put(
+          res.headers['last-modified'],
+          fullpath + 'lastmodified.txt'
+        );
+        await tx.store.put(new Blob([res.data]), fullpath + 'project.zip');
+        // await tx.store.put(new Blob([new Uint8Array(res.data)]), fullpath + "project.zip");
+        await tx.done;
+
+        localdb.close();
+        localdb = null;
+        tx = null;
+
+        // give GC a chance
+        await sleep(100);
+      }
+      return res;
     };
 
     const run = (response) => {
-      Module.toggleNativeLoader(true);
-      loadingBar.visible = false;
+      // Module.toggleNativeLoader(true);
+      // loadingBar.visible = false;
+      if (loadingBar && loadingBar.label) loadingBar.label = 'LOADING';
 
       setTimeout(() => {
         _run(response);
@@ -439,10 +474,7 @@ module.exports = (opt) => {
       var lastmodified = response.headers['last-modified'];
 
       if (Module.FS) {
-        Module.FS.writeFile(
-          fullpath + 'project.zip',
-          new Uint8Array(response.data)
-        );
+        Module.FS.writeFile(fullpath + 'project.zip', response.data);
         if (lastmodified)
           Module.FS.writeFile(fullpath + 'lastmodified.txt', lastmodified);
       } else {
@@ -451,8 +483,8 @@ module.exports = (opt) => {
           surface.writeFile(fullpath + 'lastmodified.txt', lastmodified);
       }
 
-      response.data = null;
-      response = null;
+      // response.data = null;
+      // response = null;
 
       await sleep(100);
 
@@ -468,25 +500,33 @@ module.exports = (opt) => {
         next({ fullpath, project });
       }
 
-      loadingBar.toggleHeroShot(false);
+      // loadingBar.toggleHeroShot(false);
 
-      loadingBar.remove();
-      loadingBar = undefined;
-      requestAnimationFrame((ts) => {
-        Module.toggleNativeLoader(false);
-      });
+      // loadingBar.remove();
+      // loadingBar = undefined;
+      // requestAnimationFrame((ts) => {
+      //   Module.toggleNativeLoader(false);
+      // });
     };
 
     // Launch
-    if (Module.canvas) downloadWeb().then((response) => run(response));
-    else downloadNative().then((response) => run(response));
+    // if (Module.canvas) downloadWeb().then(response=> run(response));
+    // else
+    downloadNative().then((response) => run(response));
   };
 
   const createLoadingBar = () => {
-    loadingBar = Module.require('assets/Components/LoadingBar.js')({
-      visible: visible,
-      percentage: percentage,
-    });
+    if (Module.canvas) {
+      loadingBar = Module.require('assets/Components/LoadingBarWeb.js')({
+        visible: visible,
+        percentage: percentage,
+      });
+    } else {
+      loadingBar = Module.require('assets/Components/LoadingBar.js')({
+        visible: visible,
+        percentage: percentage,
+      });
+    }
   };
 
   // Props and Methods
@@ -497,6 +537,17 @@ module.exports = (opt) => {
       },
       set: (v) => {
         visible = v;
+        if (v) {
+          if (loadingBar == undefined) createLoadingBar();
+        }
+      },
+    },
+    percentage: {
+      get: () => {
+        return loadingBar ? loadingBar.percentage : 0;
+      },
+      set: (v) => {
+        if (loadingBar) loadingBar.percentage = v;
       },
     },
   });
@@ -504,5 +555,11 @@ module.exports = (opt) => {
   return Object.assign(loader, {
     pullFilesIDB,
     getPackage,
+    close: () => {
+      if (loadingBar) {
+        loadingBar.remove();
+        loadingBar = undefined;
+      }
+    },
   });
 };

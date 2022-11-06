@@ -36,7 +36,7 @@ module.exports = (payload) => {
         controller: (d['controller'] !== undefined) ? d['controller'] : [],        
         controller_enabled: (d['controller_enabled'] != undefined) ? d['controller_enabled'] : true,
        
-        class: (d['class'] !== undefined) ? d['class'] : "",        
+        class: (d['class'] !== undefined) ? d['class'] : undefined,        
         class_enabled: (d['class_enabled'] != undefined) ? d['class_enabled'] : true,
        
         hudscale: (d['hudscale'] !== undefined) ? (d['hudscale']) : 1,
@@ -45,7 +45,7 @@ module.exports = (payload) => {
         type: (d['type'] !== undefined && d['type'].trim() != "") ? (d['type']) : "div",
         type_enabled: (d['type_enabled'] != undefined) ? d['type_enabled'] : true,
        
-        text: (d['text'] !== undefined) ? d['text'] : "",
+        text: (d['text'] !== undefined) ? d['text'] : undefined,
         text_enabled: (d['text_enabled'] != undefined) ? d['text_enabled'] : true,
     };
 

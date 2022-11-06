@@ -293,13 +293,14 @@ module.exports = (payload) => {
                 addToRedraw("playing");
                 
                 if (media.readyState > 1) {
-                    for (let [key, handler] of updateHandlers) {
-                        handler({ type: "render" });
+                    let rendered = media.render();
+                    if (rendered){
+                        for (let [key, handler] of updateHandlers) {
+                            handler({ type: "render" });
+                        }
                     }
-                    
-                    media.render();
 
-                    if (!isAudio){
+                    if (!isAudio && rendered && media.getUploadTexture()){
                         Module.ProjectManager.isDirty = true;
                     }
                 }
@@ -373,6 +374,7 @@ module.exports = (payload) => {
         texture: { get: () => { if (media) return media.texture; } },    // readonly
         state: { get: () => { if (media) return media.state; } },    // readonly
         video: { get: () => { if (media && media.video) return media.video; } },    // readonly
+        media: { get: () => { if (media) return media; } },    // readonly
 
         finalPosition: { get: () => { return finalPosition; }, set: (v) => { } },
         finalVisibility: { get: () => { return finalVisibility; }, set: (v) => { } },

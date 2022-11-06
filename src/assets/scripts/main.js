@@ -4,6 +4,8 @@
 const surface = Module.getSurface();
 const scene = surface.getScene();
 
+var { mat4 } = Module.require('assets/gl-matrix.js'); // deprecating
+
 Module.animationids = {};
 Module.ProjectManager = Module.require(
   'assets/ProjectManager/ProjectManager.js'
@@ -77,9 +79,7 @@ Module.resetCamera = function () {
                   let property = getLastItemInMap(properities);
                   nodeptrkey = property[0];
                   emptyvalue = property[1] == '';
-                } catch (error) {
-                  console.log(error);
-                }
+                } catch (error) {}
 
                 const node = nodeobj.item;
                 const object = scene.getObject(nodeptr.key);
@@ -136,7 +136,7 @@ Module.resetCamera = function () {
 };
 
 Module.init = function () {
-  'use strict';
+  // 'use strict';
   Module.resetCamera();
   // scene.setShadowMethod(2);
   scene.enableShadows(false);
@@ -154,12 +154,16 @@ let renderCount = 0;
 Module['fps'] = {
   maxFps: 30,
   currentFps: 30,
+  delta: 0,
   startTime: null,
   frame: -1,
 };
 
+let touchQue = [];
+let mouseQue = [];
+
 Module.render = function () {
-  'use strict';
+  // 'use strict';
 
   if (Module.setFPS) {
     Module.setFPS(Module['fps']['maxFps']);
@@ -178,7 +182,8 @@ Module.render = function () {
       return;
     }
 
-    Module['fps']['currentFps'] = 1000 / (delta / seg);
+    Module['fps']['currentFps'] = Module['fps']['maxFps'];
+    Module['fps']['delta'] = 1000 / (delta / seg);
   }
 
   // console.log(JSON.stringify(Module.fps))
@@ -330,6 +335,8 @@ Module.render = function () {
         Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
       surface.render_clear(0, 0, 0, 1);
     }
+
+    Module.ProjectManager.Physics.debugDraw();
   }
 
   if (!isDirty && !Module.ProjectManager.isDirty) {
@@ -357,6 +364,8 @@ Module.render = function () {
         surface.render_clear(0, 0, 0, 1);
       }
       renderCount++;
+
+      Module.ProjectManager.Physics.debugDraw();
     }
   }
 
@@ -364,7 +373,7 @@ Module.render = function () {
 };
 
 Module.onDestroy = function () {
-  'use strict';
+  // 'use strict';
   // console.log('Shutdown');
   if (Module.Handlers && typeof Module.Handlers.onDestroy === 'function')
     Module.Handlers.onDestroy();
@@ -469,12 +478,13 @@ Module.onSurfaceChanged = function (rotation, width, height) {
     if (o.addToRedraw) o.addToRedraw('transform');
   }
 
+  let res = false;
   if (
     Module.ProjectManager.projectRunning &&
     Module.ProjectManager.worldController &&
     typeof Module.ProjectManager.worldController.onSurfaceChanged === 'function'
   )
-    Module.ProjectManager.worldController.onSurfaceChanged(
+    res = Module.ProjectManager.worldController.onSurfaceChanged(
       rotation,
       width,
       height
@@ -516,12 +526,13 @@ Module.onKeyEvent = function (
 ) {
   let event = { type, key, code, shiftKey, ctrlKey, altKey, metaKey, repeat };
 
+  var res = true;
   if (
     Module.ProjectManager.projectRunning &&
     Module.ProjectManager.worldController &&
     typeof Module.ProjectManager.worldController.onKeyEvent === 'function'
   )
-    Module.ProjectManager.worldController.onKeyEvent(event);
+    res = Module.ProjectManager.worldController.onKeyEvent(event);
   else if (
     !Module.ProjectManager.projectRunning &&
     Module.Handlers &&
@@ -530,40 +541,65 @@ Module.onKeyEvent = function (
     Module.Handlers.onKeyEvent(event);
 };
 
+Module.onTextureCallback = (status) => {
+  if (status == 'loaded') Module.ProjectManager.isDirty = true;
+};
 // Web Only Bindings
 
 if (Module['canvas']) {
+  function isTouchDevice() {
+    return (
+      'ontouchstart' in window ||
+      navigator.maxTouchPoints > 0 ||
+      navigator.msMaxTouchPoints > 0
+    );
+  }
   let c = Module['canvas'];
 
   // keyboard
-  c.addEventListener('keydown', (e) => {
-    Module.onKeyEvent(
-      'keydown',
-      e.key,
-      e.code,
-      e.shiftKey,
-      e.ctrlKey,
-      e.altKey,
-      e.metaKey,
-      e.repeat
-    );
+  document.addEventListener('keydown', (e) => {
+    // if (!c.parentElement.contains(document.activeElement)) return;
+    let tagName = document.activeElement.tagName.toLowerCase();
+
+    if (tagName !== 'input' && tagName !== 'textarea' && tagName !== 'select') {
+      Module.onKeyEvent(
+        'keydown',
+        e.key,
+        e.code,
+        e.shiftKey,
+        e.ctrlKey,
+        e.altKey,
+        e.metaKey,
+        e.repeat
+      );
+    }
   });
 
-  // c.addEventListener('keypress', (e)=> {
-  //   Module.onKeyEvent('keypress', e.key, e.code, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey, e.repeat);
-  // });
+  c.addEventListener('keypress', (e) => {
+    // Module.onKeyEvent('keypress', e.key, e.code, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey, e.repeat);
+    // let tagName = document.activeElement.tagName.toLowerCase();
+    // if (tagName !== 'input' && tagName !== 'textarea' && tagName !== 'select') {
+    //   Module.onKeyEvent('keydown', e.key, e.code, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey, e.repeat);
+    // }
+  });
 
-  c.addEventListener('keyup', (e) => {
-    Module.onKeyEvent(
-      'keyup',
-      e.key,
-      e.code,
-      e.shiftKey,
-      e.ctrlKey,
-      e.altKey,
-      e.metaKey,
-      e.repeat
-    );
+  document.addEventListener('keyup', (e) => {
+    // if (!c.parentElement.contains(document.activeElement)) return;
+
+    let tagName = document.activeElement.tagName.toLowerCase();
+
+    if (tagName !== 'input' && tagName !== 'textarea' && tagName !== 'select') {
+      Module.onKeyEvent(
+        'keyup',
+        e.key,
+        e.code,
+        e.shiftKey,
+        e.ctrlKey,
+        e.altKey,
+        e.metaKey,
+        e.repeat
+      );
+    }
   });
 
   // mouse
@@ -585,8 +621,8 @@ if (Module['canvas']) {
           Module.canvas.parentElement.parentElement.clientWidth <
           Module.canvas.parentElement.parentElement.clientHeight
         ) {
-          let x = rect.bottom - e.clientY;
-          let y = e.clientX - rect.left;
+          var x = rect.bottom - e.clientY;
+          var y = e.clientX - rect.left;
           return [x * dpr, y * dpr];
         }
       } else if (World.orientation == 1) {
@@ -595,8 +631,8 @@ if (Module['canvas']) {
           Module.canvas.parentElement.parentElement.clientHeight <
           Module.canvas.parentElement.parentElement.clientWidth
         ) {
-          let x = rect.bottom - e.clientY;
-          let y = e.clientX - rect.left;
+          var x = rect.bottom - e.clientY;
+          var y = e.clientX - rect.left;
           return [x * dpr, y * dpr];
         }
       }
@@ -607,12 +643,18 @@ if (Module['canvas']) {
   let onMouse = (type, e) => {
     let xy = getXY(e);
     Module.onMouseEvent(type, e.button, xy[0], xy[1]);
-    if (document.activeElement !== c) {
-      c.focus();
-    }
+    // if (document.activeElement !== c) {
+    //   c.focus();
+    // }
     e.preventDefault();
   };
 
+  // if (!isTouchDevice()){
+  c.addEventListener('click', (e) => {
+    if (document.activeElement !== c) {
+      c.focus();
+    }
+  });
   c.addEventListener('mouseup', (e) => {
     onMouse(0, e);
   });
@@ -625,6 +667,7 @@ if (Module['canvas']) {
   c.addEventListener('mousemove', (e) => {
     onMouse(2, e);
   });
+  // }
 
   // mouse scroll
   c.addEventListener('wheel', (e) => {
@@ -718,8 +761,8 @@ if (Module['canvas']) {
           Module.canvas.parentElement.parentElement.clientWidth <
           Module.canvas.parentElement.parentElement.clientHeight
         ) {
-          let x = rect.bottom - t.clientY;
-          let y = t.clientX - rect.left;
+          var x = rect.bottom - t.clientY;
+          var y = t.clientX - rect.left;
           return [x * dpr, y * dpr];
         }
       } else if (World.orientation == 1) {
@@ -728,8 +771,8 @@ if (Module['canvas']) {
           Module.canvas.parentElement.parentElement.clientHeight <
           Module.canvas.parentElement.parentElement.clientWidth
         ) {
-          let x = rect.bottom - t.clientY;
-          let y = t.clientX - rect.left;
+          var x = rect.bottom - t.clientY;
+          var y = t.clientX - rect.left;
           return [x * dpr, y * dpr];
         }
       }
@@ -765,24 +808,30 @@ if (Module['canvas']) {
       }
     }
 
-    if (document.activeElement !== c) {
-      c.focus();
-    }
+    // if (document.activeElement !== c) {
+    //   c.focus();
+    // }
     e.preventDefault();
   };
 
+  // if (isTouchDevice()){
   c.addEventListener('touchend', (e) => {
     onTouch(0, e);
+    e.preventDefault();
   });
   c.addEventListener('touchcancel', (e) => {
     onTouch(0, e);
+    e.preventDefault();
   });
   c.addEventListener('touchstart', (e) => {
     onTouch(1, e);
+    e.preventDefault();
   });
   c.addEventListener('touchmove', (e) => {
     onTouch(2, e);
+    e.preventDefault();
   });
+  // }
 }
 
 // Web Only Bindings

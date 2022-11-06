@@ -105,12 +105,18 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
     cherryViewer._main();
 
+    const scopedEval = (script : string) => {
+      return (Function( 'return (' + script + ')' ).bind(window)());
+    }
+
     cherryViewer.require = (filePath: any) => {
       if (cherryViewer.require_cache[filePath]) {
         return cherryViewer.require_cache[filePath];
       }
       const path = cherryViewer.ProjectManager.path;
-      const projectVersion = cherryViewer.ProjectManager.project.data.version;
+      const projectVersion = (cherryViewer.ProjectManager.project && 
+        cherryViewer.ProjectManager.project.data && 
+        cherryViewer.ProjectManager.project.data.version != undefined) ? cherryViewer.ProjectManager.project.data.version : 2;
       const surface = cherryViewer.getSurface();
       const scene = surface.getScene();
       const archive =
@@ -142,6 +148,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
       ${script}
       return module.exports;}('${filePath}'))`;
 
+      // cherryViewer.require_cache[filePath] = scopedEval(scriptWrapper);
       cherryViewer.require_cache[filePath] = eval(scriptWrapper);
 
       return cherryViewer.require_cache[filePath];
@@ -446,8 +453,8 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
       object.applyAutoScale();
       object.applyAutoPivot();
 
-      const changeListenerFN = () => {
-        object.removeChangeListener(changeListenerFN);
+      // const changeListenerFN = () => {
+        // object.removeChangeListener(changeListenerFN);
 
         // Change material shader to PBR
         const meshesIds = getObjectMeshes(key).objectMeshes.map(
@@ -457,9 +464,9 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
         setObjectMaterial(key, meshesIds, 'use_pbr', true);
         const { autoscale, pivot } = object;
         callback({ autoscale, pivot });
-      };
+      // };
 
-      object.addChangeListener(changeListenerFN);
+      // object.addChangeListener(changeListenerFN);
     }
   };
 
@@ -471,16 +478,27 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
    * @param callback
    * @returns
    */
-  const addObjectToScene = (
-    node: TreeNode | HTMLHudNode | ConfigurationNode,
+  const addObjectToScene = (node: TreeNode | HTMLHudNode | ConfigurationNode,
     entities: Entities,
     parent?: TreeNode | HTMLHudNode | ConfigurationNode,
-    key?: CherryKey
-  ) => {
+    key?: CherryKey) : Promise<Entity> => {
+
+  return new Promise(async (resolve, reject)=>{
     try {
+      const sleep = (m: number) => new Promise(r => setTimeout(r, m));
       const parentObject = parent ? pm.getObject(parent.key) : null;
       const currentObject = pm.addObject(node, entities, parentObject, key);
       const currentEntity = entities[node.key];
+
+      if (node.type === NODE_TYPES.object || node.type === NODE_TYPES.objectHud){
+        for (var x=0; x < 10000; x++){
+          await sleep(10);
+          console.log('wiating')
+          let obj = scene.getObject(node.key);
+          if (obj && obj.getStatus() != 0) break;
+        }
+
+      }
 
       if (node.type === NODE_TYPES.light) {
         const { key } = node;
@@ -489,6 +507,14 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
         if (!lightobj) {
           lightobj = scene.addObject(key, '/assets/sun.c3b');
+          lightobj.setParameter('visible', false);
+
+          for (var x=0; x < 10000; x++){
+            await sleep(10);
+            let obj = scene.getObject(key);
+            if (obj && obj.getStatus() != 0) break;
+          }
+
           pm.objects[lightobj.$$.ptr] = { key };
           lightobj.setParameter('front_facing', true);
           lightobj.setParameter('visible', light.parentOpts.visible);
@@ -524,14 +550,19 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
         updatePosition();
       }
 
-      return {
+      resolve({
         ...currentEntity,
         autoscale: currentObject.autoscale,
         pivot: currentObject.pivot,
-      } as Entity;
+      } as Entity);
     } catch (e) {
-      console.log(e);
+      // console.log(e);
+      reject(e);
     }
+  })
+  
+    
+    
   };
 
   const removeObjectFromScene = (key: CherryKey) => {

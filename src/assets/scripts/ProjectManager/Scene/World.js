@@ -103,6 +103,17 @@ module.exports = (payload) => {
     hudscale: d['hudscale'] !== undefined ? d['hudscale'] : 1,
 
     css: d['css'] || '',
+
+    // physics
+    physics_debug_level:
+      d['physics_debug_level'] !== undefined ? d['physics_debug_level'] : 0,
+    fov_size:
+      d['fov_size'] !== undefined ? [...d['fov_size']] : [500, 500, 500],
+    fov_enabled: d['fov_enabled'] !== undefined ? d['fov_enabled'] : false,
+    lod_enabled: d['lod_enabled'] !== undefined ? d['lod_enabled'] : false,
+
+    //
+    render_method: d['render_method'] !== undefined ? d['render_method'] : 0,
   };
 
   let liveData = JSON.parse(JSON.stringify(world));
@@ -277,6 +288,36 @@ module.exports = (payload) => {
         case 'css':
           renderCSS = true;
           break;
+        case 'physics_debug_level':
+          v = getLastValueInMap(getProperties(row.type));
+
+          if (v > 0) {
+            Module.ProjectManager.Physics.debugEnabled = true;
+          } else {
+            Module.ProjectManager.Physics.debugEnabled = false;
+          }
+
+          Module.ProjectManager.isDirty = true;
+          break;
+
+        case 'fov_size':
+          v = getLastValueInMap(getProperties(row.type));
+          Module.ProjectManager.Physics.setFOVSize(v);
+          break;
+
+        case 'fov_enabled':
+          v = getLastValueInMap(getProperties(row.type));
+          Module.ProjectManager.Physics.toggleFOV(v);
+          break;
+        case 'lod_enabled':
+          v = getLastValueInMap(getProperties(row.type));
+          Module.ProjectManager.Physics.toggleLOD(v);
+          break;
+
+        case 'render_method':
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setRenderPipelineType(v);
+          break;
       }
     }
 
@@ -284,8 +325,7 @@ module.exports = (payload) => {
     Module.ProjectManager.isDirty = true;
     isLoading = false;
 
-    // TODO: Check if files loaded from zip in new structure loads properly in publish mode
-    if (renderCSS) {
+    if (renderCSS && Module.canvas) {
       // init
       let cssdom = Module.canvas.parentElement?.querySelector(`#css_world`);
       if (!cssdom) {
@@ -345,6 +385,14 @@ module.exports = (payload) => {
   setProperty('css', world.css);
   setProperty('hudscale', world.hudscale);
 
+  setProperty('physics_debug_level', world.physics_debug_level);
+  setProperty('fov_size', world.fov_size);
+
+  setProperty('render_method', world.render_method);
+
+  setProperty('fov_enabled', world.fov_enabled);
+  setProperty('lod_enabled', world.lod_enabled);
+
   setProperty('controller', world.controller);
   setProperty('orientation', world.orientation);
 
@@ -352,12 +400,21 @@ module.exports = (payload) => {
   addToRedraw('hudscale');
   addToRedraw('css');
 
+  addToRedraw('physics_debug_level');
+  addToRedraw('fov_size');
+
+  addToRedraw('render_method');
+  addToRedraw('fov_enabled');
+  addToRedraw('lod_enabled');
+
   // init
-  let cssdom = Module.canvas.parentElement?.querySelector(`#css_world`);
-  if (!cssdom) {
-    cssdom = document.createElement('style');
-    cssdom.id = 'css_world';
-    Module.canvas.parentElement.appendChild(cssdom);
+  if (Module.canvas) {
+    let cssdom = Module.canvas.parentElement.querySelector(`#css_world`);
+    if (!cssdom) {
+      cssdom = document.createElement('style');
+      cssdom.id = 'css_world';
+      Module.canvas.parentElement.appendChild(cssdom);
+    }
   }
 
   if (p) p.children.set(child.key, object);
@@ -504,6 +561,49 @@ module.exports = (payload) => {
       },
       set: (v) => {
         setProperty('css', v);
+      },
+    },
+
+    physics_debug_level: {
+      get: () => {
+        return getProperty('physics_debug_level')[1];
+      },
+      set: (v) => {
+        setProperty('physics_debug_level', v);
+      },
+    },
+    fov_size: {
+      get: () => {
+        return getProperty('fov_size')[1];
+      },
+      set: (v) => {
+        setProperty('fov_size', v);
+      },
+    },
+
+    render_method: {
+      get: () => {
+        return getProperty('render_method')[1];
+      },
+      set: (v) => {
+        setProperty('render_method', v);
+      },
+    },
+
+    fov_enabled: {
+      get: () => {
+        return getProperty('fov_enabled')[1];
+      },
+      set: (v) => {
+        setProperty('fov_enabled', v);
+      },
+    },
+    lod_enabled: {
+      get: () => {
+        return getProperty('lod_enabled')[1];
+      },
+      set: (v) => {
+        setProperty('lod_enabled', v);
       },
     },
 

@@ -59,4 +59,5 @@ export type CherrySurfaceSceneObject = {
   setAnimationTime: () => void;
   setParameter: SetParameter;
   setTransformMatrix: (m: any) => any;
+  getStatus: () => number;
 };

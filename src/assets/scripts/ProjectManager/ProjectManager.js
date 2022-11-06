@@ -11,6 +11,7 @@ module.exports = () => {
     'assets/ProjectManager/NewURLLoader.js'
   )();
   const Scenegraph = Module.require('assets/ProjectManager/Scenegraph.js')();
+  Scenegraph.URLLoader = URLLoader;
 
   let manager = {}; // holds manager props and methods
 
@@ -76,6 +77,7 @@ module.exports = () => {
       scene.showRulerGrid(false);
       scene.setGridAnchor(0, 0, 0);
       scene.setGridExtent(1, 1, 1);
+      scene.clearWebworkers();
 
       Module.resetCamera();
 
@@ -85,6 +87,12 @@ module.exports = () => {
       scene.setFSZip(); // pass nothing, will reset archive pointer
 
       Module.clearEventListeners();
+
+      if (Module.canvas) {
+        Module.canvas.parentElement
+          .querySelectorAll('[id^="key_"], style')
+          .forEach((e) => e.remove());
+      }
 
       isDirty = true;
     } catch (error) {
@@ -105,6 +113,7 @@ module.exports = () => {
       if (console_el)
         console_el.style.display =
           console_on === null || console_on[1] != 'on' ? 'none' : 'block';
+      Module.canvas.style.visibility = 'hidden';
     }
 
     URLLoader.visible = true;
@@ -136,6 +145,7 @@ module.exports = () => {
   };
 
   const loadScene = function (project, launch) {
+    if (launch) URLLoader.visible = true;
     Scenegraph.generate(Scenegraph.path, project);
 
     if (launch) {
@@ -286,6 +296,19 @@ module.exports = () => {
         Scenegraph.treeGenerated = v;
       },
     },
+    launched: {
+      get: () => {
+        return Scenegraph.launched;
+      },
+      set: (v) => {},
+    },
+
+    Physics: {
+      get: () => {
+        return Scenegraph.Physics;
+      },
+      set: (v) => {},
+    },
 
     archive: {
       get: () => {
@@ -327,4 +350,4 @@ module.exports = () => {
 
     getObjects: Scenegraph.getObjects,
   });
-};
+}

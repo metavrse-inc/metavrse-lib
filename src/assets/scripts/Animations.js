@@ -35,6 +35,12 @@ module.exports = () => {
         else delete Module.animationids[id];
     }
 
+    var getSessionType = ()=> {
+        if (Module.xrSession) return Module.xrSession;
+        
+        return window;
+    }
+
     var create = (opt) => {
         var opt = opt || {};
         var animation = {
@@ -57,7 +63,7 @@ module.exports = () => {
 
         var animate = (t) => {
             if (animation.state != "playing") {
-                cancelAnimationFrame(animation.req);
+                getSessionType().cancelAnimationFrame(animation.req);
                 setRequestId(animation.req, false);
                 return;
             }
@@ -82,7 +88,7 @@ module.exports = () => {
                 if (animation.loop == 0 || animation.loop == animation.counter) {
                     // finished
                     if (animation.onComplete) animation.onComplete(); // animation complete
-                    cancelAnimationFrame(animation.req);
+                    getSessionType().cancelAnimationFrame(animation.req);
                     setRequestId(animation.req, false);
                     animation.state = "stopped";
                     animation.time = 0;    // percentage of time
@@ -92,11 +98,11 @@ module.exports = () => {
                     animation.counter++;
                     animation.time = 0;
                     animation.start = undefined;
-                    animation.req = requestAnimationFrame(animate);
+                    animation.req = getSessionType().requestAnimationFrame(animate);
                     setRequestId(animation.req, true);
                 }
             } else {
-                animation.req = requestAnimationFrame(animate);
+                animation.req = getSessionType().requestAnimationFrame(animate);
                 setRequestId(animation.req, true);
             }
         }
@@ -104,13 +110,13 @@ module.exports = () => {
         var play = () => {
             animation.state = "playing";
             animation.start = undefined;
-            animation.req = requestAnimationFrame(animate);
+            animation.req = getSessionType().requestAnimationFrame(animate);
             setRequestId(animation.req, true);
         }
 
         var pause = () => {
             animation.state = "paused";
-            cancelAnimationFrame(animation.req);
+            getSessionType().cancelAnimationFrame(animation.req);
             setRequestId(animation.req, false);
         }
 
@@ -118,12 +124,12 @@ module.exports = () => {
             animation.state = "stopped";
             animation.time = 0;    // percentage of time
             animation.counter = 0; // loop counter
-            cancelAnimationFrame(animation.req);
+            getSessionType().cancelAnimationFrame(animation.req);
             setRequestId(animation.req, false);
         }
 
         var setPos = (pos) => { // 0 - 1 (percentage)
-            cancelAnimationFrame(animation.req);
+            getSessionType().cancelAnimationFrame(animation.req);
             setRequestId(animation.req, false);
             animation.start = undefined;
             animation.time = Number(pos);

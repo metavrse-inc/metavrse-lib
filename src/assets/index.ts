@@ -12,9 +12,12 @@ import glmatrix from './scripts/gl-matrix';
 import idb from './scripts/idb';
 import jszip from './scripts/jszip.min';
 import main from './scripts/main';
+import poweredBy from './scripts/poweredby.png'
+
 import socketio from './scripts/socketio';
 
 import LoadingBar from './scripts/Components/LoadingBar.js';
+import LoadingBarWeb from './scripts/Components/LoadingBarWeb';
 
 import ProjectManager from './scripts/ProjectManager/ProjectManager';
 import Scenegraph from './scripts/ProjectManager/Scenegraph';
@@ -39,10 +42,27 @@ import Video from './scripts/ProjectManager/Scene/Video';
 import VideoLink from './scripts/ProjectManager/Scene/VideoLink';
 import World from './scripts/ProjectManager/Scene/World';
 
+import AmmoJS from './scripts/lib/ammo';
+import CherryWW from './scripts/lib/CherryWW';
+
+import AmmoWasmJS from './scripts/lib/ammo.wasm';
+import AmmoWASM from './scripts/lib/ammo.wasm.wasm';
+
+// Physics
+import PhysicsEngine from './scripts/ProjectManager/Physics/engine';
+import FOVBox from './scripts/ProjectManager/Physics/FOVBox';
+import FOVMesh from './scripts/ProjectManager/Physics/FOVMesh';
+import PhysicsHelpers from './scripts/ProjectManager/Physics/helpers';
+import KinematicCharacterController from './scripts/ProjectManager/Physics/KinematicCharacterController';
+import RigidBody from './scripts/ProjectManager/Physics/RigidBody';
+
 const MAIN_PATH = 'assets';
 const PROJECT_MANAGER = `${MAIN_PATH}/ProjectManager`;
 const SCENE = `${PROJECT_MANAGER}/Scene`;
 const COMPONENTS = `${MAIN_PATH}/Components`;
+const LIBS = `${MAIN_PATH}/lib`;
+
+const PHYSICS = `${PROJECT_MANAGER}/Physics`;
 
 export const scripts = {
   [`${MAIN_PATH}/`]: null, // Folder to create
@@ -60,9 +80,11 @@ export const scripts = {
   [`${MAIN_PATH}/jszip.min.js`]: jszip,
   [`${MAIN_PATH}/main.js`]: main,
   [`${MAIN_PATH}/socketio.js`]: socketio,
+  [`${MAIN_PATH}/poweredby.png`]: poweredBy,
 
   [`${COMPONENTS}/`]: null, // Folder to create
   [`${COMPONENTS}/LoadingBar.js`]: LoadingBar,
+  [`${COMPONENTS}/LoadingBarWeb.js`]: LoadingBarWeb,
 
   [`${PROJECT_MANAGER}/`]: null, // Folder to create
   [`${PROJECT_MANAGER}/ProjectManager.js`]: ProjectManager,
@@ -86,6 +108,24 @@ export const scripts = {
   [`${SCENE}/Video.js`]: Video,
   [`${SCENE}/VideoLink.js`]: VideoLink,
   [`${SCENE}/World.js`]: World,
+
+  [`${LIBS}/`]: null, // Folder to create
+  [`${LIBS}/ammo.js`]: AmmoJS,
+  [`${LIBS}/CherryWW.js`]: CherryWW,
+
+  [`${LIBS}/ammo.wasm.js`]: AmmoWasmJS,
+  [`${LIBS}/ammo.wasm.wasm`]: AmmoWASM,
+
+
+  [`${PHYSICS}/`]: null, // Folder to create
+  [`${PHYSICS}/engine.js`]: PhysicsEngine,
+  [`${PHYSICS}/FOVBox.js`]: FOVBox,
+  [`${PHYSICS}/FOVMesh.js`]: FOVMesh,
+  [`${PHYSICS}/helpers.js`]: PhysicsHelpers,
+  [`${PHYSICS}/KinematicCharacterController.js`]: KinematicCharacterController,
+  [`${PHYSICS}/RigidBody.js`]: RigidBody,
+
+
   // png
   // c3b
 };

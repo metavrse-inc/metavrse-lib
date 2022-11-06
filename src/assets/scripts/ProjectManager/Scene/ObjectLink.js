@@ -118,7 +118,7 @@ module.exports = (payload) => {
       value,
     });
 
-    if (!isParentAvailable()) return;
+    if (!isParentAvailable() || !object.parent.visible) return;
     ObjectModel.setProperty(prop, value, object.item.key);
   };
 
@@ -177,7 +177,7 @@ module.exports = (payload) => {
       value,
     });
 
-    if (!isParentAvailable()) return;
+    if (!isParentAvailable() || !object.parent.visible) return;
     ObjectModel.setPropertyMesh(meshid, prop, value, object.item.key);
   };
 
@@ -217,9 +217,9 @@ module.exports = (payload) => {
       value: finalEnabled,
     });
 
-    if (finalEnabled && itemdata['meshes'][meshid][prop] != undefined)
+    if (finalEnabled && itemdata['meshes'][meshid][prop] != undefined && object.parent.visible){
       setPropertyMesh(meshid, prop, itemdata['meshes'][meshid][prop]);
-    else if (!finalEnabled && itemdata['meshes'][meshid][prop] != undefined) {
+    }else if (!finalEnabled && itemdata['meshes'][meshid][prop] != undefined) {
       if (!isParentAvailable()) return;
       ObjectModel.removeLinkMesh(meshid, prop, object.item.key);
     }

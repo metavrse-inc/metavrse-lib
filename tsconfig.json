@@ -3,6 +3,7 @@
   "include": ["src", "types"],
   "exclude": ["./src/cherry/CherryGL.js", "./src/assets/scripts/**/*"],
   "compilerOptions": {
+    "noImplicitUseStrict": false,
     "module": "ESNext",
     "allowJs": true,
     "moduleResolution": "Node",

@@ -37,11 +37,14 @@
   "dependencies": {
     "csstype": "^3.1.0",
     "gl-matrix": "^3.4.3",
-    "uuid": "^8.3.2",
-    "immer": "^9.0.6"
+    "immer": "^9.0.6",
+    "require": "^2.4.20",
+    "rollup-plugin-image": "^1.0.2",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@digitalroute/cz-conventional-changelog-for-jira": "^7.0.0",
+    "@rollup/plugin-image": "^3.0.1",
     "@rollup/plugin-replace": "^3.1.0",
     "@size-limit/preset-small-lib": "^7.0.8",
     "@tsconfig/recommended": "^1.0.1",
@@ -74,14 +77,6 @@
   "config": {
     "commitizen": {
       "path": "./node_modules/@digitalroute/cz-conventional-changelog-for-jira"
-    }
-  },
-  "lint-staged": {
-    "*.{js,ts,tsx,css}": "eslint --fix"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "dts lint"
     }
   },
   "jest": {

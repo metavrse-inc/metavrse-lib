@@ -10,6 +10,9 @@ module.exports = (payload) => {
   const addToUpdated = payload.addToUpdated;
   let sceneprops = payload.sceneprops;
 
+  var loadingState = 'none';
+  var loadingCallback = payload.loadingCallback;
+
   var d = data || {};
 
   const surface = Module.getSurface();
@@ -17,7 +20,14 @@ module.exports = (payload) => {
   const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
 
   // loading flag
-  let isLoading = true;
+  let isLoading = 0;
+  const Physics = Module.ProjectManager.Physics;
+  // const Ammo = Physics.Ammo;
+  // const PhysicsWorld = Physics.PhysicsWorld;
+  // const CollisionFlags = Physics.CollisionFlags;
+
+  // const { quaternionToEuler } = Module.require('assets/ProjectManager/Physics/helpers.js');
+  // const FOVMesh = Module.require('assets/ProjectManager/Physics/FOVMesh.js');
 
   // helper methods
   var Animations = Module.require('assets/Animations.js')(); // built in animation helper
@@ -342,6 +352,9 @@ module.exports = (payload) => {
     meshes: d['data'] != undefined ? JSON.parse(JSON.stringify(d['data'])) : {},
     frame: d['frame'] !== undefined ? d['frame'] : [0, 0], // animation 0, frame 0 (ms)
     hudscale: d['hudscale'] !== undefined ? d['hudscale'] : 1,
+    render_back_faces: d['render_back_faces'] !== undefined ? d['render_back_faces'] : true,
+    render_fov_visible: d['render_fov_visible'] !== undefined ? d['render_fov_visible'] : true,
+    render_fov_lod: d['render_fov_lod'] !== undefined ? d['render_fov_lod'] : true,
   };
 
   customAnimations = d['animations'] !== undefined ? [...d['animations']] : [];
@@ -641,7 +654,7 @@ module.exports = (payload) => {
       transformation[prop] = value;
       key = object.item.key;
 
-      addToUpdated(key, isLoading ? 'loaded' : 'changed', { prop, value });
+      addToUpdated(key, isLoading < 2 ? 'loaded' : 'changed', { prop, value });
     }
 
     let buckets = object.links.has(prop) ? object.links.get(prop) : new Map();
@@ -690,11 +703,11 @@ module.exports = (payload) => {
 
   const paintedProperty = (meshid, prop) => {
     let obj = scene.getObject(object.item.key);
-    if (!obj) {
+    if (obj) {
       let type = fieldTypes[prop];
       if (type != undefined) {
         var tValue = undefined;
-        let an = meshid;
+        let an = Number(meshid);
         let option = prop;
         switch (type) {
           case 'boolean':
@@ -783,11 +796,36 @@ module.exports = (payload) => {
       meshrow[prop] = value;
       key = object.item.key;
 
-      addToUpdated(key, isLoading ? 'loaded' : 'changed', {
+      addToUpdated(key, isLoading < 2 ? 'loaded' : 'changed', {
         meshid,
         prop,
         value,
       });
+    } else {
+      // we are trying to add a link check if there is a default value
+      if (transformation['meshes'][meshid] == undefined) {
+        transformation['meshes'][meshid] = {};
+      }
+
+      let meshrow = transformation['meshes'][meshid];
+
+      if (meshrow[prop] == undefined){
+        let mesh = object.meshlinks.has(meshid) ? object.meshlinks.get(meshid) : new Map();
+        meshrow[prop] = paintedProperty(meshid, prop);
+        console.log('nothing found when link activated', meshrow, prop)
+        let buckets = new Map();
+        buckets.set(object.item.key, meshrow[prop]);
+
+        mesh.set(prop, buckets);
+
+        object.meshlinks.set(meshid, mesh);
+
+        addToUpdated(object.item.key, 'added', {
+          meshid,
+          prop: prop,
+          value: meshrow[prop],
+        });
+      }
     }
 
     let mesh = object.meshlinks.has(meshid)
@@ -880,6 +918,27 @@ module.exports = (payload) => {
   };
 
   // meshes
+
+  let fov_meshes = [];
+  // let isLoading = 0;
+
+  let pendingRenderList = []; // needed only when object has not been loaded
+
+  let loadingCheck = (counter)=> {
+    if (counter-1 < 0) return;
+
+      let obj = scene.getObject(child.key);
+
+      if (!obj || obj.getStatus() == 0){
+          // not loaded
+          setTimeout(loadingCheck, 10, counter-1);
+      } else {
+          // loaded
+          render();
+      }
+  }
+
+  // meshes
   const getPathByVersion = () => {
     if (/^\d+\.\d+\..+$/.test(sceneprops.project.data.version)) {
       return Module.ProjectManager.path;
@@ -887,16 +946,86 @@ module.exports = (payload) => {
     return !scene.hasFSZip() ? Module.ProjectManager.path : '';
   };
 
+  const removeFOV =()=> {
+      for (var m of fov_meshes){
+          m.remove();
+      }
+
+      fov_meshes = [];
+  }
+
+  const toggleFOV = (isVisible)=> {
+      // add fov meshes
+      if (Module.ProjectManager.projectRunning && !transformation.hud){
+
+          let getVal = (option, meshid)=> {
+
+              const _row = object.meshdata.get(meshid);
+              const m_row = _row[option];
+              if (m_row) {
+                  const idx = m_row.bucket[m_row.bucket.length - 1];
+                  const value = m_row.index[idx].value;
+
+                  return value;
+              }
+          }
+
+          if (isVisible && fov_meshes.length == 0){
+                  let obj = scene.getObject(child.key);
+                  let meshes_ = obj.getMeshes();
+
+                  for (var x=0; x < meshes_.size(); x++){                
+                  try {
+                      let mesh_render_back_faces = transformation['render_back_faces'];
+                      let mesh_enable_fov = transformation['render_fov_visible'];
+                      let mesh_enable_lod = transformation['render_fov_lod'];
+                      if (d['data'] && d['data'][x]){
+                          let _d = d['data'][x];
+
+                          if (_d['render_back_faces'] > -1) mesh_render_back_faces = Boolean(_d['render_back_faces']);
+                          if (_d['enable_lod'] > -1) mesh_enable_lod = Boolean(_d['enable_lod']);
+                          if (_d['enable_fov'] > -1) mesh_enable_fov = Boolean(_d['enable_fov']);
+                          
+                      }
+                      let pl = {
+                          child: {type:'FOVMesh', key: child.key + "_" + x},
+                          parent: object,
+                          render_fov_visible: mesh_enable_fov,                            
+                          render_fov_lod: mesh_enable_lod,                            
+                          data: {
+                              mesh: x,
+                          }
+                      }
+
+                      let obj = Physics.add(pl);
+                      fov_meshes.push(obj);
+
+                      if (mesh_enable_fov) object.mesh.set(x, "visible", false);
+                      // object.mesh.set(x, "lod_level", 3.0);
+                      
+                      object.mesh.set(x, "render_back_faces", mesh_render_back_faces);
+                  }catch(e){
+                  }
+              }
+          } else if (!isVisible && fov_meshes.length > 0) {
+              removeFOV();
+          }
+
+      }
+  }
+
   const render = (opts) => {
     opts = opts || {};
     // loop renderlist and draw out
     let obj = scene.getObject(child.key);
+    let isLoaded = true;
     if (!obj) {
       const path = !isNaN(child.id)
         ? Module.ProjectManager.objPaths[String(child.id)]
         : String(child.id);
       try {
         obj = scene.addObject(String(child.key), path);
+        isLoading = 1;
       } catch (error) {
         renderList = [];
         return;
@@ -907,29 +1036,51 @@ module.exports = (payload) => {
         return;
       }
 
+      obj.setParameter('visible', false);
+      isLoaded = false;
       Module.ProjectManager.objects[String(obj.$$.ptr)] = { key: child.key };
 
       getAnimationList();
     }
 
+    if (obj.getStatus() == 0) {
+      if (Module.ProjectManager.launched) pendingRenderList.push(...renderList);
+      return;
+    }
+
+    if (Module.ProjectManager.launched) {
+      renderList = [...pendingRenderList, ...renderList];
+      pendingRenderList = [];
+    }
+
+    if (isLoading == 1){
+      isLoading = 2;
+      addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
+
+    }
+
     if (d['autoscaled']) {
       autoScale();
       delete d['autoscaled'];
+      console.log('autoscaled')
     }
 
     if (d['autopivot']) {
       autoPivot();
       delete d['autopivot'];
+      console.log('autopivot')
     }
 
     if (autoscaleObject) {
       autoscaleObject = false;
       autoScale();
+      console.log('autoscaled 1')
     }
 
     if (autospivotObject) {
       autoPivot();
       autospivotObject = false;
+      console.log('autopivot 1')
     }
 
     let renderTransformation = false;
@@ -979,6 +1130,46 @@ module.exports = (payload) => {
             // for (let [key, handler] of updateHandlers) {
             //     handler(row.type);
             // }
+
+            if (option == 'render_back_faces') {
+              if (value > -1) {
+                obj.setParameter(Number(meshid), option, Boolean(value));
+              } else {
+                obj.setParameter(
+                  Number(meshid),
+                  option,
+                  transformation[option]
+                );
+              }
+              // console.log('mesh - render_back_faces', idx, value)
+              break;
+            }
+
+            if (option == 'enable_fov') {
+              let pho = Physics.get(child.key + '_' + meshid);
+              if (pho == undefined) break;
+              if (value > -1) {
+                pho.render_fov_visible = value;
+              } else {
+                pho.render_fov_visible = transformation['render_fov_visible'];
+              }
+
+              // console.log('mesh - render_fov_visible', idx, value)
+              break;
+            }
+
+            if (option == 'enable_lod') {
+              let pho = Physics.get(child.key + '_' + meshid);
+              if (pho == undefined) break;
+              if (value > -1) {
+                pho.render_fov_lod = value;
+              } else {
+                pho.render_fov_lod = transformation['render_fov_lod'];
+              }
+
+              // console.log('mesh - render_fov_lod', idx, value)
+              break;
+            }
 
             if (videos.includes(option)) {
               // get texture id from video object
@@ -1146,6 +1337,8 @@ module.exports = (payload) => {
       obj.setParameter('visible', parentOpts.visible);
       renderVisibility = true;
 
+      toggleFOV(parentOpts.visible);
+      
       for (let [key, handler] of updateHandlers) {
         try {
           handler('visible', obj);
@@ -1167,7 +1360,28 @@ module.exports = (payload) => {
       Module.ProjectManager.isDirty = true;
     }
 
-    isLoading = false;
+    if (loadingState == 'loading') {
+      loadingState = 'loaded';
+      if (loadingCallback) loadingCallback(object);
+    }
+
+    if (!isLoaded && renderTransformation) {
+      for (var value of fov_meshes) {
+        value.render();
+      }
+
+      for (let [key, value] of object.children) {
+        value.render();
+      }
+    } else if (isLoaded && renderTransformation) {
+      for (var value of fov_meshes) {
+        value.render();
+      }
+
+      for (let [key, value] of object.children) {
+        value.render({ transform: true });
+      }
+    }
   };
 
   Object.assign(object, {
@@ -1192,7 +1406,7 @@ module.exports = (payload) => {
   const regenerateLink = (category, type, link) => {};
 
   // added
-  addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
+  // addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
 
   setProperty('visible', transformation.visible);
   setProperty('position', transformation.position);
@@ -1479,9 +1693,15 @@ module.exports = (payload) => {
         try {
           handler('removed');
         } catch (err) {
-          console.log(err);
+          // console.log(err);
         }
       }
+
+      for (var m of fov_meshes) {
+        m.remove();
+      }
+
+      m = [];
 
       sceneprops.sceneIndex.delete(object.item.key);
       if (object.parent) object.parent.children.delete(object.item.key);

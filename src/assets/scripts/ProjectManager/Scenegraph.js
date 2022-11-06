@@ -2,6 +2,7 @@
  * Scenegraph Module
  */
 module.exports = () => {
+  const { mat4, vec3 } = Module.require('assets/gl-matrix.js');
   let scenegraph = {}; // holds scenegraph props and methods
 
   const ObjectModel = Module.require('assets/ProjectManager/Scene/Object.js');
@@ -46,6 +47,11 @@ module.exports = () => {
 
   let redraws = new Map();
 
+  var URLLoader;
+
+  const Physics = Module.require('assets/ProjectManager/Physics/engine.js')();
+  Physics.init();
+
   // props
   const sceneprops = {
     path: '/',
@@ -72,8 +78,10 @@ module.exports = () => {
   const surface = Module.getSurface();
   const scene = surface.getScene();
 
+  let launchCount = 0;
   let launch = false;
   let launched = false;
+  let queueSize = 0;
 
   let launchScene = false;
   let sceneCallback = null;
@@ -113,12 +121,18 @@ module.exports = () => {
     return true;
   };
 
+  let tmpRedraws = null;
+  let tmpOpts = null;
+  let objectsLoaded = false;
+
   const render = (opts) => {
     // deprecating
-    //if (!isEmpty(sceneprops.redraw)) processRedraw(opts);
+    // if (!isEmpty(sceneprops.redraw)) processRedraw(opts);
     // deprecating
 
-    const local_redraws = new Map(redraws);
+    if (Module.ProjectManager.projectRunning) Physics.render();
+
+    let local_redraws = new Map(redraws);
     redraws.clear();
 
     for (const [key, value] of local_redraws) {
@@ -132,13 +146,78 @@ module.exports = () => {
     }
 
     if (launch && !launched) {
+      if (tmpRedraws == null) {
+        tmpRedraws = new Map(local_redraws);
+        tmpOpts = JSON.stringify(JSON.stringify(opts));
+      }
+      if (!objectsLoaded) {
+        let qs = scene.getWorkerObjectQueueSize();
+        if (qs == 0) {
+          objectsLoaded = true;
+          if (URLLoader) {
+            URLLoader.percentage = 0.1;
+            // URLLoader.close()
+          }
+
+          if (tmpRedraws != null) {
+            for (const [key, value] of tmpRedraws) {
+              if (tmpOpts && tmpOpts[key]) {
+                if (tmpOpts[key]['parentMat'])
+                  tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
+                value.render(tmpOpts[key]);
+              } else {
+                value.render(tmpOpts);
+              }
+            }
+
+            tmpRedraws.clear();
+            tmpRedraws = null;
+            tmpOpts = null;
+          }
+
+          return;
+        } else if (qs > 0) {
+          if (qs > queueSize) queueSize = qs;
+
+          if (URLLoader) {
+            let ratio = (queueSize - qs) / queueSize;
+            URLLoader.percentage = ratio / 10;
+          }
+
+          return;
+        }
+      } else {
+        let qs = scene.getTextureQueue();
+        if (qs == 0) {
+          if (URLLoader) {
+            URLLoader.percentage = 1.0;
+            URLLoader.close();
+          }
+
+          if (Module.canvas) Module.canvas.style.visibility = 'initial';
+        } else if (qs > 0) {
+          if (qs > queueSize) queueSize = qs;
+
+          if (URLLoader) {
+            let ratio = (queueSize - qs) / queueSize - 0.1;
+            URLLoader.percentage = ratio + 0.1;
+          }
+
+          return;
+        }
+      }
+
+      scene.clearWebworkers();
+
       launched = true;
+
       initControllers();
       var d_scene =
         sceneprops.project.data['scene'][
           sceneprops.project.data.selected_scene
         ];
       var d_assets = sceneprops.project.data['assets'];
+
       try {
         // TODO: future version 1.1
         // pass sceneprops.project.data['scene'] instead of selected scene
@@ -146,22 +225,51 @@ module.exports = () => {
         if (
           sceneprops.worldController &&
           typeof sceneprops.worldController.onInit === 'function'
-        ) {
+        )
           sceneprops.worldController.onInit(d_scene, d_assets);
-        }
       } catch (e) {
         sceneprops.worldController = undefined;
         console.log('world error - ' + e.message);
       }
 
-      const local_redraws = new Map(redraws);
+      local_redraws = new Map(redraws);
       redraws.clear();
 
       for (const [k, v] of local_redraws) {
         v.render(opts);
       }
+
+      Physics.resetFOV();
     } else if (launchScene) {
       // init controllers
+      if (launch) {
+        let qs = scene.getWorkerObjectQueueSize();
+        if (qs == 0) {
+          objectsLoaded = true;
+          if (URLLoader) {
+            URLLoader.percentage = 1.0;
+            URLLoader.close();
+          }
+
+          if (Module.canvas) Module.canvas.style.visibility = 'initial';
+        } else if (qs > 0) {
+          if (qs > queueSize) queueSize = qs;
+
+          if (URLLoader) {
+            let ratio = (queueSize - qs) / queueSize;
+            URLLoader.percentage = ratio;
+          }
+
+          return;
+        }
+
+        // means we are in viewer
+        initControllers();
+      }
+
+      scene.clearWebworkers();
+
+      // TODO: launch scene controller if any
 
       if (sceneCallback) {
         try {
@@ -173,12 +281,43 @@ module.exports = () => {
       sceneCallback = null;
 
       launchScene = false;
+    } else {
+      if (!launched && tmpRedraws == null) {
+        tmpRedraws = new Map(local_redraws);
+        tmpOpts = JSON.stringify(JSON.stringify(opts));
+      }
+      let qs = scene.getWorkerObjectQueueSize();
+      if (qs == 0 && !launched) {
+        launched = true;
+
+        if (tmpRedraws != null) {
+          for (const [key, value] of tmpRedraws) {
+            if (tmpOpts && tmpOpts[key]) {
+              if (tmpOpts[key]['parentMat'])
+                tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
+              value.render(tmpOpts[key]);
+            } else {
+              value.render(tmpOpts);
+            }
+          }
+
+          tmpRedraws.clear();
+          tmpRedraws = null;
+          tmpOpts = null;
+        }
+      }
+
+      // scene.clearWebworkers();
     }
 
     let responseList = new Map(updatedList);
     if (responseList.size > 0) {
       for (const [k, handler] of changeHandlers) {
-        handler(responseList);
+        try {
+          handler(responseList);          
+        } catch (error) {
+          console.error(error)
+        }
       }
     }
 
@@ -189,6 +328,9 @@ module.exports = () => {
   const processRedraw = (opts) => {};
 
   const parseScene = (children, parent, configs, opt) => {
+    const tree =
+      sceneprops.project.data['scene'][sceneprops.project.data.selected_scene]
+        .tree;
     const data =
       sceneprops.project.data['scene'][sceneprops.project.data.selected_scene]
         .data;
@@ -213,6 +355,17 @@ module.exports = () => {
           break;
         case 'object-hud':
         case 'object':
+          if (child.type == 'object') {
+            payload.loadingCallback = (obj) => {
+              // console.log('loaded')
+              // Physics.addObject({
+              //     object: obj,
+              //     mass: 0,
+              //     friction: 0,
+              //     ghost: true,
+              // })
+            };
+          }
           obj = ObjectModel(payload);
           if (
             payload.data['controller'] != undefined &&
@@ -252,13 +405,35 @@ module.exports = () => {
             objectControllerkeys.set(child.key, payload.data['controller']);
           break;
 
+        // physics
+        case 'RigidBody':
+          obj = Physics.add(payload);
+          if (
+            payload.data['controller'] != undefined &&
+            payload.data['controller'] != ''
+          )
+            objectControllerkeys.set(child.key, payload.data['controller']);
+          break;
+
+        case 'KinematicCharacterController':
+          obj = Physics.add(payload);
+          if (
+            payload.data['controller'] != undefined &&
+            payload.data['controller'] != ''
+          )
+            objectControllerkeys.set(child.key, payload.data['controller']);
+          break;
+
         default:
           obj = GenericObjectModel(payload);
           break;
       }
 
       if (obj) {
+        // if (opt == "tree") obj.clearRender();
+
         sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+
         if (!payload.parent) sceneList.push(obj); // only for root items
         if (child.children) {
           parseScene(child.children, obj, configs, opt);
@@ -303,13 +478,16 @@ module.exports = () => {
 
       try {
         switch (child.type) {
+          // configurations
           case 'configuration':
+            // payload.parent = undefined; // starts a new root
             obj = ConfigurationModel(payload);
             payload.key = child.key;
             sceneprops.configurations.set(child.key, {
               obj,
               index: ++sceneprops.config_idx,
             });
+            // sceneprops.configurations.set(child.key, obj);
             break;
           case 'object-group-link':
             obj = ObjectGroupLinkModel(payload);
@@ -346,7 +524,7 @@ module.exports = () => {
             break;
         }
       } catch (error) {
-        console.log(child, error);
+        // console.log(child, error);
       }
 
       if (obj) {
@@ -360,6 +538,8 @@ module.exports = () => {
       }
     });
   };
+
+  const regenerateMeshes = () => {};
 
   const loadPaths = (tree, parent) => {
     tree.forEach((item) => {
@@ -414,6 +594,7 @@ module.exports = () => {
       sceneprops.project.data['scene'][scene] === undefined
     )
       return;
+    queueSize = 0;
     Module.toggleNativeLoader(true);
     await sleep(1);
 
@@ -530,6 +711,14 @@ module.exports = () => {
       case 'HTMLElement-link':
         obj = HTMLElementLinkModel(payload);
         break;
+
+      // physics
+      case 'RigidBody':
+        obj = Physics.add(payload);
+        break;
+      case 'KinematicCharacterController':
+        obj = Physics.add(payload);
+        break;
       default:
         obj = GenericObjectModel(payload);
         break;
@@ -558,6 +747,8 @@ module.exports = () => {
 
     obj.remove();
   };
+
+  const regenerateLinks = (obj) => {};
 
   const moveObject = (key, parent) => {
     let obj = sceneprops.sceneIndex.get(key);
@@ -593,6 +784,7 @@ module.exports = () => {
     sceneprops.sceneIndex.clear();
     sceneprops.worldController = undefined;
     sceneprops.assetIndex.clear();
+
     loadPaths(sceneprops.project.data['assets'].tree);
     // Load world controller
     // TODO: Change version check so it use semver library
@@ -663,6 +855,7 @@ module.exports = () => {
           };
 
           let obj = WorldModel(payload);
+
           sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
           if (worldControllerkey != '')
             sceneprops.worldController = Module.require(worldControllerkey)();
@@ -672,6 +865,7 @@ module.exports = () => {
         }
       }
     }
+
     constructGraph();
   };
 
@@ -790,6 +984,26 @@ module.exports = () => {
         treeGenerated = v;
       },
     },
+    URLLoader: {
+      get: () => {
+        return URLLoader;
+      },
+      set: (v) => {
+        URLLoader = v;
+      },
+    },
+    Physics: {
+      get: () => {
+        return Physics;
+      },
+      set: (v) => {},
+    },
+    launched: {
+      get: () => {
+        return launched;
+      },
+      set: (v) => {},
+    },
   });
 
   return Object.assign(scenegraph, {
@@ -819,6 +1033,8 @@ module.exports = () => {
     selectScene,
 
     reset: () => {
+      Physics.reset();
+      queueSize = 0;
       redraws.clear();
       sceneprops.redraw = {};
       sceneprops.project = {};
@@ -832,8 +1048,10 @@ module.exports = () => {
       sceneprops.config_idx = 0;
       Module.clearRequire();
       if (Module.clearVideos) Module.clearVideos();
+      launchCount = 0;
       launch = false;
       launched = false;
+      objectsLoaded = false;
     },
 
     addChangeListener: (callback) => {

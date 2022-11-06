@@ -4,4 +4,5 @@ export type AssetType =
   | 'stylesheet'
   | 'image'
   | 'object'
-  | 'video';
+  | 'video'
+  | 'file';

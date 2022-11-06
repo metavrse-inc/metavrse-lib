@@ -66,31 +66,60 @@ export const calculateScalesGizmo = (
 export const createGizmoObject = (
   cherryViewer: CherryViewer,
   type: 'move' | 'rotate'
-): {gizmo: CherrySurfaceSceneObject, meshes: Meshes | null} => {
-  const scene = cherryViewer.getSurface().getScene()
+): Promise<{gizmo: CherrySurfaceSceneObject, meshes: Meshes | null}> => {
+  const sleep = (m: number) => new Promise(r => setTimeout(r, m));
 
-  const key = type === 'move' ? GIZMO_KEY : GIZMO_ROTATE_KEY
-  const object = type === 'move' ? GIZMO_MOVE_OBJECT : GIZMO_ROTATE_OBJECT
+  return new Promise(async (resolve, reject)=>{
+    try {
+      const scene = cherryViewer.getSurface().getScene()
 
-  const gizmo = scene.addObject(key, object);
-  gizmo?.setParameter('visible', false);
-  gizmo?.setParameter('gizmo', true);
-  let meshes = null
+      const key = type === 'move' ? GIZMO_KEY : GIZMO_ROTATE_KEY
+      const object = type === 'move' ? GIZMO_MOVE_OBJECT : GIZMO_ROTATE_OBJECT
 
-  if (gizmo) {
-    meshes = addTexturesToGizmo(gizmo, type);
-  }
+      const gizmo = scene.addObject(key, object);
 
-  if (type === 'rotate') {
-    setGizmoRotateInitialMeshes(gizmo)
-  }
+      let loaded = false;
+      for (var x=0; x < 10000; x++){
+        await sleep(10);
+        let obj = scene.getObject(key);
+        if (obj && obj.getStatus() != 0) {
+          loaded = true;
+          break;
+        }
+      }
 
-  if (type === 'move' && meshes) {
-    setInitialMeshes(gizmo, meshes, GIZMO_INITIAL_MESHES)
-  }
+      if (!loaded) {
+        reject();
+        return;
+      }
 
-  return { gizmo, meshes };
+      // loaded
+      gizmo?.setParameter('visible', false);
+      gizmo?.setParameter('gizmo', true);
+      let meshes = null
+
+      if (gizmo) {
+        meshes = addTexturesToGizmo(gizmo, type);
+      }
+
+      if (type === 'rotate') {
+        setGizmoRotateInitialMeshes(gizmo)
+      }
+
+      if (type === 'move' && meshes) {
+        setInitialMeshes(gizmo, meshes, GIZMO_INITIAL_MESHES)
+      }
+
+      resolve({ gizmo, meshes });
+
+    } catch (error) {
+        console.error(error)
+        reject();
+    }
+    
+ })
 };
+
 
 export const prepareNewTarget = (
   targetPositions: TargetConfig,

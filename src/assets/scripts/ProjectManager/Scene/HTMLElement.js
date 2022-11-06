@@ -11,6 +11,7 @@
 
     let ParentElement = Module.canvas.parentElement;
     if (parent) ParentElement = parent.DOMElement;
+    // if (!ParentElement) ParentElement = Module.canvas.parentElement;
 
     var d = data || {};
 
@@ -56,8 +57,13 @@
         }
 
     }
+    function isTouchDevice() {
+        return (('ontouchstart' in window) ||
+            (navigator.maxTouchPoints > 0) ||
+            (navigator.msMaxTouchPoints > 0));
+    }
 
-    let onClick = (e)=> {
+    let onClick = (e, type)=> {
         if (Module.ProjectManager.projectRunning) {
             try {
                 let nodeptrkey = object.item.key;
@@ -71,8 +77,22 @@
                   emptyvalue = (cKeyRow.value == "")
                 } catch (error) {
                 }
+                
+                if (!emptyvalue){
+                    let ctrl = Module.ProjectManager.objectControllers[nodeptrkey];
 
-                if (!emptyvalue && Module.ProjectManager.objectControllers[nodeptrkey].onClick) Module.ProjectManager.objectControllers[nodeptrkey].onClick(object.item, {}, 0, e.target.clientX, e.target.clientY);                
+                    switch (type){
+                        case "touchstart":
+                            if (ctrl.onTouchStart) ctrl.onTouchStart(object.item, {}, 0, e.target.clientX, e.target.clientY);
+                            break;
+                        case "touchend":
+                            if (ctrl.onTouchEnd) ctrl.onTouchEnd(object.item, {}, 0, e.target.clientX, e.target.clientY);
+                            break;
+                        case "click":                            
+                        // default:
+                            if (ctrl.onClick) ctrl.onClick(object.item, {}, 0, e.target.clientX, e.target.clientY);
+                    }
+                } 
             } catch (error) {
                 
             }
@@ -131,6 +151,10 @@
         links : new Map(),
         // transformation: {},
         // children: new Map(),
+    }
+
+    if (!ParentElement){
+        console.log(object)
     }
 
     let links = {
@@ -299,7 +323,31 @@
 
                 if (isValid(transformation.type)){
                     object.DOMElement = changeTag(object.DOMElement, transformation.type)
-                    object.DOMElement.addEventListener('click', onClick);
+                    // object.DOMElement.addEventListener('click', onClick);
+                    let startDown = null;
+                    let _down = (e, type)=> {
+                        startDown = Date.now();
+                        onClick(e, type);
+                    }
+                    let _up = (e, type)=> {
+                        let now = Date.now();
+                        onClick(e, type);
+
+                        if (startDown == null) startDown = now;
+                        if (now - startDown < 300) onClick(e, "click");
+                        
+                        startDown = null;
+                    }
+
+                    if (isTouchDevice()){
+                        object.DOMElement.addEventListener('touchstart', (e)=>_down(e, 'touchstart'))
+                        object.DOMElement.addEventListener('touchend', (e)=>_up(e, 'touchend'))
+                        object.DOMElement.addEventListener('touchcancel', (e)=>_up(e, 'touchend'))
+                    }else{
+                        object.DOMElement.addEventListener('mousedown',  (e)=>_down(e, 'mousedown'))
+                        object.DOMElement.addEventListener('mouseup',  (e)=>_up(e, 'mouseup'))
+
+                    }
                 }
             }
         }
@@ -376,28 +424,34 @@
         }
 
         if (renderText) {
-            if (text.trim() == ""){
-                // remove element
-                if (object.TextElement){
-                    object['DOMElement'].removeChild(object.TextElement);
-                    object.TextElement = undefined;
+            try {
+                if (text.trim() == ""){
+                    // remove element
+                    if (object.TextElement){
+                        object['DOMElement'].removeChild(object.TextElement);
+                        object.TextElement = undefined;
+                    }
+    
+                } else {
+                    // create if does not exist
+    
+                    if (!object.TextElement){
+                        // text
+                        let spanText = document.createElement("span");
+                        spanText.classList.add("__text");
+                        object['DOMElement'].prepend(spanText);
+                        object['TextElement'] = spanText;
+                        // console.log(parseHTML(text))
+                    }
+    
+                    object.TextElement.innerHTML = text;
+    
                 }
-
-            } else {
-                // create if does not exist
-
-                if (!object.TextElement){
-                    // text
-                    let spanText = document.createElement("span");
-                    spanText.classList.add("__text");
-                    object['DOMElement'].prepend(spanText);
-                    object['TextElement'] = spanText;
-                    // console.log(parseHTML(text))
-                }
-
-                object.TextElement.innerHTML = text;
-
+            } catch (error) {
+                console.log(error)
+                
             }
+            
         }
 
         if (renderVisibility || opts.visible != undefined) {
@@ -420,73 +474,105 @@
 
         if (renderMesh) {
             let css = "";
-            if (object.CSSElement) {
-                let finalGenerated = {};
-                Object.keys(generated).forEach(meshid=> {
+            
+            let finalGenerated = {};
+            Object.keys(generated).forEach(meshid=> {
+                finalGenerated[meshid] = {} 
                     finalGenerated[meshid] = {} 
-                    Object.keys(generated[meshid]).forEach(option=> {
-                        let val = generated[meshid][option];
-                        finalGenerated[meshid][option] = val;
-                    })
+                finalGenerated[meshid] = {} 
+                    finalGenerated[meshid] = {} 
+                finalGenerated[meshid] = {} 
+                    finalGenerated[meshid] = {} 
+                finalGenerated[meshid] = {} 
+                Object.keys(generated[meshid]).forEach(option=> {
+                    let val = generated[meshid][option];
+                    finalGenerated[meshid][option] = val;
                 })
+            })
 
-                // let idx = object.transformation["styles"].bucket;
-                // let vals = object.transformation["styles"].index;
-                let vals = getProperties("props");
+            // let idx = object.transformation["styles"].bucket;
+            // let vals = object.transformation["styles"].index;
+            let vals = getProperties("props");
 
-                for (var [k, key] of vals){
-                    // let c = vals[cdx];
-                    if (key == object.item.key) continue;
+            for (var [k, key] of vals){
+                // let c = vals[cdx];
+                if (key == object.item.key) continue;
 
-                    try {
-                        let configstyles = Module.ProjectManager.getObject(key);
-                        let _generated = configstyles.mesh.getAll();
-                        Object.keys(_generated).forEach(meshid=> {
+                try {
+                    let configstyles = Module.ProjectManager.getObject(key);
+                    let _generated = configstyles.mesh.getAll();
+                    Object.keys(_generated).forEach(meshid=> {
+                        if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
                             if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
-                            Object.keys(_generated[meshid]).forEach(option=> {
-                                let val = _generated[meshid][option];
-                                finalGenerated[meshid][option] = val;
-                            })
+                        if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
+                            if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
+                        if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
+                            if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
+                        if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
+                        Object.keys(_generated[meshid]).forEach(option=> {
+                            let val = _generated[meshid][option];
+                            finalGenerated[meshid][option] = val;
                         })
+                    })
+                } catch (error) {}
+            }
+            
+
+            let finalcss = "";
+            let csslines = 0;
+            Object.keys(finalGenerated).forEach(meshid=> {
+                if (meshid.trim() != ""){
+                    let propname = object.item.key;
+                    if (meshid != "default") propname += meshid;
+                    
+                    css = "#key_" + propname + " {\n";
+                    Object.keys(finalGenerated[meshid]).forEach(option=> {
+                        csslines++;
+                        let val = finalGenerated[meshid][option];
+                        if (val.includes("[[") && val.includes("]]")){
+                            try {
+                                let key = val.replace("[[", "").replace("]]","");
+                                let file = getFile(key, true);
+                                val = `url(data:image/png;base64,${toBase64(new Uint8Array(file))})`
+                                
+                            } catch (error) {
+                                console.log(error)
+                            }
+                        }
+
+                        if (option.trim() != "" && val.trim() != ""){
+                            css += `    ${option} : ${val}; \n`;
+                        }
+                    })
                         
-                    } catch (error) {}
+                    // console.log(key, generated[key]);
+                    css += "}\n\n";
+
+                    finalcss += css;
                 }
+            })
 
-                let finalcss = "";
-                Object.keys(finalGenerated).forEach(meshid=> {
-                    if (meshid.trim() != ""){
-                        let propname = object.item.key;
-                        if (meshid != "default") propname += meshid;
-                        
-                        css = "#key_" + propname + " {\n";
-                        Object.keys(finalGenerated[meshid]).forEach(option=> {
-                            let val = finalGenerated[meshid][option];
-                            if (val.includes("[[") && val.includes("]]")){
-                                try {
-                                    let key = val.replace("[[", "").replace("]]","");
-                                    let file = getFile(key, true);
-                                    val = `url(data:image/png;base64,${toBase64(new Uint8Array(file))})`
-                                    
-                                } catch (error) {
-                                    console.log(error)
-                                }
-                            }
-    
-                            if (option.trim() != "" && val.trim() != ""){
-                                css += `    ${option} : ${val}; \n`;
-                            }
-                        })
-                            
-                        // console.log(key, generated[key]);
-                        css += "}\n\n";
-    
-                        finalcss += css;
+            // do links css
+
+            try {
+                if (csslines > 0) {
+                    if (!object.CSSElement){
+                        let cssdom = document.createElement("style");
+                        cssdom.id = "css_" + object.item.key;
+                        Module.canvas.parentElement.appendChild(cssdom);
+                        object.CSSElement = cssdom;
                     }
-                })
+                    object.CSSElement.innerHTML = finalcss;
+                } else {
+                    if (object.CSSElement) {
+                        Module.canvas.parentElement.removeChild(object.CSSElement);
+                        object.CSSElement = undefined;
+                    }
+                }                
+                
+            } catch (error) {
+                console.log(error)
 
-                // do links css
-
-                object.CSSElement.innerHTML = finalcss;
             }
         }
 
@@ -581,18 +667,54 @@
     }
 
     // init
-    let cssdom = Module.canvas.parentElement?.querySelector(`#css_${object.item.key}`);
-    if (cssdom) Module.canvas.parentElement.removeChild(cssdom);
+    let cssdom = Module.canvas.parentElement.querySelector(`#css_${object.item.key}`);
+    try {
+        if (cssdom) Module.canvas.parentElement.removeChild(cssdom);
+        
+    } catch (error) {
+        console.log(error)
+        
+    }
     
-    let obj = ParentElement?.querySelector(`#key_${object.item.key}`);
-    if (obj) ParentElement.removeChild(obj);
+    let obj = ParentElement.querySelector(`#key_${object.item.key}`);
+    try {
+        if (obj) ParentElement.removeChild(obj);
+        
+    } catch (error) {
+        console.log(error)
+        
+    }
 
     // add
     let v = getLastValueInMap(getProperties('type'));
     
     obj = document.createElement(v);
 
-    obj.addEventListener('click', onClick);
+    // obj.addEventListener('click', onClick);
+    let startDown = null;
+    let _down = (e, type)=> {
+        startDown = Date.now();
+        onClick(e, type);
+    }
+    let _up = (e, type)=> {
+        let now = Date.now();
+        onClick(e, type);
+        
+        if (startDown == null) startDown = now;
+        if (now - startDown < 300) onClick(e, "click");
+        
+        startDown = null;
+    }
+
+    if (isTouchDevice()){
+        obj.addEventListener('touchstart', (e)=>_down(e, 'touchstart'))
+        obj.addEventListener('touchend', (e)=>_up(e, 'touchend'))
+        obj.addEventListener('touchcancel', (e)=>_up(e, 'touchend'))
+    }else{
+        obj.addEventListener('mousedown',  (e)=>_down(e, 'mousedown'))
+        obj.addEventListener('mouseup',  (e)=>_up(e, 'mouseup'))
+
+    }
 
     obj.id = "key_" + object.item.key;
 
@@ -606,8 +728,8 @@
     object.DOMElement.style.display = "none";
 
 
-    ParentElement?.appendChild(obj);
-    Module.canvas.parentElement?.appendChild(cssdom);
+    ParentElement.appendChild(obj);
+    Module.canvas.parentElement.appendChild(cssdom);
 
     if (object.parent) object.parent.children.set(child.key, object);
 
@@ -713,7 +835,6 @@
         type: { get: () => { return getProperty('type')[1]; }, set: (v) => { setProperty('type', v); } },
         class: { get: () => { return getProperty('class')[1]; }, set: (v) => { setProperty('class', v); } },
         text: { get: () => { return getProperty('text')[1]; }, set: (v) => { setProperty('text', v); } },
-        code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); } },
     })
 
     Object.assign(object, {
@@ -759,11 +880,22 @@
             sceneprops.sceneIndex.delete(object.item.key);
             if (object.parent) object.parent.children.delete(object.item.key);
 
-            let obj = ParentElement?.querySelector(`#key_${object.item.key}`);
-            if (obj) ParentElement.removeChild(obj);
+            let obj = ParentElement.querySelector(`#key_${object.item.key}`);
+            try {
+                if (obj) ParentElement.removeChild(obj);
+                
+            } catch (error) {
+                console.log(error)
+                
+            }
 
-            let cssobj = Module.canvas.parentElement?.querySelector(`#css_${object.item.key}`);
-            if (cssobj) Module.canvas.parentElement.removeChild(cssobj);
+            let cssobj = Module.canvas.parentElement.querySelector(`#css_${object.item.key}`);
+            try {
+                
+                if (cssobj) Module.canvas.parentElement.removeChild(cssobj);
+            } catch (error) {
+                console.log(error)
+            }
 
             // scene.removeObject(object.item.key);
             Module.ProjectManager.isDirty = true;

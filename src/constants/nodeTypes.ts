@@ -20,4 +20,5 @@ export const NODE_TYPES = {
   folder: 'folder',
   javascript: 'javascript',
   stylesheet: 'stylesheet',
+  file: 'file',
 } as const;
