@@ -132,9 +132,6 @@ module.exports = (payload) => {
   };
 
   const toggleLink = (enabled, prop) => {
-    if (prop == "controller") {
-      console.log(prop)
-    }
     if (!isLoading) itemdata[prop + '_enabled'] = enabled;
     else itemdata[prop + '_enabled'] = itemdata[prop + '_enabled'] && enabled;
 
