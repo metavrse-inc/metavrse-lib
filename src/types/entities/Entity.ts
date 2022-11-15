@@ -55,6 +55,12 @@ export type Entity = {
   }>;
   class?: string;
 
+  // physics
+  mass?: number;
+  shape_type?: string;
+  shape_file?: CherryKey;
+  ghost?: boolean;
+
   // Configuration
   parentOpts?: {
     visible: boolean;

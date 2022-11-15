@@ -64,6 +64,10 @@ const LIBS = `${MAIN_PATH}/lib`;
 
 const PHYSICS = `${PROJECT_MANAGER}/Physics`;
 
+import squarec3b from './scripts/square.c3b';
+import CherryGLWasm from '../cherry/CherryGL.wasm';
+
+
 export const scripts = {
   [`${MAIN_PATH}/`]: null, // Folder to create
   [`${MAIN_PATH}/ARObjectController.js`]: ARObjectController,
@@ -81,6 +85,7 @@ export const scripts = {
   [`${MAIN_PATH}/main.js`]: main,
   [`${MAIN_PATH}/socketio.js`]: socketio,
   [`${MAIN_PATH}/poweredby.png`]: poweredBy,
+  [`${MAIN_PATH}/square.c3b`]: squarec3b,
 
   [`${COMPONENTS}/`]: null, // Folder to create
   [`${COMPONENTS}/LoadingBar.js`]: LoadingBar,
@@ -124,6 +129,10 @@ export const scripts = {
   [`${PHYSICS}/helpers.js`]: PhysicsHelpers,
   [`${PHYSICS}/KinematicCharacterController.js`]: KinematicCharacterController,
   [`${PHYSICS}/RigidBody.js`]: RigidBody,
+
+
+  [`CherryGL.wasm`]: CherryGLWasm,
+
 
 
   // png

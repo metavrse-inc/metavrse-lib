@@ -33,7 +33,7 @@ module.exports = (payload) => {
         visible: (d['visible'] !== undefined) ? d['visible'] : true,
         visible_enabled: (d['visible_enabled'] != undefined) ? d['visible_enabled'] : true,
        
-        controller: (d['controller'] !== undefined) ? d['controller'] : [],        
+        controller: (d['controller'] !== undefined) ? d['controller'] : undefined,        
         controller_enabled: (d['controller_enabled'] != undefined) ? d['controller_enabled'] : true,
        
         class: (d['class'] !== undefined) ? d['class'] : undefined,        

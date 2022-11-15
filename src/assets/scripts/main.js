@@ -43,8 +43,8 @@ Module.clearEventListeners = () => {
 Module.resetCamera = function () {
   let camera_opts = {
     fov: Math.PI / 4,
-    near: 0.01,
-    far: 100,
+    near: 0.1,
+    far: 1000,
     viewport: [0, 0, Module.screen.width, Module.screen.height],
   };
 
@@ -56,7 +56,9 @@ Module.resetCamera = function () {
 
   let control_opts = {
     camera: Module.camera,
-    distanceBounds: [0.1, 40],
+    distanceBounds: [0.1, 1000],
+    zoomSpeed : 0.024,
+    pinchSpeed : 0.024,
     distance: 3.5,
     onTap: (button, x, y) => {
       if (Module.ProjectManager.projectRunning) {

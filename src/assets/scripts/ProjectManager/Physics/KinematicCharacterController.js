@@ -237,7 +237,7 @@ module.exports = (payload) => {
         characterController.setUpInterpolate(true);
         // characterController.setJumpSpeed(Number(data.jumpspeed))
         // characterController.setMaxJumpHeight(0.25)
-        // characterController.setMaxSlope(Math.PI / 2)
+        characterController.setMaxSlope(Math.PI / 2)
         // characterGravity = characterController.getGravity();
 
         // btBroadphaseProxy.CollisionFilterGroups.CharacterFilter - 32

@@ -146,7 +146,8 @@ module.exports = (payload) => {
   Object.defineProperties(object, {
     visible: {
       get: () => {
-        return getProperty('visible')[1];
+        let v = getProperty('visible')[1];
+        return (v == undefined) ? true: v;
       },
       set: (v) => {
         setProperty('visible', v);

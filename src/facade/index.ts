@@ -93,20 +93,24 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
   }): Promise<void> => {
     const files = Object.keys(assetsFiles);
     for (const path of files) {
+      if (path == "CherryGL.wasm") continue;
       const content = assetsFiles[path];
       if (content) {
         const lastSlash = path.lastIndexOf('/') + 1;
         const fullpath = path.substring(0, lastSlash);
 
         cherryViewer.FS.createPath('/', fullpath);
-        cherryViewer.FS.writeFile(path, new TextEncoder().encode(content));
+
+        if (typeof content == "string") cherryViewer.FS.writeFile(path, new TextEncoder().encode(content));
+        else cherryViewer.FS.writeFile(path, new Uint8Array(content));
       }
     }
 
     cherryViewer._main();
 
     const scopedEval = (script : string) => {
-      return (Function( 'return (' + script + ')' ).bind(window)());
+      let scene = cherryViewer.getSurface().getScene();
+      return (Function( 'Module', 'scene', 'return (' + script + ')' ).bind(window)(cherryViewer, scene));
     }
 
     cherryViewer.require = (filePath: any) => {
@@ -148,8 +152,8 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
       ${script}
       return module.exports;}('${filePath}'))`;
 
-      // cherryViewer.require_cache[filePath] = scopedEval(scriptWrapper);
-      cherryViewer.require_cache[filePath] = eval(scriptWrapper);
+      cherryViewer.require_cache[filePath] = scopedEval(scriptWrapper);
+      // cherryViewer.require_cache[filePath] = eval(scriptWrapper);
 
       return cherryViewer.require_cache[filePath];
     };

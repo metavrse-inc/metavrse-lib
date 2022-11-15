@@ -70,11 +70,10 @@
                 
                 let emptyvalue = false;
                 try {
-                //   let cKey = object.transformation.controller.bucket[object.transformation.controller.bucket.length - 1];
-                //   let cKeyRow = object.transformation.controller.index[cKey];
-                  let cKeyRow = getLastValueInMap(getProperties('controller'));
-                  nodeptrkey = (cKeyRow.childkey != undefined) ? cKeyRow.childkey : nodeptr.key;  
-                  emptyvalue = (cKeyRow.value == "")
+                    let properities = getProperties("controller");
+                    let property = getLastItemInMap(properities);
+                    nodeptrkey = property[0];  
+                    emptyvalue = (property[1] == "")
                 } catch (error) {
                 }
                 

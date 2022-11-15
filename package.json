@@ -39,6 +39,7 @@
     "gl-matrix": "^3.4.3",
     "immer": "^9.0.6",
     "require": "^2.4.20",
+    "rollup-plugin-copy": "^3.4.0",
     "rollup-plugin-image": "^1.0.2",
     "uuid": "^8.3.2"
   },

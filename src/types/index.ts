@@ -9,6 +9,7 @@ export * from './assets/AssetType';
  */
 export * from './cherry/CherryCamera';
 export * from './cherry/CherryControls';
+export * from './cherry/CherryHelper';
 export * from './cherry/CherryKey';
 export * from './cherry/CherryMesh';
 export * from './cherry/CherryMeshes';
@@ -60,6 +61,8 @@ export * from './entities/ObjectEntity';
 export * from './entities/ObjectGroupEntity';
 export * from './entities/ObjectHudEntity';
 export * from './entities/VideoEntity';
+export * from './entities/RigidBodyEntity';
+export * from './entities/KinematicCharacterControllerEntity';
 
 /**
  * Project types

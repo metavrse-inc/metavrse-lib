@@ -118,7 +118,8 @@ module.exports = (payload) => {
       value,
     });
 
-    if (!isParentAvailable() || !object.parent.visible) return;
+    // if (!isParentAvailable()) return;
+    if (!isParentAvailable() || !parentOpts.visible) return;
     ObjectModel.setProperty(prop, value, object.item.key);
   };
 
@@ -131,6 +132,9 @@ module.exports = (payload) => {
   };
 
   const toggleLink = (enabled, prop) => {
+    if (prop == "controller") {
+      console.log(prop)
+    }
     if (!isLoading) itemdata[prop + '_enabled'] = enabled;
     else itemdata[prop + '_enabled'] = itemdata[prop + '_enabled'] && enabled;
 
@@ -217,7 +221,8 @@ module.exports = (payload) => {
       value: finalEnabled,
     });
 
-    if (finalEnabled && itemdata['meshes'][meshid][prop] != undefined && object.parent.visible){
+    if (finalEnabled && itemdata['meshes'][meshid][prop] != undefined && parentOpts.visible){
+    // if (finalEnabled && itemdata['meshes'][meshid][prop] != undefined){
       setPropertyMesh(meshid, prop, itemdata['meshes'][meshid][prop]);
     }else if (!finalEnabled && itemdata['meshes'][meshid][prop] != undefined) {
       if (!isParentAvailable()) return;

@@ -115,7 +115,7 @@
       options['locateFile'] = (path)=> {
          if (path.endsWith(".wasm")) {
             let buf = getFile("assets/lib/ammo.wasm.wasm", true);
-            let blob = new Blob([buf]); ;
+            let blob = new Blob([buf], {type: "application/wasm"});
             return URL.createObjectURL(blob)
          }
          return path;

@@ -13,4 +13,6 @@ export * from './utils/mergeConfigurationsIntoTree.util';
 // IMPORTANT: Don't change this line it will automaticlly change the version after build!
 export const CherryGLVersion = '[VI]{version}[/VI]';
 
+export {createViewer3DInstance} from './types/cherry/CherryHelper'
+
 export default CherryGLInstance;
