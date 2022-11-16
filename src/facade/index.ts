@@ -497,7 +497,6 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
       if (node.type === NODE_TYPES.object || node.type === NODE_TYPES.objectHud){
         for (var x=0; x < 10000; x++){
           await sleep(10);
-          console.log('wiating')
           let obj = scene.getObject(node.key);
           if (obj && obj.getStatus() != 0) break;
         }

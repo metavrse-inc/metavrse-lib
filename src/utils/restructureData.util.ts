@@ -29,6 +29,8 @@ const ALLOWED_TREE_TYPES = [
   'object-group',
   'video',
   'camera',
+  'RigidBody',
+  'KinematicCharacterController',
 ];
 
 const ALLOWED_HTML_HUD_TYPES: string[] = [

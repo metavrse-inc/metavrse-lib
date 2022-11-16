@@ -5,4 +5,6 @@ export type TreeNodeType =
   | 'object-hud'
   | 'object-group'
   | 'video'
+  | 'RigidBody'
+  | 'KinematicCharacterController'
   | 'camera';

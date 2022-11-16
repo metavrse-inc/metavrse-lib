@@ -61,6 +61,17 @@ export type GetterSetterPropertyType =
   | 'orientation'
   | 'hudscale'
   | 'css'
+  | 'physics_debug_level'
+  | 'fov_size'
+  | 'render_method'
+  | 'fov_enabled'
+  | 'lod_enabled'
+
+  // Physics
+  | 'shape_type'
+  | 'shape_file'
+  | 'mass'
+  | 'ghost'
 
   //  HTML Hud
   | 'text'

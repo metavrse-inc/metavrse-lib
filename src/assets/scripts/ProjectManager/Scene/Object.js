@@ -1000,10 +1000,10 @@ module.exports = (payload) => {
                       let obj = Physics.add(pl);
                       fov_meshes.push(obj);
 
-                      if (mesh_enable_fov) object.mesh.set(x, "visible", false);
+                      // if (mesh_enable_fov) object.mesh.set(x, "visible", false);
                       // object.mesh.set(x, "lod_level", 3.0);
                       
-                      object.mesh.set(x, "render_back_faces", mesh_render_back_faces);
+                      // object.mesh.set(x, "render_back_faces", mesh_render_back_faces);
                   }catch(e){
                   }
               }
@@ -1062,25 +1062,21 @@ module.exports = (payload) => {
     if (d['autoscaled']) {
       autoScale();
       delete d['autoscaled'];
-      console.log('autoscaled')
     }
 
     if (d['autopivot']) {
       autoPivot();
       delete d['autopivot'];
-      console.log('autopivot')
     }
 
     if (autoscaleObject) {
       autoscaleObject = false;
       autoScale();
-      console.log('autoscaled 1')
     }
 
     if (autospivotObject) {
       autoPivot();
       autospivotObject = false;
-      console.log('autopivot 1')
     }
 
     let renderTransformation = false;

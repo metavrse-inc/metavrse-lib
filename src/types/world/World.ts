@@ -29,5 +29,11 @@ export type World = {
   fxaa: number;
   orientation: number;
   hudscale: number;
-  css: CherryKey
+  css: CherryKey;
+
+  physics_debug_level: number;
+  fov_size: Vector3;
+  render_method: number;
+  fov_enabled: boolean;
+  lod_enabled: boolean;
 };

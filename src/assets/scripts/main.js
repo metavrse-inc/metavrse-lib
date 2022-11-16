@@ -184,8 +184,9 @@ Module.render = function () {
       return;
     }
 
-    Module['fps']['currentFps'] = Module['fps']['maxFps'];
+    // Module['fps']['currentFps'] = Module['fps']['maxFps'];
     Module['fps']['delta'] = 1000 / (delta / seg);
+    Module['fps']['currentFps'] = 1000 / (delta / seg);
   }
 
   // console.log(JSON.stringify(Module.fps))
