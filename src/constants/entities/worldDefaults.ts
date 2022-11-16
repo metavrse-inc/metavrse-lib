@@ -23,5 +23,10 @@ export const worldDefaults: World = {
   fxaa: 1,
   hudscale: 1,
   orientation: 0,
-  css: ''
+  css: '',
+  physics_debug_level: 0, 
+  fov_size: [500,500,500], 
+  render_method: 0, 
+  fov_enabled: false, 
+  lod_enabled: false
 };
