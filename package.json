@@ -1,6 +1,6 @@
 {
   "name": "@metavrse-inc/metavrse-lib",
-  "version": "1.20.8",
+  "version": "1.20.9",
   "description": "",
   "main": "dist/metavrse-lib.esm.js",
   "module": "dist/metavrse-lib.esm.js",
