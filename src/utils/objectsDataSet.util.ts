@@ -8,7 +8,7 @@ import { TreeNodeType } from '../types/nodes/TreeNodeType';
 
 export type ObjectDataSet = {
   newNode: TreeNode | null;
-  newEntity: Entity | null;
+  newEntity: any | null;
   newAsset: Asset | null;
 };
 
