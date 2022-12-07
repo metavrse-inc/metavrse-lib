@@ -1,1 +1,2 @@
-export type HTMLHudSupportedTags = 'div' | 'img' | 'input';
+export type HTMLHudSupportedTags = any;
+// export type HTMLHudSupportedTags = 'div' | 'img' | 'input';

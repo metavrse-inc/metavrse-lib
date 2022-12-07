@@ -118,7 +118,6 @@ module.exports = (payload) => {
       value,
     });
 
-    // if (!isParentAvailable()) return;
     if (!isParentAvailable() || !parentOpts.visible) return;
     ObjectModel.setProperty(prop, value, object.item.key);
   };
@@ -178,7 +177,7 @@ module.exports = (payload) => {
       value,
     });
 
-    if (!isParentAvailable() || !object.parent.visible) return;
+    if (!isParentAvailable() || !parentOpts.visible) return;
     ObjectModel.setPropertyMesh(meshid, prop, value, object.item.key);
   };
 

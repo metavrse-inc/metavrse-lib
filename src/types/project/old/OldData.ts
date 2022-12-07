@@ -73,4 +73,5 @@ export type OldData = {
     [key: string]: any;
   };
   src?: CherryKey;
+  type?: string;
 };

@@ -30,7 +30,7 @@ module.exports = (payload) => {
 
     // can be undefined
     let transformation = {
-        visible: (d['visible'] !== undefined) ? d['visible'] : true,
+        visible: (d['visible'] !== undefined) ? d['visible'] : undefined,
         visible_enabled: (d['visible_enabled'] != undefined) ? d['visible_enabled'] : true,
        
         controller: (d['controller'] !== undefined) ? d['controller'] : undefined,        
@@ -39,10 +39,10 @@ module.exports = (payload) => {
         class: (d['class'] !== undefined) ? d['class'] : undefined,        
         class_enabled: (d['class_enabled'] != undefined) ? d['class_enabled'] : true,
        
-        hudscale: (d['hudscale'] !== undefined) ? (d['hudscale']) : 1,
+        hudscale: (d['hudscale'] !== undefined) ? (d['hudscale']) : undefined,
         hudscale_enabled: (d['hudscale_enabled'] != undefined) ? d['hudscale_enabled'] : true,
        
-        type: (d['type'] !== undefined && d['type'].trim() != "") ? (d['type']) : "div",
+        type: (d['type'] !== undefined && d['type'].trim() != "") ? d['type'] : undefined,
         type_enabled: (d['type_enabled'] != undefined) ? d['type_enabled'] : true,
        
         text: (d['text'] !== undefined) ? d['text'] : undefined,

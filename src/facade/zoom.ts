@@ -62,7 +62,6 @@ export const zoomFacade = (
 
     cherryViewer.controls.distance = distance * DISTANCE_MULTIPLIER;
     cherryViewer.controls.target = calculatedXYZ as Vector3;
-    cherryViewer.controls.position = [distance, distance, distance];
   };
 
   const zoomToMesh = (
