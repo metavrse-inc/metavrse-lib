@@ -19,6 +19,7 @@
     "lint": "dts lint",
     "size": "size-limit",
     "start": "NODE_ENV=development dts watch --format esm --onSuccess 'yalc push dist'",
+    "start:win": "NODE_ENV=development dts watch --format esm --onSuccess \\\"yalc push dist\\\"",
     "test": "dts test"
   },
   "repository": {
