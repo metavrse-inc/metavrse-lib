@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.21.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.20.10...v1.21.0) (2022-12-23)
+
+
+### Features
+
+* J101-1 Update scenegraph and core renderer ([5dab57d](https://github.com/metavrse-inc/metavrse-lib/commit/5dab57d487ff2bbfc7e9cf6a71ba674b97e1c845))
+
 ### [1.20.10](https://github.com/metavrse-inc/metavrse-lib/compare/v1.20.8...v1.20.10) (2022-12-07)
 
 ### [1.20.8](https://github.com/metavrse-inc/metavrse-lib/compare/v1.20.3...v1.20.8) (2022-11-16)
