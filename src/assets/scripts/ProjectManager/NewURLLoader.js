@@ -10,6 +10,7 @@ module.exports = (opt) => {
   if (Module.canvas) idb = Module.require('assets/idb.js')();
   const surface = Module.getSurface();
   const scene = surface.getScene();
+  const axios = Module.require('assets/axios.min.js');
 
   const sleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,6 +28,9 @@ module.exports = (opt) => {
     const lsKey = `${url}_lastTimeDownloaded`;
     const headers = {};
     const lastTimeDownloaded = localStorage.getItem(lsKey);
+    fullpath = url.replace(/[^\w\s]/gi, '') + '/';
+
+    if (Module.FS) Module.FS.createPath('/', fullpath, true, true);
 
     if (password) {
       headers.Authorization = `Basic ${btoa(`user:${password}`)}`;
@@ -36,7 +40,127 @@ module.exports = (opt) => {
       headers['If-Modified-Since'] = lastTimeDownloaded;
     }
 
+    let head_res = await axios.head(url, {headers});
+    console.log(head_res)
+
     const internalFetch = (internalHeaders) => {
+      let config = {
+        responseType: 'arraybuffer',
+        onDownloadProgress: function (e) {
+          // console.log(e.loaded / e.total)
+          options.onDownloadProgress &&
+                                options.onDownloadProgress({
+                                  total: e.total,
+                                  loaded: e.loaded,
+                                });
+        },
+        headers: internalHeaders,
+        validateStatus: function (status) {
+          return status >= 200 && status <= 404; // custom
+        },
+      };
+
+      axios.get(url, config)
+        .then(async (res) => {
+          if (res.status === 200) {
+            if (!res.data || !res.headers) {
+              options.onProjectFileInvalid && options.onProjectFileInvalid();
+              return;
+            }
+            options.onProjectLoadingStart && options.onProjectLoadingStart();
+            localStorage.setItem(lsKey, res.headers['last-modified']);
+
+            const data = new Uint8Array(res.data);
+
+            if (Module.canvas) {
+              let localdb = await idb.openDB('workspace', 21, {
+                upgrade(db) {
+                  db.createObjectStore('FILE_DATA');
+                },
+              });
+              let tx = localdb.transaction('FILE_DATA', 'readwrite');
+
+              // clear current data
+              await tx.store.delete(
+                IDBKeyRange.bound(fullpath, fullpath + '\uffff')
+              );
+
+              // add new data
+              await tx.store.put(
+                new Blob([new Uint8Array(data)]),
+                fullpath + 'project.zip'
+              );
+              await tx.done;
+
+              localdb.close();
+              localdb = null;
+              tx = null;
+
+              // give GC a chance
+              await sleep(100);
+
+              if (Module.FS) {
+                Module.FS.writeFile(
+                  fullpath + 'project.zip',
+                  new Uint8Array(data)
+                );
+              } else {
+                surface.writeFile(fullpath + 'project.zip', data);
+              }
+            }
+
+            callback(data);
+          }
+
+          if (res.status === 304) {
+            try {
+              await pullFilesIDB(fullpath);
+
+              options.onProjectLoadingStart && options.onProjectLoadingStart();
+
+              const archive = Module.ProjectManager.archive;
+              archive.close();
+              archive.open(fullpath + 'project.zip');
+              scene.setFSZip(archive); // enable project archive
+
+              var f = archive.fopens('project.json'); //fopens string - fopen arraybuffer
+              let project = JSON.parse(f);
+
+              options.onDownloadProgress &&
+                options.onDownloadProgress({
+                  total: 100,
+                  loaded: 100,
+                });
+
+              callback(project);
+            } catch (e) {
+              internalFetch({
+                ...internalHeaders,
+                'If-Modified-Since': undefined,
+              });
+            }
+          }
+
+          if (res.status === 404) {
+            options.onProjectNotFound && options.onProjectNotFound();
+          }
+
+          if (res.status === 401) {
+            options.onIncorrectPassword &&
+              options.onIncorrectPassword(password);
+          }
+
+          if (res.status === 403) {
+            options.onLimitsExceeded && options.onLimitsExceeded();
+          }
+        })
+        .catch(() => {
+          options.onProjectFileInvalid && options.onProjectFileInvalid();
+        });
+    };
+
+    
+    const internalFetch2 = (internalHeaders) => {
       fetch(url, { headers: internalHeaders })
         .then(async (res) => {
           if (res.status === 200) {
@@ -138,7 +262,7 @@ module.exports = (opt) => {
 
           if (res.status === 304) {
             try {
-              await pullFilesIDB();
+              await pullFilesIDB(fullpath);
 
               options.onProjectLoadingStart && options.onProjectLoadingStart();
 

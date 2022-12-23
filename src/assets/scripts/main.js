@@ -557,7 +557,7 @@ if (Module['canvas']) {
       navigator.msMaxTouchPoints > 0
     );
   }
-  let c = Module['canvas'];
+  let c = Module['canvas'].ownerDocument.documentElement;
 
   // keyboard
   document.addEventListener('keydown', (e) => {
@@ -742,8 +742,9 @@ if (Module['canvas']) {
     // console.log(normed, -e.deltaY)
     Module.onScroll(-normed.spinY * 10);
     // Module.onScroll( (e.deltaY < 0) ? 10 : -10);
-    e.preventDefault();
-  });
+    // e.preventDefault();
+    // e.stopPropagation();
+  }, {passive: false});
 
   // touch
   let getXYTouches = (e, t) => {

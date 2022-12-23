@@ -327,6 +327,8 @@
                     let _down = (e, type)=> {
                         startDown = Date.now();
                         onClick(e, type);
+
+                        // e.stopPropagation();
                     }
                     let _up = (e, type)=> {
                         let now = Date.now();
@@ -336,17 +338,19 @@
                         if (now - startDown < 300) onClick(e, "click");
                         
                         startDown = null;
+                        // e.stopPropagation();
                     }
 
-                    if (isTouchDevice()){
-                        object.DOMElement.addEventListener('touchstart', (e)=>_down(e, 'touchstart'))
-                        object.DOMElement.addEventListener('touchend', (e)=>_up(e, 'touchend'))
-                        object.DOMElement.addEventListener('touchcancel', (e)=>_up(e, 'touchend'))
-                    }else{
-                        object.DOMElement.addEventListener('mousedown',  (e)=>_down(e, 'mousedown'))
-                        object.DOMElement.addEventListener('mouseup',  (e)=>_up(e, 'mouseup'))
+                    // if (isTouchDevice()){
+                        object.DOMElement.addEventListener('touchstart', (e)=>_down(e, 'touchstart'), {passive: false})
+                        object.DOMElement.addEventListener('touchend', (e)=>_up(e, 'touchend'), {passive: false})
+                        object.DOMElement.addEventListener('touchcancel', (e)=>_up(e, 'touchend'), {passive: false})
+                    // }else{
+                        object.DOMElement.addEventListener('mousedown',  (e)=>_down(e, 'mousedown'), {passive: false})
+                        object.DOMElement.addEventListener('mouseup',  (e)=>_up(e, 'mouseup'), {passive: false})
+                        object.DOMElement.addEventListener('wheel',  (e)=>{ e.stopPropagation();}, {passive: false})
 
-                    }
+                    // }
                 }
             }
         }
@@ -491,7 +495,7 @@
 
             // let idx = object.transformation["styles"].bucket;
             // let vals = object.transformation["styles"].index;
-            let vals = getProperties("props");
+            let vals = getProperties("styles");
 
             for (var [k, key] of vals){
                 // let c = vals[cdx];
@@ -501,12 +505,6 @@
                     let configstyles = Module.ProjectManager.getObject(key);
                     let _generated = configstyles.mesh.getAll();
                     Object.keys(_generated).forEach(meshid=> {
-                        if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
-                            if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
-                        if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
-                            if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
-                        if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
-                            if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
                         if (finalGenerated[meshid] == undefined) finalGenerated[meshid] = {} 
                         Object.keys(_generated[meshid]).forEach(option=> {
                             let val = _generated[meshid][option];
@@ -694,6 +692,8 @@
     let _down = (e, type)=> {
         startDown = Date.now();
         onClick(e, type);
+        // e.stopPropagation();
+
     }
     let _up = (e, type)=> {
         let now = Date.now();
@@ -703,17 +703,20 @@
         if (now - startDown < 300) onClick(e, "click");
         
         startDown = null;
-    }
-
-    if (isTouchDevice()){
-        obj.addEventListener('touchstart', (e)=>_down(e, 'touchstart'))
-        obj.addEventListener('touchend', (e)=>_up(e, 'touchend'))
-        obj.addEventListener('touchcancel', (e)=>_up(e, 'touchend'))
-    }else{
-        obj.addEventListener('mousedown',  (e)=>_down(e, 'mousedown'))
-        obj.addEventListener('mouseup',  (e)=>_up(e, 'mouseup'))
+        // e.stopPropagation();
 
     }
+
+    // if (isTouchDevice()){
+        obj.addEventListener('touchstart', (e)=>_down(e, 'touchstart'), {passive: false})
+        obj.addEventListener('touchend', (e)=>_up(e, 'touchend'), {passive: false})
+        obj.addEventListener('touchcancel', (e)=>_up(e, 'touchend'), {passive: false})
+    // }else{
+        obj.addEventListener('mousedown',  (e)=>_down(e, 'mousedown'), {passive: false})
+        obj.addEventListener('mouseup',  (e)=>_up(e, 'mouseup'), {passive: false})
+        obj.addEventListener('wheel',  (e)=>{ e.stopPropagation();}, {passive: false})
+
+    // }
 
     obj.id = "key_" + object.item.key;
 
@@ -834,6 +837,7 @@
         type: { get: () => { return getProperty('type')[1]; }, set: (v) => { setProperty('type', v); } },
         class: { get: () => { return getProperty('class')[1]; }, set: (v) => { setProperty('class', v); } },
         text: { get: () => { return getProperty('text')[1]; }, set: (v) => { setProperty('text', v); } },
+        code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); }, },
     })
 
     Object.assign(object, {

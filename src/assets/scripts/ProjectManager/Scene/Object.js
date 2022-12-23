@@ -1039,8 +1039,6 @@ module.exports = (payload) => {
       obj.setParameter('visible', false);
       isLoaded = false;
       Module.ProjectManager.objects[String(obj.$$.ptr)] = { key: child.key };
-
-      getAnimationList();
     }
 
     if (obj.getStatus() == 0) {
@@ -1056,6 +1054,7 @@ module.exports = (payload) => {
     if (isLoading == 1){
       isLoading = 2;
       addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
+      getAnimationList();
 
     }
 

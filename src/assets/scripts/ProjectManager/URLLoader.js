@@ -163,7 +163,9 @@ module.exports = (opt) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
   };
 
-  const pullFilesIDB = async () => {
+  const pullFilesIDB = async (path) => {
+    if (path == undefined) path = fullpath;
+
     let localdb = await idb.openDB('workspace', 21, {
       upgrade(db) {
         db.createObjectStore('FILE_DATA');
@@ -174,7 +176,7 @@ module.exports = (opt) => {
     let store = tx.objectStore('FILE_DATA');
 
     let entries = await store.getAllKeys(
-      IDBKeyRange.bound(fullpath, fullpath + '\uffff')
+      IDBKeyRange.bound(path, path + '\uffff')
     );
 
     for (const idx of entries) {

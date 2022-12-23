@@ -47,6 +47,9 @@ module.exports = (payload) => {
        
         text: (d['text'] !== undefined) ? d['text'] : undefined,
         text_enabled: (d['text_enabled'] != undefined) ? d['text_enabled'] : true,
+
+        styles: child.key,
+        styles_enabled: (d['styles_enabled'] != undefined) ? d['styles_enabled'] : true,
     };
 
     let object = {
@@ -83,7 +86,7 @@ module.exports = (payload) => {
 
     const getProperty = (prop)=>{
         if (!isParentAvailable()) return transformation[prop];
-        return HTMLModel.getProperty(prop, object.item.key); 
+        return HTMLModel.getProperty(prop, object.item.key)[1]; 
     }
 
     const setProperty = (prop, value)=>{
@@ -301,6 +304,8 @@ module.exports = (payload) => {
         type: { get: () => { return getProperty('type'); }, set: (v) => { setProperty('type', v, "type"); } },
         class: { get: () => { return getProperty('class'); }, set: (v) => { setProperty('class', v, "class"); } },
         text: { get: () => { return getProperty('text'); }, set: (v) => { setProperty('text', v, "text"); } },
+        code: { get: () => { return getProperty('code'); }, set: (v) => { setProperty('code', v); }, },
+
 
         parentOpts: { get: () => { if (ModelExists()) return HTMLModel.parentOpts; }, set: (v) => {  } },
         finalVisibility: { get: () => { if (ModelExists()) return HTMLModel.parentOpts.visible; }, set: (v) => {  } },

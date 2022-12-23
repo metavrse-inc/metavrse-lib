@@ -2,7 +2,7 @@ import { Entity } from './Entity';
 
 type RequiredProperties = 'key' | 'visible' | 'type' | 'data';
 
-type OptionalProperties = 'text' | 'props' | 'class';
+type OptionalProperties = 'text' | 'code' | 'props' | 'class';
 
 export type HTMLHudEntity = Pick<
   Required<Entity & { type: keyof HTMLElementTagNameMap }>,

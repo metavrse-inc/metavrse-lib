@@ -19,6 +19,7 @@ const ALLOWED_CONFIGURATION_TYPES = [
   'object-group-link',
   'video-link',
   'configuration',
+  'object-group',
 ];
 
 const ALLOWED_TREE_TYPES = [
@@ -98,22 +99,26 @@ export const restructureData = (
 
       if (ALLOWED_CONFIGURATION_TYPES.includes(node.type)) {
         hasConfig = node.type === 'configuration';
-        newConfigurationsTree.push(newConfiguration);
 
-        if (node.type == "HTMLElement-link"){
-          newEntities[node.key] = {
-            ...(entity as Entity),
-            key: node.key,
-            skey: node.skey,
-          };
-        } else {
-          newEntities[node.key] = {
-            ...(entity as Entity),
-            key: node.key,
-            skey: node.skey,
-            type: node.type,
-          };
+        if ((node.type === 'object-group' && newConfiguration.children.length > 0) || node.type !== 'object-group'){
+          newConfigurationsTree.push(newConfiguration);
+
+          if (node.type == "HTMLElement-link"){
+            newEntities[node.key] = {
+              ...(entity as Entity),
+              key: node.key,
+              skey: node.skey,
+            };
+          } else {
+            newEntities[node.key] = {
+              ...(entity as Entity),
+              key: node.key,
+              skey: node.skey,
+              type: node.type,
+            };
+          }
         }
+        
         
       }
 
@@ -127,13 +132,9 @@ export const restructureData = (
         };
       }
 
-      if (node.type === 'object-group' && node.title.toLowerCase().includes("procedure")) {
-        console.log(node, hasConfig)
-      }
-
-      if (node.type === 'object-group' && hasConfig) {
-        newConfigurationsTree.push(newConfiguration);
-      }
+      // if (node.type === 'object-group' && hasConfig) {
+      //   newConfigurationsTree.push(newConfiguration);
+      // }
 
       if (node.type === 'object-group' && hasHtmlHud) {
         newHTMLHudTree.push(newHtmlHud)
