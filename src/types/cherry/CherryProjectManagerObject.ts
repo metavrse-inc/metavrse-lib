@@ -102,6 +102,7 @@ export type CherryProjectManagerObject = {
   toggleLink: () => void;
   setProperty: (prop: string, value: any, key?: CherryKey) => void;
   getProperty: (prop: string, key: CherryKey) => [string, Vector3];
+  getProperties: (prop: string) => Map<string, Vector3>;
   removeLink: { (): void; (prop: string, key?: CherryKey): boolean };
   clearRender: () => void;
   remove: () => void;
