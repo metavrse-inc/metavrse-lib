@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.23.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.22.0...v1.23.0) (2023-02-01)
+
+
+### Features
+
+* AT-4 Export getProperties function for CherryProjectManagerObject ([89f4892](https://github.com/metavrse-inc/metavrse-lib/commit/89f48922378b6fa9dda571083e99021b0017fbb7))
+
 ## [1.22.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.20.10...v1.22.0) (2022-12-23)
 
 
