@@ -109,6 +109,24 @@ export const objectsDataSet = (
         newNode: { ...newNode, type: NODE_TYPES.video },
         newEntity: { ...DEFAULTS.videoDefaults, key },
       };
+    case NODE_TYPES.ZIPElement:
+      return {
+        ...initData,
+        newNode: { ...newNode, type: NODE_TYPES.ZIPElement },
+        newEntity: { ...DEFAULTS.ZIPElementDefaults, key },
+      };
+    case NODE_TYPES.RigidBody:
+      return {
+        ...initData,
+        newNode: { ...newNode, type: NODE_TYPES.RigidBody },
+        newEntity: { ...DEFAULTS.RigidBodyDefaults, key },
+      };
+    case NODE_TYPES.KinematicCharacterController:
+      return {
+        ...initData,
+        newNode: { ...newNode, type: NODE_TYPES.KinematicCharacterController },
+        newEntity: { ...DEFAULTS.KinematicCharacterControllerDefaults, key },
+      };
     default:
       return initData;
   }

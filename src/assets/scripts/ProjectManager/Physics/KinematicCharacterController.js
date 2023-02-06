@@ -112,6 +112,7 @@ module.exports = (payload) => {
     var geometry;
     let extents = {f1:0,f2:0,f3:0}
     let center = {f1:0,f2:0,f3:0}
+    let _object = null;
     const addObject = (args) => {
         let o = args.parent;
         let key = o.item.key;
@@ -119,6 +120,7 @@ module.exports = (payload) => {
         var data = {};
 
         let so = scene.getObject(key);
+        _object = so;
 
         extents = so.getParameterVec3("extent");
         center = so.getParameterVec3("center");
@@ -128,37 +130,30 @@ module.exports = (payload) => {
         let size = [extents.f1, extents.f2, extents.f3]
 
         let q = quat.create();
-        quat.fromEuler(q, ...o.rotate);
-        // mat4.getRotation(q, o.parentOpts.transform)
+        quat.fromEuler(q, ...o.rotate)
 
-        // let position = vec3.create();
-        // mat4.getTranslation(position, o.parentOpts.transform)
+        if (o.parent && o.parent.parentOpts){
+            let qParent = quat.create();
+            mat4.getRotation(qParent, o.parent.parentOpts.transform);
+            quat.multiply(q, qParent, q);
+        }
+
+        let position = vec3.create();
+        mat4.getTranslation(position, o.parentOpts.transform)
 
         let m4 = mat4.create();
-        mat4.fromRotationTranslation(m4, q, o.position)
+        mat4.fromRotationTranslation(m4, q, position)
 
-        let positionOriginal = vec3.fromValues(center.f1 * scales[0], center.f2 * scales[1], center.f3 * scales[2])
-
-        // pivot
-        const piv = mat4.create();
-        const mi = mat4.create();      // used for pivot point
-        mat4.translate(piv, piv, vec3.fromValues(o.pivot[0] * scales[0], o.pivot[1] * scales[1], o.pivot[2] * scales[2]));
-        mat4.invert(mi, piv);  // used for pivot point
-        mat4.multiply(m4, m4, mi);     // used for pivot point
-  
         // geometry = new Ammo.btSphereShape( size[1] * 0.5);
         // geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
         switch (params.shape_type) {
             case 'cylinder':
-                mat4.translate(m4, m4, positionOriginal);
                 geometry = new Ammo.btCylinderShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
                 break;
             case 'capsule':
-                mat4.translate(m4, m4, positionOriginal);
                 geometry = new Ammo.btCapsuleShape(size[0] * 0.5, size[1]);
                 break;
             case 'sphere':
-                mat4.translate(m4, m4, positionOriginal);
                 geometry = new Ammo.btSphereShape( size[1] * 0.5);
                 break;
 
@@ -166,7 +161,7 @@ module.exports = (payload) => {
 
                 try {
                     let path = (!scene.hasFSZip() && Module.ProjectManager && Module.ProjectManager.archive) ?  Module.ProjectManager.path : "";
-                    let om = scene.getObjectGeometry(path + params.shape_file);
+                    let om = scene.getObjectGeometry(o.zip_id, path + params.shape_file);
                     const mesh = new Ammo.btTriangleMesh(false, false);
                     let triangles = om.triangles;
                     let verts = om.vertices;
@@ -202,7 +197,6 @@ module.exports = (payload) => {
                 }
             case 'bounding-box':
             default:
-                mat4.translate(m4, m4, positionOriginal);
                 geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
                 break;
         }
@@ -289,29 +283,20 @@ module.exports = (payload) => {
                 mat4.getScaling(scales, o.parentOpts.transform)
 
                 let q = quat.create();
-                quat.fromEuler(q, ...o.rotate);
-                // mat4.getRotation(q, o.parentOpts.transform)
+                quat.fromEuler(q, ...o.rotate)
 
+                if (o.parent && o.parent.parentOpts){
+                    let qParent = quat.create();
+                    mat4.getRotation(qParent, o.parent.parentOpts.transform);
+                    quat.multiply(q, qParent, q);
+                }
                 
-                // let position = vec3.create();
-                // mat4.getTranslation(position, o.parentOpts.transform)
+                let position = vec3.create();
+                mat4.getTranslation(position, o.parentOpts.transform)
         
-                let positionOriginal = vec3.fromValues(center.f1 * scales[0], center.f2 * scales[1], center.f3 * scales[2])
-
                 // 3d transformation
                 let m4 = mat4.create();
-                mat4.fromRotationTranslation(m4, q, o.position) 
-
-                if (params.shape_type != "custom-mesh"){
-                    mat4.translate(m4, m4, positionOriginal);
-                }
-
-                // pivot
-                const piv = mat4.create();
-                const mi = mat4.create();      // used for pivot point
-                mat4.translate(piv, piv, vec3.fromValues(o.pivot[0] * scales[0], o.pivot[1] * scales[1], o.pivot[2] * scales[2]));
-                mat4.invert(mi, piv);  // used for pivot point
-                mat4.multiply(m4, m4, mi);     // used for pivot point
+                mat4.fromRotationTranslation(m4, q, position) 
 
                 // rigidbody transformation
                 let q2 = quat.create();
@@ -322,11 +307,11 @@ module.exports = (payload) => {
                 mat4.multiply(m4, m4, m42);
 
                 var transform = body.getWorldTransform()
+                transform.setFromOpenGLMatrix(m4);
 
                 vec3.multiply(scales, scales, params.scale);
                 geometry.setLocalScaling(new Ammo.btVector3(...scales));
 
-                transform.setFromOpenGLMatrix(m4);
                 body.setWorldTransform(transform);
 
                 // body.setMotionState(ms);
@@ -342,39 +327,42 @@ module.exports = (payload) => {
         var p = TRANSFORM_AUX.getOrigin();
         var q = TRANSFORM_AUX.getRotation();
 
+        let scales = vec3.create();
+        mat4.getScaling(scales, o.parentOpts.transform)
+
         // physics
         let m4 = mat4.create();
-        mat4.fromRotationTranslation(m4, [q.x(), q.y(), q.z(), q.w()], [p.x(), p.y(), p.z()]);
+        mat4.fromRotationTranslationScale(m4, [q.x(), q.y(), q.z(), q.w()], [p.x(), p.y(), p.z()], scales);
 
-        // adjusted
+        // physics transformation
+        let q2 = quat.create();
+        quat.fromEuler(q2, ...params.rotate);
         let m42 = mat4.create();
-        let qq = quat.create();
-        quat.fromEuler(qq, ...params.rotate)
-        mat4.fromRotationTranslation(m42, qq, params.position);
+        mat4.fromRotationTranslation(m42, q2, params.position);
         mat4.invert(m42, m42)
+        
+        mat4.multiply(m4, m42, m4);
 
-        // apply physics offset to object
-        mat4.multiply(m4, m4, m42);
+        // adjust matrix directly
+        _object.setTransformMatrix(m4);
 
-        let qF = quat.create();
-        let pF = vec3.create();
+        try {
+            // let FOVMeshes = o.FOVMeshes;
+            // for (var m of FOVMeshes) {
+            //     m.render({transform: [...m4]})
+            // }
 
-        mat4.getRotation(qF, m4)
-        mat4.getTranslation(pF, m4)
-
-        let distance = vec3.distance(o.position, pF);
-        if (distance > 0.0001) o.position = pF;
-
-        let euler = quaternionToEuler(qF, o.rotate)
-        if (euler[0] != o.rotate[0] || euler[1] != o.rotate[1] || euler[2] != o.rotate[2]) {
-            o.rotate = euler;
+        } catch (error) {
+            
         }
 
-        if (onUpdate) onUpdate();
+        Module.ProjectManager.isDirty = true;
+
+        if (onUpdate) onUpdate([...m4]);
 
         for (var [k, funcUp] of updateHandlers) {
             try {
-                funcUp();
+                funcUp([...m4]);
             } catch (error) {
             }
         }

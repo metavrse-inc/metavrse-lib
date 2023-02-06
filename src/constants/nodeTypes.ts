@@ -21,4 +21,10 @@ export const NODE_TYPES = {
   javascript: 'javascript',
   stylesheet: 'stylesheet',
   file: 'file',
+  ZIPElement: 'ZIPElement',
+  ZIPAsset: 'ZIPAsset',
+
+  RigidBody: 'RigidBody',
+  KinematicCharacterController: 'KinematicCharacterController',
+
 } as const;

@@ -5,8 +5,8 @@
 
  module.exports = (payload) => {
     const Physics = payload.Physics;
-    const Ammo = Physics.Ammo;
-    const PhysicsWorld = Physics.PhysicsWorld;
+    const Ammo = Physics.FOV_Ammo;
+    const PhysicsWorld = Physics.FOV_PhysicsWorld;
     const CollisionFlags = Physics.CollisionFlags;
 
     let child = payload.child;
@@ -205,8 +205,8 @@
             try {
                 if (el.item.type == "FOVMesh"){
                     let ks = el.item.key.split("_")
-                    let key = ks[0];
-                    let meshid = ks[1];
+                    // let key = ks[0];
+                    let meshid = ks[ks.length - 1];
 
                     if (!collisionStatus.has(el.item.key)){
                         collisionStatus.set(el.item.key, {

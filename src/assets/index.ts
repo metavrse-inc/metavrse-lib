@@ -23,6 +23,7 @@ import ProjectManager from './scripts/ProjectManager/ProjectManager';
 import Scenegraph from './scripts/ProjectManager/Scenegraph';
 import URLLoader from './scripts/ProjectManager/URLLoader';
 import NewURLLoader from './scripts/ProjectManager/NewURLLoader';
+import ZIPManager from './scripts/ProjectManager/ZIPManager';
 
 import Camera from './scripts/ProjectManager/Scene/Camera';
 import CameraLink from './scripts/ProjectManager/Scene/CameraLink';
@@ -41,6 +42,7 @@ import ObjectLink from './scripts/ProjectManager/Scene/ObjectLink';
 import Video from './scripts/ProjectManager/Scene/Video';
 import VideoLink from './scripts/ProjectManager/Scene/VideoLink';
 import World from './scripts/ProjectManager/Scene/World';
+import ZIPElement from './scripts/ProjectManager/Scene/ZIPElement';
 
 import AmmoJS from './scripts/lib/ammo';
 import CherryWW from './scripts/lib/CherryWW';
@@ -96,6 +98,7 @@ export const scripts = {
   [`${PROJECT_MANAGER}/Scenegraph.js`]: Scenegraph,
   [`${PROJECT_MANAGER}/URLLoader.js`]: URLLoader,
   [`${PROJECT_MANAGER}/NewURLLoader.js`]: NewURLLoader,
+  [`${PROJECT_MANAGER}/ZIPManager.js`]: ZIPManager,
   [`${SCENE}/Camera.js`]: Camera,
   [`${SCENE}/CameraLink.js`]: CameraLink,
   [`${SCENE}/Configuration.js`]: Configuration,
@@ -113,6 +116,7 @@ export const scripts = {
   [`${SCENE}/Video.js`]: Video,
   [`${SCENE}/VideoLink.js`]: VideoLink,
   [`${SCENE}/World.js`]: World,
+  [`${SCENE}/ZIPElement.js`]: ZIPElement,
 
   [`${LIBS}/`]: null, // Folder to create
   [`${LIBS}/ammo.js`]: AmmoJS,

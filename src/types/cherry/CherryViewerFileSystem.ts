@@ -1,4 +1,5 @@
 export type CherryViewerFileSystem = {
+  readFile : (path: string, opt?: any) => any;
   readdir: (path: string) => string[];
   mkdir: (path: string) => void;
   createPath: (

@@ -7,7 +7,7 @@ export type TreeNodeType =
   | 'video'
   | 'RigidBody'
   | 'KinematicCharacterController'
-  
+  | 'ZIPElement'
   | 'configuration'
   | 'object-group'
   | 'camera-link'

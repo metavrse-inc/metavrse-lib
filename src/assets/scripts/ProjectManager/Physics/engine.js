@@ -28,6 +28,17 @@
    var debugDrawer;
    var debugEnabled = false;
 
+   // engine
+   var FOV_Ammo;
+   var FOV_collisionConfiguration;
+   var FOV_dispatcher;
+   var FOV_broadphase;
+   var FOV_solver;
+   var FOV_physicsWorld;
+   var FOV_ammoInitalised = false;
+   var FOV_debugDrawer;
+   var FOV_debugEnabled = false;
+
    // numbers
    var gravity = -9.8;
    var scaleT = 0.1; // Scale to match our world
@@ -129,6 +140,20 @@
       physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
       physicsWorld.setGravity(new Ammo.btVector3(0, Number(gravity), 0));
       physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
+
+      /// fov
+      FOV_Ammo = await _Ammo(options);
+      FOV_collisionConfiguration = new FOV_Ammo.btDefaultCollisionConfiguration();
+      FOV_dispatcher = new FOV_Ammo.btCollisionDispatcher(FOV_collisionConfiguration);
+      FOV_broadphase = new FOV_Ammo.btDbvtBroadphase();
+      FOV_solver = new FOV_Ammo.btSequentialImpulseConstraintSolver();
+      FOV_physicsWorld = new FOV_Ammo.btDiscreteDynamicsWorld(FOV_dispatcher, FOV_broadphase, FOV_solver, FOV_collisionConfiguration);
+      FOV_physicsWorld.setGravity(new FOV_Ammo.btVector3(0, Number(gravity), 0));
+      FOV_physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new FOV_Ammo.btGhostPairCallback());
+      
+      FOV_ammoInitalised = true;
+      
+      /// fov
 
       ammoInitalised = true;
       console.log('Physics initialized')
@@ -236,6 +261,54 @@
    
          physicsWorld.setDebugDrawer(debugDrawer);
 
+         /// FOV
+         FOV_debugDrawer = new FOV_Ammo.DebugDrawer();
+         FOV_debugDrawer.DebugDrawMode = 1;
+         FOV_debugDrawer.drawLine = function (from, to, color) {
+            const heap = FOV_Ammo.HEAPF32;
+            const r = heap[(color + 0) / 4];
+            const g = heap[(color + 4) / 4];
+            const b = heap[(color + 8) / 4];
+
+            const fromX = heap[(from + 0) / 4];
+            const fromY = heap[(from + 4) / 4];
+            const fromZ = heap[(from + 8) / 4];
+
+            const toX = heap[(to + 0) / 4];
+            const toY = heap[(to + 4) / 4];
+            const toZ = heap[(to + 8) / 4];
+
+            //   console.log("drawLine", from, to, color);
+            // draws a simple line of pixels between points but stores them for later draw
+            var lineFrom = [fromX, fromY, fromZ];
+            var lineTo = [toX, toY, toZ];
+            TheLines.push(...lineFrom, ...lineTo);
+            TheLinesCount += 2;
+
+            var colorFrom = [r, g, b];
+            var colorTo = [r, g, b];
+            TheColors.push(...colorFrom, ...colorTo);
+            TheColorsCount += 2;
+         };
+         FOV_debugDrawer.drawContactPoint = function (pointOnB, normalOnB, distance, lifeTime, color) {
+         //   console.log("drawContactPoint")
+         };
+         FOV_debugDrawer.reportErrorWarning = function(warningString) {
+           console.warn(warningString);
+         };
+         FOV_debugDrawer.draw3dText = function(location, textString) {
+         //   console.log("draw3dText", location, textString);
+         };
+         FOV_debugDrawer.setDebugMode = function(debugMode) {
+           this.DebugDrawMode = debugMode;
+         };
+         FOV_debugDrawer.getDebugMode = function() {
+           return this.DebugDrawMode;
+         };
+   
+         FOV_physicsWorld.setDebugDrawer(FOV_debugDrawer);
+         /// FOV
+
       }
 
       addFOVBox();
@@ -270,7 +343,9 @@
       if (isNaN(fps)) fps = 1 / 60;
 
       physicsWorld.stepSimulation(fps);
+      FOV_physicsWorld.stepSimulation(fps);
 
+      // deprecate
       for (var [key, _u] of syncList) {
          let oi = objectIndexes.get(key); // object index
          let o = oi.object;   // scenegraph object
@@ -306,6 +381,7 @@
       if (!ammoInitalised || !debugEnabled) return;
     
       physicsWorld.debugDrawWorld();
+      FOV_physicsWorld.debugDrawWorld();
       
       if (TheLines.length == 0) {
          TheLines = [];
@@ -639,6 +715,9 @@
       Ammo: { get: () => { return Ammo; }, set: (v) => {} },
       PhysicsWorld: { get: () => { return physicsWorld; }, set: (v) => {} },
       debugEnabled: { get: () => { return debugEnabled; }, set: (v) => { debugEnabled = v} },
+
+      FOV_Ammo: { get: () => { return Ammo; }, set: (v) => {} },
+      FOV_PhysicsWorld: { get: () => { return physicsWorld; }, set: (v) => {} },
    })
 
    return Object.assign(_physics, {

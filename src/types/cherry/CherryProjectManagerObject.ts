@@ -28,6 +28,10 @@ export type GetterSetterPropertyType =
   | 'controller'
   | 'code'
 
+  | 'render_fov_lod' 
+  | 'render_back_faces' 
+  | 'render_fov_visible'
+
   // Video
   | 'src'
   | 'pixel'
@@ -133,6 +137,9 @@ export type CherryProjectManagerObject = {
   controller: string;
   frame: number;
   code: Code;
+  render_fov_lod: boolean,
+  render_back_faces: boolean,
+  render_fov_visible: boolean,
   /** @description Use to retrieve mesh specify by index or update mesh by it index. Used also for managing CSS properties/values in HTML Hud */
   mesh: {
     get: (index: number, property: ShaderParameterType) => CherryMesh;
