@@ -48,7 +48,7 @@ module.exports = (opt) => {
     }
 
     if (lastTimeDownloaded) {
-      // headers['If-Modified-Since'] = lastTimeDownloaded;
+      headers['If-Modified-Since'] = lastTimeDownloaded;
     }
 
     const internalFetch = (internalHeaders) => {
