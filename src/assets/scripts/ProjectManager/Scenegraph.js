@@ -52,6 +52,10 @@ module.exports = () => {
   const Physics = Module.require('assets/ProjectManager/Physics/engine.js')();
   Physics.init();
 
+  const ZIPElementModel = Module.require('assets/ProjectManager/Scene/ZIPElement.js');
+
+  const ZIPManager = Module.require('assets/ProjectManager/ZIPManager.js')();
+
   // props
   const sceneprops = {
     path: '/',
@@ -282,22 +286,33 @@ module.exports = () => {
 
       launchScene = false;
     } else {
-      if (!launched && tmpRedraws == null) {
+      if (tmpRedraws == null) {
         tmpRedraws = new Map(local_redraws);
         tmpOpts = JSON.stringify(JSON.stringify(opts));
       }
-      let qs = scene.getWorkerObjectQueueSize();
-      if (qs == 0 && !launched) {
-        launched = true;
+      // let qs = scene.getWorkerObjectQueueSize();
+      // if (qs == 0) {
+        // launched = true;
 
         if (tmpRedraws != null) {
           for (const [key, value] of tmpRedraws) {
-            if (tmpOpts && tmpOpts[key]) {
-              if (tmpOpts[key]['parentMat'])
-                tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
-              value.render(tmpOpts[key]);
-            } else {
-              value.render(tmpOpts);
+            let pass = true;
+            if (value.item.type == "object"){
+              let obj = scene.getObject(value.item.key);
+              if (!obj || obj.getStatus() == 0){
+                if (obj) redraws.set(key, value);
+                pass = false;
+              }
+            }
+
+            if (pass){
+              if (tmpOpts && tmpOpts[key]) {
+                if (tmpOpts[key]['parentMat'])
+                  tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
+                value.render(tmpOpts[key]);
+              } else {
+                value.render(tmpOpts);
+              }
             }
           }
 
@@ -305,7 +320,7 @@ module.exports = () => {
           tmpRedraws = null;
           tmpOpts = null;
         }
-      }
+      // }
 
       // scene.clearWebworkers();
     }
@@ -327,21 +342,53 @@ module.exports = () => {
   // Deprecating
   const processRedraw = (opts) => {};
 
-  const parseScene = (children, parent, configs, opt) => {
-    const tree =
-      sceneprops.project.data['scene'][sceneprops.project.data.selected_scene]
-        .tree;
-    const data =
-      sceneprops.project.data['scene'][sceneprops.project.data.selected_scene]
-        .data;
+  // add zip
+  const addZip = (o, is_async)=> {
+    // is is_async, o is the payload
+    const obj_ = o;
+    let cb = ()=> {
+      let obj = obj_;
 
+      if (is_async) obj = ZIPElementModel(o);
+      let zip_node = ZIPManager.zips.get(obj.url);
+      let zip = zip_node.archive;
+      sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+      let d = getZIPData(zip);
+
+      let addPrefix = (leaf)=> {
+        for (var node of leaf) {
+          if (node.key) node.key = obj.item.key + "_" + node.key;
+          if (node.skey) node.skey = obj.item.key + "_" + node.skey;
+          if (node.children) addPrefix(node.children);
+        }
+      }
+
+      addPrefix(d.tree);
+
+      for (var c of d.tree) {
+        _addObject(c, d.data, obj, obj.key, {
+          prefix: obj.item.key,
+          zip_id: obj.url
+        });
+      }
+    }
+    if (is_async) ZIPManager.callbacks.add(o.data.url, cb)
+    else cb();
+  }
+
+  const parseScene = (data, children, parent, configs, opt) => {
+    opt = opt || {}
+    
     children.forEach((child) => {
       var obj;
+
+      let originalKey = child.key;
+      if (opt && opt.prefix) originalKey = child.key.split("_")[1];
 
       var payload = {
         child,
         parent,
-        data: data[child.key] || {},
+        data: data[originalKey] || {},
         addToRedraw,
         addToUpdated,
         sceneprops,
@@ -355,17 +402,6 @@ module.exports = () => {
           break;
         case 'object-hud':
         case 'object':
-          if (child.type == 'object') {
-            payload.loadingCallback = (obj) => {
-              // console.log('loaded')
-              // Physics.addObject({
-              //     object: obj,
-              //     mass: 0,
-              //     friction: 0,
-              //     ghost: true,
-              // })
-            };
-          }
           obj = ObjectModel(payload);
           if (
             payload.data['controller'] != undefined &&
@@ -393,7 +429,7 @@ module.exports = () => {
 
         // configurations
         case 'configuration':
-          configs.push({ child, parent });
+          configs.push({ child, parent, data, opt });
           break;
 
         case 'HTMLElement':
@@ -424,20 +460,28 @@ module.exports = () => {
             objectControllerkeys.set(child.key, payload.data['controller']);
           break;
 
+        case 'ZIPElement':
+          obj = ZIPElementModel(payload);
+                
+          if (!obj){            
+            addZip(payload, true);
+          }
+          
+          break;
+
         default:
           obj = GenericObjectModel(payload);
           break;
       }
 
       if (obj) {
-        // if (opt == "tree") obj.clearRender();
-
         sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
 
         if (!payload.parent) sceneList.push(obj); // only for root items
-        if (child.children) {
-          parseScene(child.children, obj, configs, opt);
-        }
+
+        if (obj.item.type == "ZIPElement") addZip(obj, false);
+
+        if (child.children) parseScene(data, child.children, obj, configs, opt);
       }
     });
 
@@ -539,10 +583,32 @@ module.exports = () => {
     });
   };
 
+
+  const loadPathsZip = (tree, parent, prefix) => {
+    tree.forEach((item) => {
+      if (item.type != 'folder') {
+        sceneprops.objPaths[prefix + "_" + item.key] = "files/" + item.key;
+      }
+
+      let leaf = {
+        key: item.key,
+        title: item.title,
+        type: item.type,
+        item,
+        parent,
+        children: item.children,
+      };
+      sceneprops.assetIndex.set(prefix + "_" + item.key, leaf);
+
+      if (item.children) loadPathsZip(item.children, leaf, prefix);
+    });
+  };
+
   const regenerateMeshes = () => {};
 
-  const loadPaths = (tree, parent) => {
-    tree.forEach((item) => {
+  const loadPaths = async (tree, parent) => {
+    // tree.forEach(async (item) => {
+    for (var item of tree) {
       if (item.type != 'folder') {
         if (/^\d+\.\d+\..+$/.test(sceneprops.project.data.version)) {
           sceneprops.objPaths[item.key] = sceneprops.path + item.key;
@@ -557,14 +623,42 @@ module.exports = () => {
         key: item.key,
         title: item.title,
         type: item.type,
+        url: item.url,
+        async: item.async,
         item,
         parent,
         children: item.children,
       };
       sceneprops.assetIndex.set(item.key, leaf);
 
+      if (leaf.url != undefined){
+        try {
+          const item_ = item;
+          let cb = {
+            onDownloadProgress: (response)=> {
+              if (URLLoader) {
+                URLLoader.percentage = response.loaded/response.total;
+                // URLLoader.close();
+              }
+            },
+
+            onFinished: (zip_object)=> {
+              const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
+              loadPathsZip(assets, leaf, item_.url);
+              ZIPManager.callbacks.run(item_.url);
+            }
+          }
+
+          if (leaf.async) ZIPManager.addZip(item.url, cb);
+          else await ZIPManager.addZip(item.url, cb);
+
+        } catch (error) {
+          
+        }
+      }
+
       if (item.children) loadPaths(item.children, leaf);
-    });
+    };
   };
 
   const constructGraph = (opt) => {
@@ -577,7 +671,11 @@ module.exports = () => {
     sceneprops.configurations.clear();
     sceneprops.config_idx = 0;
 
-    const configs = parseScene(tree, undefined, [], opt);
+    const data =
+      sceneprops.project.data['scene'][sceneprops.project.data.selected_scene]
+        .data;
+
+    const configs = parseScene(data, tree, undefined, [], opt);
     parseSceneConfigurations(configs, undefined, opt);
     if (treeGenerated) {
       try {
@@ -633,6 +731,31 @@ module.exports = () => {
     Module.toggleNativeLoader(false);
   };
 
+  const getZIPData = (archive)=> {
+    // parse scene
+    const readJsonFile = (filename) => {
+      return JSON.parse(archive.fopens(filename));
+    };
+
+    // Read json files form zip
+    const project = readJsonFile('project.json');
+
+    const { startingScene } = project;
+    const entities = readJsonFile(`scenes/${startingScene}/entities.json`);
+    const world = readJsonFile(`scenes/${startingScene}/world.json`);
+    const tree = readJsonFile(`scenes/${startingScene}/tree.json`);
+    const configurations = readJsonFile(`scenes/${startingScene}/configurations.json`);
+    
+    return {
+      data: {
+        world,
+        ...entities,
+      },
+      tree: ZIPManager.mergeConfigurationsIntoTree(tree, configurations)
+    }
+
+  }
+
   const addObject = (child, data, parent, key) => {
     const obj = _addObject(child, data, parent, key);
     // regenerateLinks(obj);
@@ -640,16 +763,21 @@ module.exports = () => {
     return obj;
   };
 
-  const _addObject = (child, data, parent, key) => {
+  const _addObject = (child, data, parent, key, opt) => {
+    opt = opt || {};
+
+    let originalKey = child.key;
+    if (opt.prefix) originalKey = child.key.split("_")[1];
+    
     var payload = {
       key,
       child,
       parent,
-      data: data[child.key],
+      data: data[originalKey],
       addToRedraw,
       addToUpdated,
       sceneprops,
-      opt: undefined,
+      opt,
     };
 
     var obj;
@@ -719,6 +847,16 @@ module.exports = () => {
       case 'KinematicCharacterController':
         obj = Physics.add(payload);
         break;
+
+      case 'ZIPElement':
+        obj = ZIPElementModel(payload);
+        if (!obj){
+          obj = undefined;
+          addZip(payload, true);
+        }
+        
+        break;
+        
       default:
         obj = GenericObjectModel(payload);
         break;
@@ -727,9 +865,13 @@ module.exports = () => {
     if (obj) {
       sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
 
+      if (obj.item.type == "ZIPElement"){
+        addZip(obj, false);
+      }
+
       if (child.children) {
         for (let x = 0; x < child.children.length; x++) {
-          _addObject(child.children[x], data, obj, payload.key);
+          _addObject(child.children[x], data, obj, payload.key, opt);
         }
       }
 
@@ -776,7 +918,7 @@ module.exports = () => {
     // regenerateLinks(obj);
   };
 
-  const generate = (fullpath, p) => {
+  const generate = async (fullpath, p) => {
     sceneprops.path = fullpath;
     sceneprops.project = p;
 
@@ -785,7 +927,7 @@ module.exports = () => {
     sceneprops.worldController = undefined;
     sceneprops.assetIndex.clear();
 
-    loadPaths(sceneprops.project.data['assets'].tree);
+    await loadPaths(sceneprops.project.data['assets'].tree);
     // Load world controller
     // TODO: Change version check so it use semver library
     if (/^\d+\.\d+\..+$/.test(p.data.version)) {
@@ -1001,6 +1143,13 @@ module.exports = () => {
     launched: {
       get: () => {
         return launched;
+      },
+      set: (v) => {},
+    },
+
+    ZIPManager: {
+      get: () => {
+        return ZIPManager;
       },
       set: (v) => {},
     },

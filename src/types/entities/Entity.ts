@@ -26,6 +26,14 @@ export type Entity = {
   controller?: CherryKey;
   code?: Code;
 
+  render_back_faces?: boolean;
+  render_fov_visible?: boolean;
+  render_fov_lod?: boolean;
+
+  // asset zip
+  url?: string;
+  async?: boolean;
+
   // Video≤
   src?: string;
   pixel?: Vector3;

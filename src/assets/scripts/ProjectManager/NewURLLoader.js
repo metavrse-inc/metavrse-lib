@@ -7,10 +7,13 @@ module.exports = (opt) => {
   opt = opt || {};
 
   let idb;
+  let localdb;
   if (Module.canvas) idb = Module.require('assets/idb.js')();
   const surface = Module.getSurface();
   const scene = surface.getScene();
   const axios = Module.require('assets/axios.min.js');
+
+  const { pullFilesIDB } = Module.require( 'assets/ProjectManager/URLLoader.js' )();
 
   const sleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -19,9 +22,17 @@ module.exports = (opt) => {
   const newLoader = {};
   let fullpath = '/';
 
-  const { pullFilesIDB } = Module.require(
-    'assets/ProjectManager/URLLoader.js'
-  )();
+  const loadDB = async ()=> {
+    if (!localdb){
+      localdb = await idb.openDB('workspace', 21, {
+        upgrade(db) {
+          db.createObjectStore('FILE_DATA');
+        },
+      });
+    }
+  }
+
+  loadDB();
 
   // Somewhere inside this file we need to put the new endpoint
   const fetchData = async (url, password, options, callback) => {
@@ -37,11 +48,8 @@ module.exports = (opt) => {
     }
 
     if (lastTimeDownloaded) {
-      headers['If-Modified-Since'] = lastTimeDownloaded;
+      // headers['If-Modified-Since'] = lastTimeDownloaded;
     }
-
-    let head_res = await axios.head(url, {headers});
-    console.log(head_res)
 
     const internalFetch = (internalHeaders) => {
       let config = {
@@ -73,11 +81,7 @@ module.exports = (opt) => {
             const data = new Uint8Array(res.data);
 
             if (Module.canvas) {
-              let localdb = await idb.openDB('workspace', 21, {
-                upgrade(db) {
-                  db.createObjectStore('FILE_DATA');
-                },
-              });
+              
               let tx = localdb.transaction('FILE_DATA', 'readwrite');
 
               // clear current data
@@ -92,8 +96,8 @@ module.exports = (opt) => {
               );
               await tx.done;
 
-              localdb.close();
-              localdb = null;
+              // localdb.close();
+              // localdb = null;
               tx = null;
 
               // give GC a chance
@@ -109,7 +113,7 @@ module.exports = (opt) => {
               }
             }
 
-            callback(data);
+            callback(fullpath + 'project.zip', res.status);
           }
 
           if (res.status === 304) {
@@ -118,169 +122,13 @@ module.exports = (opt) => {
 
               options.onProjectLoadingStart && options.onProjectLoadingStart();
 
-              const archive = Module.ProjectManager.archive;
-              archive.close();
-              archive.open(fullpath + 'project.zip');
-              scene.setFSZip(archive); // enable project archive
-
-              var f = archive.fopens('project.json'); //fopens string - fopen arraybuffer
-              let project = JSON.parse(f);
-
               options.onDownloadProgress &&
                 options.onDownloadProgress({
                   total: 100,
                   loaded: 100,
                 });
 
-              callback(project);
-            } catch (e) {
-              internalFetch({
-                ...internalHeaders,
-                'If-Modified-Since': undefined,
-              });
-            }
-          }
-
-          if (res.status === 404) {
-            options.onProjectNotFound && options.onProjectNotFound();
-          }
-
-          if (res.status === 401) {
-            options.onIncorrectPassword &&
-              options.onIncorrectPassword(password);
-          }
-
-          if (res.status === 403) {
-            options.onLimitsExceeded && options.onLimitsExceeded();
-          }
-        })
-        .catch(() => {
-          options.onProjectFileInvalid && options.onProjectFileInvalid();
-        });
-    };
-
-    
-    const internalFetch2 = (internalHeaders) => {
-      fetch(url, { headers: internalHeaders })
-        .then(async (res) => {
-          if (res.status === 200) {
-            if (!res.body || !res.headers) {
-              options.onProjectFileInvalid && options.onProjectFileInvalid();
-              return;
-            }
-            options.onProjectLoadingStart && options.onProjectLoadingStart();
-            localStorage.setItem(lsKey, res.headers.get('Last-Modified'));
-
-            const reader = res.body.getReader();
-            const contentLength = res.headers.get('Content-Length') ?? 0;
-            let loaded = 0;
-
-            const consume = async () => {
-              return new Response(
-                new ReadableStream({
-                  start(controller) {
-                    read();
-                    function read() {
-                      reader
-                        .read()
-                        .then(({ done, value }) => {
-                          if (done) {
-                            if (contentLength === 0) {
-                              options.onDownloadProgress &&
-                                options.onDownloadProgress({
-                                  total: contentLength,
-                                  loaded: loaded,
-                                });
-                            }
-
-                            controller.close();
-                            return;
-                          }
-
-                          loaded += value.byteLength;
-                          options.onDownloadProgress &&
-                            options.onDownloadProgress({
-                              total: contentLength,
-                              loaded: loaded,
-                            });
-                          controller.enqueue(value);
-                          read();
-                        })
-                        .catch((error) => {
-                          console.error(error);
-                          controller.error(error);
-                        });
-                    }
-                  },
-                })
-              );
-            };
-
-            const buff = await consume();
-
-            const data = await buff.arrayBuffer();
-
-            if (Module.canvas) {
-              let localdb = await idb.openDB('workspace', 21, {
-                upgrade(db) {
-                  db.createObjectStore('FILE_DATA');
-                },
-              });
-              let tx = localdb.transaction('FILE_DATA', 'readwrite');
-
-              // clear current data
-              await tx.store.delete(
-                IDBKeyRange.bound(fullpath, fullpath + '\uffff')
-              );
-
-              // add new data
-              await tx.store.put(
-                new Blob([new Uint8Array(data)]),
-                fullpath + 'project.zip'
-              );
-              await tx.done;
-
-              localdb.close();
-              localdb = null;
-              tx = null;
-
-              // give GC a chance
-              await sleep(100);
-
-              if (Module.FS) {
-                Module.FS.writeFile(
-                  fullpath + 'project.zip',
-                  new Uint8Array(data)
-                );
-              } else {
-                surface.writeFile(fullpath + 'project.zip', data);
-              }
-            }
-
-            callback(data);
-          }
-
-          if (res.status === 304) {
-            try {
-              await pullFilesIDB(fullpath);
-
-              options.onProjectLoadingStart && options.onProjectLoadingStart();
-
-              const archive = Module.ProjectManager.archive;
-              archive.close();
-              archive.open(fullpath + 'project.zip');
-              scene.setFSZip(archive); // enable project archive
-
-              var f = archive.fopens('project.json'); //fopens string - fopen arraybuffer
-              let project = JSON.parse(f);
-
-              options.onDownloadProgress &&
-                options.onDownloadProgress({
-                  total: 100,
-                  loaded: 100,
-                });
-
-              callback(project);
+              callback(fullpath + 'project.zip', res.status);
             } catch (e) {
               internalFetch({
                 ...internalHeaders,
@@ -391,7 +239,7 @@ module.exports = (opt) => {
   };
 
   // Temporary name, you can change it
-  const tempMethodName = async (url, password, options, cb) => {
+  const loadURL = async (url, password, options, cb) => {
     fetchData(url, password, options, async (data) => {
       if (!data) throw Error('No data found!');
 
@@ -399,6 +247,8 @@ module.exports = (opt) => {
       archive.close();
       archive.open(fullpath + 'project.zip');
       scene.setFSZip(archive);
+      scene.setActiveZip();
+      // scene.setActiveZip("zip_name"); // nothing passed in will set the default zip
 
       const readJsonFile = (filename) => {
         return JSON.parse(archive.fopens(filename));
@@ -449,6 +299,8 @@ module.exports = (opt) => {
   };
 
   return Object.assign(newLoader, {
-    tempMethodName,
+    loadURL,
+    fetchData,
+    mergeConfigurationsIntoTree
   });
 };

@@ -21,6 +21,8 @@ module.exports = () => {
   let payload = undefined;
   let projectRunning = false;
 
+  let published_url =  location.protocol + '//' + location.host;
+
   const surface = Module.getSurface();
   const scene = surface.getScene();
 
@@ -84,6 +86,7 @@ module.exports = () => {
       URLLoader.visible = false;
 
       if (archive !== null) archive.close();
+
       scene.setFSZip(); // pass nothing, will reset archive pointer
 
       Module.clearEventListeners();
@@ -137,16 +140,16 @@ module.exports = () => {
   };
 
   const loadNewURL = async (url, password, options = {}) => {
-    await NewURLLoader.tempMethodName(url, password, options, (projectData) => {
+    await NewURLLoader.loadURL(url, password, options, (projectData) => {
       // Change assets path so the new structure is readable in CherryGL
       Scenegraph.path = 'files/';
       loadScene(projectData, true);
     });
   };
 
-  const loadScene = function (project, launch) {
+  const loadScene = async (project, launch)=> {
     if (launch) URLLoader.visible = true;
-    Scenegraph.generate(Scenegraph.path, project);
+    await Scenegraph.generate(Scenegraph.path, project);
 
     if (launch) {
       projectRunning = true;
@@ -322,6 +325,22 @@ module.exports = () => {
         // } else {
         //     archive = v;
         // }
+      },
+    },
+    published_url: {
+      get: () => {
+        return published_url;
+      },
+      set: (v) => {
+        published_url = v;
+      },
+    },
+
+    ZIPManager: {
+      get: () => {
+        return Scenegraph.ZIPManager;
+      },
+      set: (v) => {
       },
     },
   });

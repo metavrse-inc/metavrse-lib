@@ -16,7 +16,7 @@ type RequiredProperties =
   | 'cast_shadow'
   | 'visible';
 
-type OptionalProperties = 'controller' | 'code' | 'autoscale' | 'pivot' | 'hud';
+type OptionalProperties = 'controller' | 'code' | 'autoscale' | 'pivot' | 'hud' | 'render_fov_lod' | 'render_back_faces' | 'render_fov_visible';
 
 export type ObjectEntity = Pick<
   Required<Entity & { type: 'object' }>,

@@ -64,6 +64,7 @@ export * from './entities/VideoEntity';
 export * from './entities/RigidBodyEntity';
 export * from './entities/KinematicCharacterControllerEntity';
 export * from './entities/ConfigurationEntity';
+export * from './entities/ZIPElementEntity';
 
 /**
  * Project types

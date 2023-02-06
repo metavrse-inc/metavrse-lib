@@ -8,6 +8,9 @@ import { objectHudDefaults } from './entities/objectHudDefaults';
 import { videoDefaults } from './entities/videoDefaults';
 import { htmlHudDefaults } from './entities/htmlHudElementDefaults';
 import { worldDefaults } from './entities/worldDefaults';
+import { ZIPElementDefaults } from './entities/ZIPElementDefaults';
+import { RigidBodyDefaults } from './entities/RigidBodyDefaults';
+import { KinematicCharacterControllerDefaults } from './entities/KinematicCharacterControllerDefaults';
 
 export * from './nodeTypes';
 export * from './htmlHud';
@@ -28,4 +31,7 @@ export const DEFAULTS = {
   videoDefaults,
   htmlHudDefaults,
   worldDefaults,
+  ZIPElementDefaults,
+  RigidBodyDefaults,
+  KinematicCharacterControllerDefaults,
 } as const;

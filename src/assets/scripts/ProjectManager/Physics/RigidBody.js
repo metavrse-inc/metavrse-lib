@@ -13,6 +13,7 @@
     const redrawAddMethod = payload.addToRedraw;
     let sceneprops = payload.sceneprops;
     let scaleT = 0.1;
+    const addToUpdated = payload.addToUpdated;
 
     var _d = payload.data;
 
@@ -120,51 +121,39 @@
         let scales = vec3.create();
         mat4.getScaling(scales, o.parentOpts.transform)
         let size = [extents.f1, extents.f2, extents.f3]
+        
         let q = quat.create();
-        quat.fromEuler(q, ...o.rotate);
+        quat.fromEuler(q, ...o.rotate)
 
-        let positionOriginal = vec3.fromValues(center.f1 * scales[0], center.f2 * scales[1], center.f3 * scales[2])
+        if (o.parent && o.parent.parentOpts){
+            let qParent = quat.create();
+            mat4.getRotation(qParent, o.parent.parentOpts.transform);
+            quat.multiply(q, qParent, q );
+        }
 
-        // mat4.getRotation(q, o.parentOpts.transform)
-        // let position = vec3.create();
-        // mat4.getTranslation(position, o.parentOpts.transform)
+        let position = vec3.create();
+        mat4.getTranslation(position, o.parentOpts.transform)
   
-        // size = args.size || size;
-        // let position = args.position || o.position;
-        // q = args.q || q;
-        // key = args.key || key;
-
         let m4 = mat4.create();
-        mat4.fromRotationTranslation(m4, q, o.position) 
+        mat4.fromRotationTranslation(m4, q, position) 
 
-
-        // pivot
-        const piv = mat4.create();
-        const mi = mat4.create();      // used for pivot point
-        mat4.translate(piv, piv, vec3.fromValues(o.pivot[0] * scales[0], o.pivot[1] * scales[1], o.pivot[2] * scales[2]));
-        mat4.invert(mi, piv);  // used for pivot point
-        mat4.multiply(m4, m4, mi);     // used for pivot point
-  
 
         // geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
         switch (params.shape_type) {            
             case 'cylinder':
-                mat4.translate(m4, m4, positionOriginal);
                 geometry = new Ammo.btCylinderShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
                 break;
             case 'capsule':
-                mat4.translate(m4, m4, positionOriginal);
                 geometry = new Ammo.btCapsuleShape(size[0] * 0.5, size[1]);
                 break;
             case 'sphere':
-                mat4.translate(m4, m4, positionOriginal);
                 geometry = new Ammo.btSphereShape( size[1] * 0.5);
                 break;
             case 'custom-mesh':
 
                 try {
-                    let path = (!scene.hasFSZip() && Module.ProjectManager && Module.ProjectManager.archive) ?  Module.ProjectManager.path : "";
-                    let om = scene.getObjectGeometry(path + params.shape_file);
+                    let path = (!scene.hasFSZip() && Module.ProjectManager && Module.ProjectManager.archive) ?  Module.ProjectManager.path : "files/";
+                    let om = scene.getObjectGeometry(o.zip_id, path + params.shape_file);
                     const mesh = new Ammo.btTriangleMesh(false, false);
                     let triangles = om.triangles;
                     let verts = om.vertices;
@@ -201,7 +190,6 @@
 
             case 'bounding-box':
             default:
-                mat4.translate(m4, m4, positionOriginal);
                 geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
                 break;
         }
@@ -234,6 +222,8 @@
             body.setCollisionFlags(body.getCollisionFlags() | 4);
         } else if (mass == 0) {
             body.setCollisionFlags(body.getCollisionFlags() | 1)
+        } else {
+            // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT)
         }
 
         body.setUserIndex(object.idx)
@@ -255,6 +245,7 @@
 
     render = (opts) => {
         opts = opts || {};
+        let renderTransform = false;
 
         if (!isLoaded){
             isLoaded = true;
@@ -282,28 +273,23 @@
                 mat4.getScaling(scales, o.parentOpts.transform)
                 
                 let q = quat.create();
-                quat.fromEuler(q, ...o.rotate);
-
+                // let q3 = quat.create();
+                quat.fromEuler(q, ...o.rotate)
                 // mat4.getRotation(q, o.parentOpts.transform)
-                // let position = vec3.create();
-                // mat4.getTranslation(position, o.parentOpts.transform)
-        
-                let positionOriginal = vec3.fromValues(center.f1 * scales[0], center.f2 * scales[1], center.f3 * scales[2])
+                // quat.sub(q, q, q3);
 
-                // 3d transformation
-                let m4 = mat4.create();
-                mat4.fromRotationTranslation(m4, q, o.position) 
-
-                if (params.shape_type != "custom-mesh"){
-                    mat4.translate(m4, m4, positionOriginal);
+                if (o.parent && o.parent.parentOpts){
+                    let qParent = quat.create();
+                    mat4.getRotation(qParent, o.parent.parentOpts.transform);
+                    quat.multiply(q, qParent, q);
                 }
 
-                // pivot
-                const piv = mat4.create();
-                const mi = mat4.create();      // used for pivot point
-                mat4.translate(piv, piv, vec3.fromValues(o.pivot[0] * scales[0], o.pivot[1] * scales[1], o.pivot[2] * scales[2]));
-                mat4.invert(mi, piv);  // used for pivot point
-                mat4.multiply(m4, m4, mi);     // used for pivot point
+                let position = vec3.create();
+                mat4.getTranslation(position, o.parentOpts.transform)
+        
+                // 3d transformation
+                let m4 = mat4.create();
+                mat4.fromRotationTranslation(m4, q, position) 
 
                 // rigidbody transformation
                 let q2 = quat.create();
@@ -339,33 +325,36 @@
             var p = TRANSFORM_AUX.getOrigin();
             var q = TRANSFORM_AUX.getRotation();
 
+            let scales = vec3.create();
+            mat4.getScaling(scales, o.parentOpts.transform)
+
             // physics
             let m4 = mat4.create();
-            mat4.fromRotationTranslation(m4, [q.x(), q.y(), q.z(), q.w()], [p.x(), p.y(), p.z()]);
+            mat4.fromRotationTranslationScale(m4, [q.x(), q.y(), q.z(), q.w()], [p.x(), p.y(), p.z()], scales);
 
-            // adjusted
+            // physics transformation
+            let q2 = quat.create();
+            quat.fromEuler(q2, ...params.rotate);
             let m42 = mat4.create();
-            let qq = quat.create();
-            quat.fromEuler(qq, ...params.rotate)
-            mat4.fromRotationTranslation(m42, qq, params.position);
+            mat4.fromRotationTranslation(m42, q2, params.position);
             mat4.invert(m42, m42)
 
-            // apply physics offset to object
-            mat4.multiply(m4, m4, m42);
+            mat4.multiply(m4, m42, m4);
 
-            let qF = quat.create();
-            let pF = vec3.create();
+            // adjust matrix directly
+            _object.setTransformMatrix(m4);
 
-            mat4.getRotation(qF, m4)
-            mat4.getTranslation(pF, m4)
+            try {
+                let FOVMeshes = o.FOVMeshes;
+                for (var m of FOVMeshes) {
+                    m.render({transform: m4})
+                }
 
-            let distance = vec3.distance(o.position, pF);
-            if (distance > 0.0001) o.position = pF;
-
-            let euler = quaternionToEuler(qF, o.rotate)
-            if (euler[0] != o.rotate[0] || euler[1] != o.rotate[1] || euler[2] != o.rotate[2]) {
-               o.rotate = euler;
+            } catch (error) {
+                
             }
+
+            Module.ProjectManager.isDirty = true;
          }
 
          for (var [k, funcUp] of updateHandlers) {
@@ -405,6 +394,8 @@
     let setProperty = (param, val, redraw)=> {
         params[param] = val;
         addToRedraw(redraw);
+        addToUpdated(child.key, 'changed', { prop : param, value: val });
+
     }
 
     // Props and Methods

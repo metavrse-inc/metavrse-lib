@@ -359,6 +359,11 @@ module.exports = (payload) => {
 
   customAnimations = d['animations'] !== undefined ? [...d['animations']] : [];
 
+  // console.log(payload)
+  // zips
+  let zip_id = (payload.opt && payload.opt.zip_id) ? payload.opt.zip_id : (d['zip_id'] !== undefined ? d['zip_id'] : "default");
+// console.log(zip_id)
+
   //
   const finalTransformation = mat4.create();
   let finalVisibility = transformation.visible;
@@ -940,6 +945,8 @@ module.exports = (payload) => {
 
   // meshes
   const getPathByVersion = () => {
+    if (zip_id != "default") return "files/";
+
     if (/^\d+\.\d+\..+$/.test(sceneprops.project.data.version)) {
       return Module.ProjectManager.path;
     }
@@ -1020,11 +1027,11 @@ module.exports = (payload) => {
     let obj = scene.getObject(child.key);
     let isLoaded = true;
     if (!obj) {
-      const path = !isNaN(child.id)
+      const path = !isNaN(child.id) && zip_id == "default"
         ? Module.ProjectManager.objPaths[String(child.id)]
-        : String(child.id);
+        : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
       try {
-        obj = scene.addObject(String(child.key), path);
+        obj = scene.addObject(zip_id, String(child.key), path);
         isLoading = 1;
       } catch (error) {
         renderList = [];
@@ -1053,7 +1060,6 @@ module.exports = (payload) => {
 
     if (isLoading == 1){
       isLoading = 2;
-      addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
       getAnimationList();
 
     }
@@ -1128,9 +1134,10 @@ module.exports = (payload) => {
 
             if (option == 'render_back_faces') {
               if (value > -1) {
-                obj.setParameter(Number(meshid), option, Boolean(value));
+                obj.setParameter(zip_id, Number(meshid), option, Boolean(value));
               } else {
                 obj.setParameter(
+                  zip_id, 
                   Number(meshid),
                   option,
                   transformation[option]
@@ -1174,11 +1181,12 @@ module.exports = (payload) => {
                   video.textureId == null || video.textureId == ''
                     ? ''
                     : video.textureId;
-                obj.setParameter(Number(meshid), option, textureID);
+                obj.setParameter(zip_id, Number(meshid), option, textureID);
               }
             } else if (type == 'object') {
               if (rgbs.includes(option)) {
                 obj.setParameter(
+                  zip_id, 
                   Number(meshid),
                   option,
                   value[0] / 255,
@@ -1187,6 +1195,7 @@ module.exports = (payload) => {
                 );
               } else {
                 obj.setParameter(
+                  zip_id, 
                   Number(meshid),
                   option,
                   value[0],
@@ -1228,12 +1237,13 @@ module.exports = (payload) => {
                   transparencyMeshRow.paths += getPathByVersion() + value + ';';
                 } else
                   obj.setParameter(
+                    zip_id, 
                     Number(meshid),
                     option + channel,
                     getPathByVersion() + value
                   );
               } else {
-                obj.setParameter(Number(meshid), option, value);
+                obj.setParameter(zip_id, Number(meshid), option, value);
               }
             }
 
@@ -1344,11 +1354,11 @@ module.exports = (payload) => {
     }
 
     for (let [meshid, value] of pbrBundle) {
-      obj.setParameter(Number(meshid), value.options, value.paths);
+      obj.setParameter(zip_id, Number(meshid), value.options, value.paths);
     }
 
     for (let [meshid, value] of transparencyBundle) {
-      obj.setParameter(Number(meshid), value.options, value.paths);
+      obj.setParameter(zip_id, Number(meshid), value.options, value.paths);
     }
 
     if (renderTransformation || renderVisibility || renderMesh) {
@@ -1401,7 +1411,7 @@ module.exports = (payload) => {
   const regenerateLink = (category, type, link) => {};
 
   // added
-  // addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
+  addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
 
   setProperty('visible', transformation.visible);
   setProperty('position', transformation.position);
@@ -1414,6 +1424,10 @@ module.exports = (payload) => {
   setProperty('show_shadow', transformation.show_shadow);
   setProperty('cast_shadow', transformation.cast_shadow);
   setProperty('front_facing', transformation.front_facing);
+
+  setProperty('render_back_faces', transformation.render_back_faces);
+  setProperty('render_fov_visible', transformation.render_fov_visible);
+  setProperty('render_fov_lod', transformation.render_fov_lod);
 
   setProperty('pivot', transformation.pivot);
   setProperty('autoscale', transformation.autoscale);
@@ -1626,6 +1640,38 @@ module.exports = (payload) => {
       set: (v) => {
         setProperty('code', v);
       },
+    },
+
+    FOVMeshes: {
+      get: () => {
+        return fov_meshes;
+      },
+      set: (v) => {
+      },
+    },
+
+    zip_id: {
+      get: () => {
+        return zip_id;
+      },
+      set: (v) => {
+        zip_id = v;
+      },
+    },
+
+    render_back_faces: { 
+      get: () => { return getProperty('render_back_faces')[1]; },
+      set: (v) => { setProperty('render_back_faces', v); },
+    },
+
+    render_fov_visible: { 
+      get: () => { return getProperty('render_fov_visible')[1]; },
+      set: (v) => { setProperty('render_fov_visible', v); },
+    },
+
+    render_fov_lod: { 
+      get: () => { return getProperty('render_fov_lod')[1]; },
+      set: (v) => { setProperty('render_fov_lod', v); },
     },
   });
 

@@ -11,4 +11,6 @@ export type Asset = {
   uiVisible?: boolean;
   uiHighlighted?: boolean;
   extension?: Extensions;
+  url?: String;
+  async?: boolean;
 };

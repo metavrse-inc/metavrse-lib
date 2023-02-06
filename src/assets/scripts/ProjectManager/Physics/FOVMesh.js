@@ -4,8 +4,8 @@
  */
  module.exports = (payload) => {
     const Physics = payload.Physics;
-    const Ammo = Physics.Ammo;
-    const PhysicsWorld = Physics.PhysicsWorld;
+    const Ammo = Physics.FOV_Ammo;
+    const PhysicsWorld = Physics.FOV_PhysicsWorld;
     const CollisionFlags = Physics.CollisionFlags;
 
     let child = payload.child;
@@ -85,6 +85,7 @@
     }
     
     let _object = null;
+    var geometry;
     const addObject = (args) => {
         let o = args.parent;
         let key = o.item.key;
@@ -104,12 +105,22 @@
         let scales = vec3.create();
         mat4.getScaling(scales, o.parentOpts.transform)
         let size = [extents.f1, extents.f2, extents.f3]
+        
         let q = quat.create();
-        mat4.getRotation(q, o.parentOpts.transform)
+        quat.fromEuler(q, ...o.rotate)
+
+        if (o.parent && o.parent.parentOpts){
+            let qParent = quat.create();
+            mat4.getRotation(qParent, o.parent.parentOpts.transform);
+            quat.multiply(q, qParent, q);
+        }
+        
         let positionOriginal = vec3.create();
         mat4.getTranslation(positionOriginal, o.parentOpts.transform)
   
-        let position = vec3.fromValues(center.f1 * scales[0], center.f2 * scales[1], center.f3 * scales[2])
+        let position = vec3.fromValues(object.center.f1 * scales[0],
+            object.center.f2 * scales[1], 
+            object.center.f3 * scales[2])
 
         mat4.fromRotationTranslation(object.matrix, q, positionOriginal);
         
@@ -119,7 +130,6 @@
         q = args.q || q;
         key = args.key || key;
   
-        var geometry;
         // console.log(o.item, size)
         geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
         geometry.setLocalScaling(new Ammo.btVector3(...scales));
@@ -158,7 +168,6 @@
 
     render = (opts) => {
         opts = opts || {};
-
         if (!isLoaded){
             isLoaded = true;
             TRANSFORM_AUX = new Ammo.btTransform();
@@ -166,30 +175,38 @@
             addObject(payload)
         } else if (isLoaded && body) {
             if (opts.transform) {
-                // if (reAddTimer) clearTimeout(reAddTimer);
-                // reAddTimer = setTimeout(reAdd);                
                 return;
-                let o = payload.parent;
-                let ms = body.getMotionState();
-                ms.getWorldTransform(TRANSFORM_AUX);
+
+                // TODO
+                let scales = vec3.create();
+                mat4.getScaling(scales, opts.transform)
 
                 let q = quat.create();
-                quat.fromEuler(q, ...o.rotate);
+                mat4.getRotation(q, opts.transform);
 
-                TRANSFORM_AUX.setOrigin(new Ammo.btVector3(...o.position));
-                TRANSFORM_AUX.setRotation(new Ammo.btQuaternion(q[0], q[1], q[2], q[3]));
+                let position = vec3.create();
+                mat4.getTranslation(position, opts.transform)
 
-                //
-                // let mn = mat4.clone(o.parentOpts.transform);
-                // // let size = [(1/o.autoscale)/2,(1/o.autoscale)/2,(1/o.autoscale)/2]
-                // // mat4.scale(mn, mn, size)
-                // TRANSFORM_AUX.setFromOpenGLMatrix(mn);
+                let positionMesh = vec3.fromValues(object.center.f1 * scales[0],
+                    object.center.f2 * scales[1], 
+                    object.center.f3 * scales[2])
 
-                ms.setWorldTransform(TRANSFORM_AUX);
+                let m = mat4.create();
+                mat4.fromRotationTranslation(m, q, position);
+                mat4.translate(m, m, positionMesh);
+
+                // geometry.setLocalScaling(new Ammo.btVector3(...scales));
+
+                let ms = body.getMotionState();
+                var transform = new Ammo.btTransform();
+
+                ms.getWorldTransform(transform);
+                transform.setFromOpenGLMatrix(m);
+                ms.setWorldTransform(transform);
+
                 body.setMotionState(ms);
+                // body.setWorldTransform(transform)
 
-                Module.ProjectManager.isDirty = true;
-                
             }
         }
     }
