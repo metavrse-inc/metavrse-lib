@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.24.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.23.0...v1.24.0) (2023-02-06)
+
+
+### Features
+
+* AT-11 Integrate multizip and physics updates ([721f3ec](https://github.com/metavrse-inc/metavrse-lib/commit/721f3ec0bf35b5ee50af8b897b9e5e834132ed16))
+
 ## [1.23.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.22.0...v1.23.0) (2023-02-01)
 
 
