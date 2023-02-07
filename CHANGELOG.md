@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.25.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.25.0...v1.25.1) (2023-02-07)
+
+
+### Bug Fixes
+
+* AT-16 Fixed zip data and cache data deadlocks ([bc79e8f](https://github.com/metavrse-inc/metavrse-lib/commit/bc79e8f7aa621ff42e24655c5953d641045dada1))
+
 ## [1.25.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.24.0...v1.25.0) (2023-02-06)
 
 
