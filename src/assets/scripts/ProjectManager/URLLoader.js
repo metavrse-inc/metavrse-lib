@@ -194,7 +194,7 @@ module.exports = (opt) => {
     localdb.close();
     localdb = null;
 
-    await sleep(100);
+    // await sleep(100);
 
     return true;
   };

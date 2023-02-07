@@ -477,9 +477,9 @@ Module.onSurfaceChanged = function (rotation, width, height) {
     }
   }
 
-  for (var [k, o] of Module.ProjectManager.getObjects()) {
-    if (o.addToRedraw) o.addToRedraw('transform');
-  }
+  // for (var [k, o] of Module.ProjectManager.getObjects()) {
+  //   if (o.addToRedraw) o.addToRedraw('transform');
+  // }
 
   let res = false;
   if (

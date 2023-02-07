@@ -139,13 +139,36 @@ module.exports = () => {
     let local_redraws = new Map(redraws);
     redraws.clear();
 
-    for (const [key, value] of local_redraws) {
-      if (opts && opts[key]) {
-        if (opts[key]['parentMat'])
-          opts[key]['transform'] = opts[key]['parentMat'];
-        value.render(opts[key]);
-      } else {
-        value.render(opts);
+    if (!Module.ProjectManager.projectRunning){
+      for (const [key, value] of local_redraws) {
+        if (opts && opts[key]) {
+          if (opts[key]['parentMat'])
+            opts[key]['transform'] = opts[key]['parentMat'];
+          value.render(opts[key]);
+        } else {
+          value.render(opts);
+        }
+      }
+    } else {
+      for (const [key, value] of local_redraws) {
+        let pass = true;
+        if (value.item.type == "object"){
+          let obj = scene.getObject(value.item.key);
+          if (!obj || obj.getStatus() == 0){
+            if (obj) redraws.set(key, value);
+            pass = false;
+          }
+        }
+  
+        if (pass){
+          if (tmpOpts && tmpOpts[key]) {
+            if (tmpOpts[key]['parentMat'])
+              tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
+            value.render(tmpOpts[key]);
+          } else {
+            value.render(tmpOpts);
+          }
+        }
       }
     }
 
@@ -211,7 +234,7 @@ module.exports = () => {
         }
       }
 
-      scene.clearWebworkers();
+      // scene.clearWebworkers();
 
       launched = true;
 
@@ -271,7 +294,7 @@ module.exports = () => {
         initControllers();
       }
 
-      scene.clearWebworkers();
+      // scene.clearWebworkers();
 
       // TODO: launch scene controller if any
 
@@ -322,7 +345,7 @@ module.exports = () => {
         }
       // }
 
-      // scene.clearWebworkers();
+      // scene.clearWebworkers();      
     }
 
     let responseList = new Map(updatedList);
