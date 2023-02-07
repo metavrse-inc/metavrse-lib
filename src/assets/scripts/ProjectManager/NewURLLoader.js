@@ -20,26 +20,45 @@ module.exports = (opt) => {
   };
 
   const newLoader = {};
-  let fullpath = '/';
+  // let fullpath = '/';
 
-  const loadDB = async ()=> {
-    if (!localdb){
-      localdb = await idb.openDB('workspace', 21, {
+  const storeInDB = async (fullpath, data)=> {
+    // if (!localdb){
+      const localdb = await idb.openDB('workspace', 21, {
         upgrade(db) {
           db.createObjectStore('FILE_DATA');
         },
       });
-    }
-  }
+    // }
 
-  loadDB();
+    let tx = localdb.transaction('FILE_DATA', 'readwrite');
+
+    // clear current data
+    await tx.store.delete(
+      IDBKeyRange.bound(fullpath, fullpath + '\uffff')
+    );
+
+    // add new data
+    await tx.store.put(
+      new Blob([new Uint8Array(data)]),
+      fullpath + 'project.zip'
+    );
+    await tx.done;
+
+    localdb.close();
+    // localdb = null;
+    tx = null;
+
+    // give GC a chance
+    await sleep(100);
+  }
 
   // Somewhere inside this file we need to put the new endpoint
   const fetchData = async (url, password, options, callback) => {
     const lsKey = `${url}_lastTimeDownloaded`;
     const headers = {};
     const lastTimeDownloaded = localStorage.getItem(lsKey);
-    fullpath = url.replace(/[^\w\s]/gi, '') + '/';
+    const fullpath = url.replace(/[^\w\s]/gi, '') + '/';
 
     if (Module.FS) Module.FS.createPath('/', fullpath, true, true);
 
@@ -51,7 +70,7 @@ module.exports = (opt) => {
       headers['If-Modified-Since'] = lastTimeDownloaded;
     }
 
-    const internalFetch = (internalHeaders) => {
+    const internalFetch = (internalHeaders, fullpath) => {
       let config = {
         responseType: 'arraybuffer',
         onDownloadProgress: function (e) {
@@ -69,7 +88,7 @@ module.exports = (opt) => {
       };
 
       axios.get(url, config)
-        .then(async (res) => {
+        .then( (res) => {
           if (res.status === 200) {
             if (!res.data || !res.headers) {
               options.onProjectFileInvalid && options.onProjectFileInvalid();
@@ -82,59 +101,41 @@ module.exports = (opt) => {
 
             if (Module.canvas) {
               
-              let tx = localdb.transaction('FILE_DATA', 'readwrite');
+              storeInDB(fullpath, res.data);
 
-              // clear current data
-              await tx.store.delete(
-                IDBKeyRange.bound(fullpath, fullpath + '\uffff')
+              Module.FS.writeFile(
+                fullpath + 'project.zip',
+                data
               );
-
-              // add new data
-              await tx.store.put(
-                new Blob([new Uint8Array(data)]),
-                fullpath + 'project.zip'
-              );
-              await tx.done;
-
-              // localdb.close();
-              // localdb = null;
-              tx = null;
-
-              // give GC a chance
-              await sleep(100);
-
-              if (Module.FS) {
-                Module.FS.writeFile(
-                  fullpath + 'project.zip',
-                  new Uint8Array(data)
-                );
-              } else {
-                surface.writeFile(fullpath + 'project.zip', data);
-              }
             }
 
             callback(fullpath + 'project.zip', res.status);
           }
 
           if (res.status === 304) {
-            try {
-              await pullFilesIDB(fullpath);
-
-              options.onProjectLoadingStart && options.onProjectLoadingStart();
-
-              options.onDownloadProgress &&
-                options.onDownloadProgress({
-                  total: 100,
-                  loaded: 100,
+            
+            let loadLocal = async (fullpath, status)=>{
+              try {
+                await pullFilesIDB(fullpath);
+  
+                options.onProjectLoadingStart && options.onProjectLoadingStart();
+  
+                options.onDownloadProgress &&
+                  options.onDownloadProgress({
+                    total: 100,
+                    loaded: 100,
+                  });
+  
+                callback(fullpath, status);
+              } catch (e) {
+                internalFetch({
+                  ...internalHeaders,
+                  'If-Modified-Since': undefined,
                 });
-
-              callback(fullpath + 'project.zip', res.status);
-            } catch (e) {
-              internalFetch({
-                ...internalHeaders,
-                'If-Modified-Since': undefined,
-              });
+              }
             }
+
+            loadLocal(fullpath + 'project.zip', res.status);
           }
 
           if (res.status === 404) {
@@ -155,7 +156,7 @@ module.exports = (opt) => {
         });
     };
 
-    internalFetch(headers);
+    internalFetch(headers, fullpath);
   };
 
   const mergeConfigurationsIntoTree = (tree, configurations) => {
@@ -240,6 +241,8 @@ module.exports = (opt) => {
 
   // Temporary name, you can change it
   const loadURL = async (url, password, options, cb) => {
+    const fullpath = url.replace(/[^\w\s]/gi, '') + '/';
+
     fetchData(url, password, options, async (data) => {
       if (!data) throw Error('No data found!');
 
