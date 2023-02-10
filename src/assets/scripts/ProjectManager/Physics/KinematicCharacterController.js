@@ -13,6 +13,7 @@ module.exports = (payload) => {
     const redrawAddMethod = payload.addToRedraw;
     let sceneprops = payload.sceneprops;
     let scaleT = 0.1;
+    const addToUpdated = payload.addToUpdated;
 
     var _d = payload.data;
 
@@ -61,6 +62,10 @@ module.exports = (payload) => {
         rotate: (_d['rotate'] !== undefined) ? [..._d['rotate']] : [0, 0, 0],
         scale: (_d['scale'] !== undefined) ? [..._d['scale']] : [1, 1, 1],
         groupMat: (_d['groupMat'] !== undefined) ? [..._d['groupMat']] : mat4.create(),
+
+        object_position: (_d['object_position'] !== undefined) ? [..._d['object_position']] : [0, 0, 0],
+        object_rotate: (_d['object_rotate'] !== undefined) ? [..._d['object_rotate']] : [0, 0, 0, 1],
+        object_scale: (_d['object_scale'] !== undefined) ? [..._d['object_scale']] : [1, 1, 1],
     };
 
     // console.log(params)
@@ -328,11 +333,13 @@ module.exports = (payload) => {
         var q = TRANSFORM_AUX.getRotation();
 
         let scales = vec3.create();
-        mat4.getScaling(scales, o.parentOpts.transform)
+        mat4.getScaling(scales, o.parentOpts.transform);
 
+        let finalRotation = quat.fromValues(...params.object_rotate);
+        quat.multiply(finalRotation, [q.x(), q.y(), q.z(), q.w()], finalRotation);
         // physics
         let m4 = mat4.create();
-        mat4.fromRotationTranslationScale(m4, [q.x(), q.y(), q.z(), q.w()], [p.x(), p.y(), p.z()], scales);
+        mat4.fromRotationTranslationScale(m4, finalRotation, [p.x(), p.y(), p.z()], scales);
 
         // physics transformation
         let q2 = quat.create();
@@ -347,10 +354,10 @@ module.exports = (payload) => {
         _object.setTransformMatrix(m4);
 
         try {
-            // let FOVMeshes = o.FOVMeshes;
-            // for (var m of FOVMeshes) {
-            //     m.render({transform: [...m4]})
-            // }
+            let FOVMeshes = o.FOVMeshes;
+            for (var m of FOVMeshes) {
+                m.render({transform: [...m4]})
+            }
 
         } catch (error) {
             
@@ -397,14 +404,21 @@ module.exports = (payload) => {
     let setProperty = (param, val, redraw)=> {
         params[param] = val;
         addToRedraw(redraw);
+        addToUpdated(child.key, 'changed', { prop : param, value: val });
     }
 
+    let Object3d = {}
+    Object.defineProperties(Object3d, {
+        rotate: { get: () => { return getProperty('object_rotate'); }, set: (v) => { setProperty('object_rotate', v, ""); } },
+    })
     // Props and Methods
     Object.defineProperties(object, {
         position: { get: () => { return getProperty('position'); }, set: (v) => { setProperty('position', v, "transform"); } },
         scale: { get: () => { return getProperty('scale'); }, set: (v) => { setProperty('scale', v, "transform"); } },
         rotate: { get: () => { return getProperty('rotate'); }, set: (v) => { setProperty('rotate', v, "transform"); } },
         shape_type: { get: () => { return getProperty('shape_type'); }, set: (v) => { setProperty('shape_type', v, "readd"); } },
+        object: { get: () => { return Object3d; }, set: (v) => {} },
+
     })
 
     // Props and Methods

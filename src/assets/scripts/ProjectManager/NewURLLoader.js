@@ -70,7 +70,7 @@ module.exports = (opt) => {
       headers['If-Modified-Since'] = lastTimeDownloaded;
     }
 
-    const internalFetch = (internalHeaders, fullpath) => {
+    const internalFetch = (internalHeaders) => {
       let config = {
         responseType: 'arraybuffer',
         onDownloadProgress: function (e) {
@@ -156,7 +156,7 @@ module.exports = (opt) => {
         });
     };
 
-    internalFetch(headers, fullpath);
+    internalFetch(headers);
   };
 
   const mergeConfigurationsIntoTree = (tree, configurations) => {

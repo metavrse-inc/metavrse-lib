@@ -11,7 +11,7 @@
 
     let ParentElement = Module.canvas.parentElement;
     if (parent) ParentElement = parent.DOMElement;
-    // if (!ParentElement) ParentElement = Module.canvas.parentElement;
+    if (!ParentElement) ParentElement = Module.canvas.parentElement;
 
     var d = data || {};
 

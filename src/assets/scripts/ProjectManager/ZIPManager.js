@@ -19,6 +19,16 @@
     const zips = new Map();
     const sleep = (m) => new Promise(r => setTimeout(r, m));
 
+    var isURL = (string)=> {
+        let url;
+        try {
+          url = new URL(string);
+        } catch (_) {
+          return false;
+        }
+        return url.protocol === "http:" || url.protocol === "https:";
+    }
+
     const callback_list = new Map();
 
     const addCallback = (url, cb)=> {
@@ -49,7 +59,7 @@
     const addZip = (url, options)=> {
         return new Promise((resolve, reject) => {
             // if not url use base published url
-            let full_url = Module.ProjectManager.published_url + "/" + url;
+            let full_url = (isURL(url)) ? url : Module.ProjectManager.published_url + "/" + url;
             
             if (!zips.has(url)){
                 let zip_object = {

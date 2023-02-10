@@ -8,4 +8,5 @@ export const KinematicCharacterControllerDefaults: Omit<KinematicCharacterContro
   shape_type: 'bounding-box',
   groupMat: [],
   mass: 2,
+  type: ""
 };
