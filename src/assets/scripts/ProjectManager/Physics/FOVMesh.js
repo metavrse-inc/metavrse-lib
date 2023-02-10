@@ -79,7 +79,7 @@
 
     const remove = ()=> {
         if (parent) parent.children.delete(child.key);
-        Physics.removeUpdate(child.key);
+        // Physics.removeUpdate(child.key);
 
         deleteBody();        
     }
@@ -146,8 +146,8 @@
         var rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, geometry, localInertia);
         body = new Ammo.btRigidBody(rbInfo);
   
-        body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE  | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
-        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE );
+        body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_STATIC_OBJECT | CollisionFlags.CF_NO_CONTACT_RESPONSE  | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
+        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_STATIC_OBJECT | CollisionFlags.CF_NO_CONTACT_RESPONSE );
 
         body.setUserIndex(object.idx);
         PhysicsWorld.addRigidBody(body, 16, -1);
@@ -175,9 +175,6 @@
             addObject(payload)
         } else if (isLoaded && body) {
             if (opts.transform) {
-                return;
-
-                // TODO
                 let scales = vec3.create();
                 mat4.getScaling(scales, opts.transform)
 
@@ -195,17 +192,11 @@
                 mat4.fromRotationTranslation(m, q, position);
                 mat4.translate(m, m, positionMesh);
 
-                // geometry.setLocalScaling(new Ammo.btVector3(...scales));
+                geometry.setLocalScaling(new Ammo.btVector3(...scales));
 
-                let ms = body.getMotionState();
-                var transform = new Ammo.btTransform();
-
-                ms.getWorldTransform(transform);
-                transform.setFromOpenGLMatrix(m);
-                ms.setWorldTransform(transform);
-
-                body.setMotionState(ms);
-                // body.setWorldTransform(transform)
+                let moveTransform = body.getWorldTransform();
+                moveTransform.setFromOpenGLMatrix(m);
+                body.setWorldTransform(moveTransform);
 
             }
         }

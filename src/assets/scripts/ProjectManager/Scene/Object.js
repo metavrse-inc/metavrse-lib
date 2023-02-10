@@ -1175,13 +1175,15 @@ module.exports = (payload) => {
 
             if (videos.includes(option)) {
               // get texture id from video object
-              const video = Module.ProjectManager.getObject(value);
+              let v = (zip_id != "default" && payload.opt && payload.opt.prefix) ? payload.opt.prefix + "_" + value : value;
+              const video = Module.ProjectManager.getObject(v);
               if (video) {
                 const textureID =
                   video.textureId == null || video.textureId == ''
                     ? ''
                     : video.textureId;
-                obj.setParameter(zip_id, Number(meshid), option, textureID);
+
+                obj.setParameter(Number(meshid), option, textureID);
               }
             } else if (type == 'object') {
               if (rgbs.includes(option)) {
@@ -1370,21 +1372,9 @@ module.exports = (payload) => {
       if (loadingCallback) loadingCallback(object);
     }
 
-    if (!isLoaded && renderTransformation) {
-      for (var value of fov_meshes) {
-        value.render();
-      }
-
+    if (isLoaded && renderTransformation) {
       for (let [key, value] of object.children) {
-        value.render();
-      }
-    } else if (isLoaded && renderTransformation) {
-      for (var value of fov_meshes) {
-        value.render();
-      }
-
-      for (let [key, value] of object.children) {
-        value.render({ transform: true });
+        value.render({ transform: parentOpts.transform });
       }
     }
   };

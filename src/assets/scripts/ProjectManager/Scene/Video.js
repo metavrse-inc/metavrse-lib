@@ -32,6 +32,8 @@ module.exports = (payload) => {
     const getLastKeyInMap = map => Array.from(map)[map.size-1][0]
     const getLastValueInMap = map => Array.from(map)[map.size-1][1];
 
+    let zip_id = (payload.opt && payload.opt.zip_id) ? payload.opt.zip_id : "default";
+
     let transformation = {
         visible: (d['visible'] !== undefined) ? d['visible'] : true,
         position: (d['position'] !== undefined) ? [...d['position']] : [0, 0, 0],
@@ -56,7 +58,10 @@ module.exports = (payload) => {
 
     // init native video
     media = (Module.Video === undefined) ? null : new Module.Video(liveData.pixel);
-    if (media !== null) Module.videoids.set(media, media);
+    if (media !== null) {
+        media.zip_id = zip_id;
+        Module.videoids.set(media, media);
+    }
 
     let srcAsset = sceneprops.assetIndex.get(liveData.src);
     let isAudio = (!srcAsset) ? false : (srcAsset.type == "audio") ? true: false;
@@ -248,8 +253,8 @@ module.exports = (payload) => {
                     if (liveData.isurl) media.src = "URL:" + liveData.src;
                     else {
                         media.type = (!srcAsset) ? 'video': srcAsset.type;
-                        // console.log(srcAsset)
-                        media.src = (!scene.hasFSZip()) ? Module.ProjectManager.path + liveData.src : liveData.src;
+                        let path = (zip_id != "default") ? "files/" + liveData.src : ((!scene.hasFSZip()) ? Module.ProjectManager.path + liveData.src : "files/" + liveData.src)
+                        media.src = path;
                         srcAsset = sceneprops.assetIndex.get(liveData.src);
                         isAudio = (!srcAsset) ? false : (srcAsset.type == "audio") ? true: false;
                     }

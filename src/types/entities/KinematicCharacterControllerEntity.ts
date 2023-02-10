@@ -5,10 +5,10 @@ type RequiredProperties = 'key' | 'shape_type'  | 'position'
 | 'scale'
 | 'groupMat';
 
-type OptionalProperties = 'visible' | 'ghost' | 'props' | 'mass' | 'shape_file';
+type OptionalProperties = 'type' | 'visible' | 'ghost' | 'props' | 'mass' | 'shape_file';
 
 export type KinematicCharacterControllerEntity = Pick<
-  Required<Entity & { type: 'RigidBody' }>,
+  Required<Entity & { type: 'KinematicCharacterController' }>,
   RequiredProperties
 > &
   Pick<Entity, OptionalProperties>;

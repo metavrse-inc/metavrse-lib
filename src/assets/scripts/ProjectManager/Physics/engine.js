@@ -47,6 +47,7 @@
    var syncList = new Map(); // objects that need to be updated
    
    var renderList = new Map(); // objects that need to be updated
+   var allList = new Map(); // objects that need to be updated
    var idx2=0;
    
    var objectIndexes = new Map();   // all physics objects
@@ -132,6 +133,16 @@
          return path;
       }
 
+      var options2 = {}
+      options2['locateFile'] = (path)=> {
+         if (path.endsWith(".wasm")) {
+            let buf = getFile("assets/lib/ammo.wasm.wasm", true);
+            let blob = new Blob([buf], {type: "application/wasm"});
+            return URL.createObjectURL(blob)
+         }
+         return path;
+      }
+
       Ammo = await _Ammo(options);
       collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
       dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
@@ -142,7 +153,7 @@
       physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
 
       /// fov
-      FOV_Ammo = await _Ammo(options);
+      FOV_Ammo = await _Ammo(options2);
       FOV_collisionConfiguration = new FOV_Ammo.btDefaultCollisionConfiguration();
       FOV_dispatcher = new FOV_Ammo.btCollisionDispatcher(FOV_collisionConfiguration);
       FOV_broadphase = new FOV_Ammo.btDbvtBroadphase();
@@ -332,6 +343,7 @@
       
       FOVBox_r = FOVBox(args);
       renderList.set("FOVBox", FOVBox_r)
+      allList.set("FOVBox", FOVBox_r)
       // console.log('adding FOVBox')
    }
 
@@ -585,15 +597,19 @@
          Ammo.destroy(val.physicsBody);
       }
 
-      for (var [key, val] of renderList){
+      for (var [key, val] of allList){
          if (key != "FOVBox"){
             val.remove();
          }
       }
 
       renderList.clear();
+      allList.clear();
 
-      if (FOVBox_r) renderList.set("FOVBox", FOVBox_r)
+      if (FOVBox_r) {
+         renderList.set("FOVBox", FOVBox_r)
+         allList.set("FOVBox", FOVBox_r)
+      }
 
       objectIndexes.clear();
       objectIndexes2.clear();
@@ -619,7 +635,8 @@
       }
 
       if (obj){
-         renderList.set(args.idx, obj)
+         if (type != "FOVMesh") renderList.set(args.idx, obj)
+         allList.set(args.idx, obj)
          return obj;
       }
    }
@@ -634,6 +651,7 @@
       let re = ()=> {
          try {
             renderList.delete("FOVBox")
+            allList.delete("FOVBox")
             FOVBox_r.remove();
             FOVBox_r = null;
             addFOVBox();
@@ -659,7 +677,7 @@
    }
 
    const get = (key)=> {
-      return renderList.get(key);
+      return allList.get(key);
    }
 
    const resetFOV = ()=> {
@@ -671,11 +689,13 @@
       }
 
       try {
-         for (var [key, el] of renderList) {
+         for (var [key, el] of allList) {
             if (el.item.type == "FOVMesh"){
                let ks = el.item.key.split("_")
                // let key = ks[0];
-               let meshid = ks[1];
+               // let meshid = ks[1];
+               let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
+
                el.render_fov_visible = fov_enabled && el.render_fov_visible
                if (el.render_fov_visible) 
                {
@@ -716,8 +736,8 @@
       PhysicsWorld: { get: () => { return physicsWorld; }, set: (v) => {} },
       debugEnabled: { get: () => { return debugEnabled; }, set: (v) => { debugEnabled = v} },
 
-      FOV_Ammo: { get: () => { return Ammo; }, set: (v) => {} },
-      FOV_PhysicsWorld: { get: () => { return physicsWorld; }, set: (v) => {} },
+      FOV_Ammo: { get: () => { return FOV_Ammo; }, set: (v) => {} },
+      FOV_PhysicsWorld: { get: () => { return FOV_physicsWorld; }, set: (v) => {} },
    })
 
    return Object.assign(_physics, {

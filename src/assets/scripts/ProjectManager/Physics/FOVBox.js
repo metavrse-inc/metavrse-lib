@@ -206,7 +206,7 @@
                 if (el.item.type == "FOVMesh"){
                     let ks = el.item.key.split("_")
                     // let key = ks[0];
-                    let meshid = ks[ks.length - 1];
+                    let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
 
                     if (!collisionStatus.has(el.item.key)){
                         collisionStatus.set(el.item.key, {
@@ -226,7 +226,7 @@
                 
                 
             } catch (error) {
-                // console.error(error)
+                console.error(error)
             }
         }
 

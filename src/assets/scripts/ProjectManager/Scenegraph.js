@@ -152,7 +152,7 @@ module.exports = () => {
     } else {
       for (const [key, value] of local_redraws) {
         let pass = true;
-        if (value.item.type == "object"){
+        if (value.item.type == "object" && value.zip_id != "default"){
           let obj = scene.getObject(value.item.key);
           if (!obj || obj.getStatus() == 0){
             if (obj) redraws.set(key, value);
@@ -768,13 +768,17 @@ module.exports = () => {
     const world = readJsonFile(`scenes/${startingScene}/world.json`);
     const tree = readJsonFile(`scenes/${startingScene}/tree.json`);
     const configurations = readJsonFile(`scenes/${startingScene}/configurations.json`);
+    const hudTree = readJsonFile(`scenes/${startingScene}/hud-tree.json`);
     
     return {
       data: {
         world,
         ...entities,
       },
-      tree: ZIPManager.mergeConfigurationsIntoTree(tree, configurations)
+      tree: [ 
+        ...ZIPManager.mergeConfigurationsIntoTree(tree, configurations),
+        ...hudTree,
+      ]
     }
 
   }
