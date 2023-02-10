@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.26.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.25.1...v1.26.0) (2023-02-10)
+
+
+### Features
+
+* AT-20 Physics and video fixes ([89992bc](https://github.com/metavrse-inc/metavrse-lib/commit/89992bc0dd4327e4e54336315990bf34f6c17ef6))
+
 ### [1.25.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.25.0...v1.25.1) (2023-02-07)
 
 
