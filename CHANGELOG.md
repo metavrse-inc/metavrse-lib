@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.27.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.26.0...v1.27.0) (2023-02-14)
+
+
+### Features
+
+* AT-25 Add Props for Physics objects in LIB ([3dadfac](https://github.com/metavrse-inc/metavrse-lib/commit/3dadfac43f69768ebdf375de5c53e41b33461dcd))
+
 ## [1.26.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.25.1...v1.26.0) (2023-02-10)
 
 
