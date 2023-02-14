@@ -61,6 +61,10 @@
         rotate: (_d['rotate'] !== undefined) ? [..._d['rotate']] : [0, 0, 0],
         scale: (_d['scale'] !== undefined) ? [..._d['scale']] : [1, 1, 1],
         groupMat: (_d['groupMat'] !== undefined) ? [..._d['groupMat']] : mat4.create(),
+
+        object_position: (_d['object_position'] !== undefined) ? [..._d['object_position']] : [0, 0, 0],
+        object_rotate: (_d['object_rotate'] !== undefined) ? [..._d['object_rotate']] : [0, 0, 0, 1],
+        object_scale: (_d['object_scale'] !== undefined) ? [..._d['object_scale']] : [1, 1, 1],
     };
 
     let props = {};
@@ -226,7 +230,12 @@
             // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT)
         }
 
-        body.setUserIndex(object.idx)
+        body.setUserIndex(object.idx);
+
+        // apply all params
+        Object.keys(props).map((prop) => {
+            applyParam({type: 'set', prop, value: props[prop]})
+        })
 
         if (ghost) PhysicsWorld.addRigidBody(body, 16, -1);
         else PhysicsWorld.addRigidBody(body);
@@ -243,6 +252,42 @@
         render();
     };
 
+    var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+    var ARGUMENT_NAMES = /([^\s,]+)/g;
+    var getParamNames =(func)=> {
+        try {
+            var fnStr = func.toString().replace(STRIP_COMMENTS, '');
+            var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+            if(result === null)
+                result = [];
+            return result;            
+        } catch (error) {}
+
+        return [];
+    }
+
+    var applyParam = (opts)=> {
+        try {
+            if (Reflect.has(body, opts.prop)){       
+                let fnArgs = getParamNames(Reflect.get(body, opts.prop));
+                let fnValues = JSON.parse("[" + opts.value + "]");
+                
+                if (fnArgs.length != fnValues.length) throw(`[${opts.prop}] Wrong number of arguments, expected ${fnArgs.length} but received ${fnValues.length}`)
+
+                let finalValues = [];
+
+                for (var v of fnValues) {
+                    if (Array.isArray(v) && v.length == 3) finalValues.push(new Ammo.btVector3(...v))
+                    else finalValues.push(v);
+                }
+
+                body[opts.prop](...finalValues);
+            }            
+        } catch (error) {
+            // console.log(error)
+        }
+    }
+
     render = (opts) => {
         opts = opts || {};
         let renderTransform = false;
@@ -258,6 +303,11 @@
             for (var o of renderList){
                 if (o.type == "transform") renderTransform = true;
                 else if (o.type == "readd") reInsert = true;
+                else if (o.type == "props") {
+                    if (o.value.type == "set"){
+                        applyParam(o.value)
+                    }
+                }
             }
 
             if (reInsert){
@@ -315,22 +365,51 @@
         }
     }
 
+    let physics_transformation = {
+        position: [0,0,0],
+        rotation: [0,0,0,1],
+        m4: mat4.create(),
+    }
+
+    let isArrayDifferent = (a1, a2)=> {
+        for (var x=0; x < a1.length; x++){
+            if (a1[x] != a2[x]) return true;
+        }
+
+        return false;
+    }
+
     const update = ()=> {
-        if (params.mass <= 0 || !isLoaded || !body) return;
+        if (!isLoaded || !body) return;
 
         let o = payload.parent;
-        var ms = body.getMotionState();
-         if (ms) {
-            ms.getWorldTransform(TRANSFORM_AUX);
-            var p = TRANSFORM_AUX.getOrigin();
-            var q = TRANSFORM_AUX.getRotation();
 
+        let TRANSFORM_AUX = body.getWorldTransform();
+        var p = TRANSFORM_AUX.getOrigin();
+        var q = TRANSFORM_AUX.getRotation();
+
+        var _p = [p.x(), p.y(), p.z()];
+        var _q = [q.x(), q.y(), q.z(), q.w()];
+
+        let mp = false;
+        let mr = false;
+
+        if (isArrayDifferent(physics_transformation.position, _p)) mp = true;
+        if (isArrayDifferent(physics_transformation.rotation, _q)) mr = true;
+
+        let m4 = physics_transformation.m4;
+        
+        if (mp || mr){
+            physics_transformation.position = _p;
+            physics_transformation.rotation = _q;
+            
             let scales = vec3.create();
             mat4.getScaling(scales, o.parentOpts.transform)
 
+            let finalRotation = quat.fromValues(...params.object_rotate);
+            quat.multiply(finalRotation, _q, finalRotation);
             // physics
-            let m4 = mat4.create();
-            mat4.fromRotationTranslationScale(m4, [q.x(), q.y(), q.z(), q.w()], [p.x(), p.y(), p.z()], scales);
+            mat4.fromRotationTranslationScale(m4, finalRotation, _p, scales);
 
             // physics transformation
             let q2 = quat.create();
@@ -344,20 +423,21 @@
             // adjust matrix directly
             _object.setTransformMatrix(m4);
 
-            try {
-                let FOVMeshes = o.FOVMeshes;
-                for (var m of FOVMeshes) {
-                    m.render({transform: m4})
-                }
+            Module.ProjectManager.isDirty = true;
 
-            } catch (error) {
-                
+        }
+
+        try {
+            let FOVMeshes = o.FOVMeshes;
+            for (var m of FOVMeshes) {
+                m.render({transform: m4})
             }
 
-            Module.ProjectManager.isDirty = true;
-         }
+        } catch (error) {
+            
+        }
 
-         for (var [k, funcUp] of updateHandlers) {
+        for (var [k, funcUp] of updateHandlers) {
             try {
                 funcUp();
             } catch (error) {
@@ -398,14 +478,56 @@
 
     }
 
+    let propdata = {
+        rename: (prop, newprop)=> {
+            if (props[prop] != undefined && prop !== newprop) {
+                props[newprop] = props[prop];
+                delete props[prop];
+
+                addToRedraw("props", {type:'rename', prop, newprop});
+                addToUpdated(child.key, 'changed', { prop: "props", value: props });
+
+            }
+        },
+
+        remove: (prop)=> {
+            if (props[prop] !=undefined) {
+                delete props[prop];
+                addToRedraw("props", {type:'remove', prop});
+                addToUpdated(child.key, 'changed', { prop: "props", value: props });
+            }  
+        },
+
+        get: (prop)=> {
+            return props[prop];
+        },
+
+        set: (prop, value)=>{
+            props[prop] = value;
+            addToRedraw("props", {type:'set', prop, value});
+            addToUpdated(child.key, 'changed', { prop: "props", value: props });
+        }
+    }
+
+    let Object3d = {}
+    Object.defineProperties(Object3d, {
+        rotate: { get: () => { return getProperty('object_rotate'); }, set: (v) => { setProperty('object_rotate', v, ""); } },
+    })
+
     // Props and Methods
     Object.defineProperties(object, {
         // orientation: { get: () => { return (Module.ProjectManager.projectRunning) ? world.orientation : 0; }, set: (v) => { world.orientation = v; } },
+        mass: { get: () => { return getProperty('mass'); }, set: (v) => { setProperty('mass', v, "mass"); } },
         position: { get: () => { return getProperty('position'); }, set: (v) => { setProperty('position', v, "transform"); } },
         scale: { get: () => { return getProperty('scale'); }, set: (v) => { setProperty('scale', v, "transform"); } },
         rotate: { get: () => { return getProperty('rotate'); }, set: (v) => { setProperty('rotate', v, "transform"); } },
         shape_type: { get: () => { return getProperty('shape_type'); }, set: (v) => { setProperty('shape_type', v, "readd"); } },
         shape_file: { get: () => { return getProperty('shape_file'); }, set: (v) => { setProperty('shape_file', v, "readd"); } },
+        ghost: { get: () => { return getProperty('ghost'); }, set: (v) => { setProperty('ghost', v, "ghost"); } },
+        RigidBody: { get: () => { return body; }, set: (v) => {} },
+        object: { get: () => { return Object3d; }, set: (v) => {} },
+        props: { get: () => { return propdata; }, set: (v) => { } },
+   
     })
     
     Object.assign(object, {

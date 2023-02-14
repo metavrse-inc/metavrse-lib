@@ -70,6 +70,8 @@ module.exports = (opt) => {
       headers['If-Modified-Since'] = lastTimeDownloaded;
     }
 
+    if (options.onProjectLoadingStart) options.onProjectLoadingStart();
+
     const internalFetch = (internalHeaders) => {
       let config = {
         responseType: 'arraybuffer',
@@ -94,7 +96,6 @@ module.exports = (opt) => {
               options.onProjectFileInvalid && options.onProjectFileInvalid();
               return;
             }
-            options.onProjectLoadingStart && options.onProjectLoadingStart();
             localStorage.setItem(lsKey, res.headers['last-modified']);
 
             const data = new Uint8Array(res.data);
