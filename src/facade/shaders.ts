@@ -10,31 +10,31 @@ export const SHADER_TYPES: Record<
 > = {
   PBR: {
     albedo: ['albedo_ratio', 'albedo_texture', 'albedo_video'],
-    ao: ['ao_ratio', 'ao_texture', 'ao_texture_channel'],
-    emissive: ['emissive_ratio', 'emissive_texture'],
     metalness: [
       'metalness_ratio',
       'metalness_texture',
       'metalness_texture_channel',
     ],
-    normal: ['normal_texture', 'normal_ratio'],
-    opacity: ['opacity_ratio', 'opacity_texture', 'opacity_texture_channel'],
     roughness: [
       'roughness_ratio',
       'roughness_texture',
       'roughness_texture_channel',
     ],
+    ao: ['ao_ratio', 'ao_texture', 'ao_texture_channel'],
+    normal: ['normal_texture', 'normal_ratio'],
+    emissive: ['emissive_ratio', 'emissive_texture'],
+    opacity: ['opacity_ratio', 'opacity_texture', 'opacity_texture_channel'],
     // NOTE: Not used in PBR shader
     // specular: ['specular_pbr_ratio', 'specular_ibl_ratio'],
-    uv: ['uv_animation'],
+    // uv: ['uv_animation'],
   },
   STANDARD: {
     ambient: ['ambient_ratio', 'ambient_texture', 'ambient_video'],
     diffuse: ['diffuse_ratio', 'diffuse_texture'],
+    specular: ['specular_ratio', 'specular_texture', 'specular_power'],
     normal: ['normal_texture', 'normal_ratio'],
     opacity: ['opacity_ratio', 'opacity_texture', 'opacity_texture_channel'],
-    specular: ['specular_ratio', 'specular_texture', 'specular_power'],
-    uv: ['uv_animation'],
+    // uv: ['uv_animation'],
   },
 };
 

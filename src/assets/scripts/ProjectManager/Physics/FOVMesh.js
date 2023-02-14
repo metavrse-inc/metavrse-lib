@@ -70,7 +70,7 @@
     const deleteBody = ()=> {
         try {
             if (body == null) return;
-            PhysicsWorld.removeRigidBody(body);
+            PhysicsWorld.removeCollisionObject(body);
             Ammo.destroy(body);
         } catch (error) {
             
@@ -130,27 +130,20 @@
         q = args.q || q;
         key = args.key || key;
   
-        // console.log(o.item, size)
         geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
         geometry.setLocalScaling(new Ammo.btVector3(...scales));
   
         var transform = new Ammo.btTransform();
-        // transform.setIdentity();
         transform.setFromOpenGLMatrix(m);
 
-        var motionState = new Ammo.btDefaultMotionState(transform);
-  
-        var localInertia = new Ammo.btVector3(0, 0, 0);
-        geometry.calculateLocalInertia(0, localInertia);
-  
-        var rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, geometry, localInertia);
-        body = new Ammo.btRigidBody(rbInfo);
-  
-        body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_STATIC_OBJECT | CollisionFlags.CF_NO_CONTACT_RESPONSE  | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
-        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_STATIC_OBJECT | CollisionFlags.CF_NO_CONTACT_RESPONSE );
-
+        body = new Ammo.btPairCachingGhostObject();
+        body.setCollisionShape(geometry);
+        body.setWorldTransform(transform);
+        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_KINEMATIC_OBJECT);
+        body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
         body.setUserIndex(object.idx);
-        PhysicsWorld.addRigidBody(body, 16, -1);
+  
+        PhysicsWorld.addCollisionObject(body, 16);
 
         Module.ProjectManager.isDirty = true;
   
