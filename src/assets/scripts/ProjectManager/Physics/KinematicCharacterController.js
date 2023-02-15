@@ -545,15 +545,10 @@ module.exports = (payload) => {
         shape_type: { get: () => { return getProperty('shape_type'); }, set: (v) => { setProperty('shape_type', v, "readd"); } },
         object: { get: () => { return Object3d; }, set: (v) => {} },
         props: { get: () => { return propdata; }, set: (v) => { } },
-
-    })
-
-    // Props and Methods
-    Object.defineProperties(object, {
         controller: { get: () => { return characterController; }, set: (v) => { } },
         onUpdate: { get: () => { return onUpdate; }, set: (v) => { onUpdate = v} },
     })
-    
+
     Object.assign(object, {
         remove,
         render,
