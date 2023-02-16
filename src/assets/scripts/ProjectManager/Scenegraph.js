@@ -1195,6 +1195,22 @@ module.exports = () => {
       return sceneprops.sceneIndex;
     },
 
+    addAsset: (key, item)=> {
+      sceneprops.assetIndex.set(key, item);
+      if (/^\d+\.\d+\..+$/.test(sceneprops.project.data.version)) {
+        sceneprops.objPaths[item.key] = sceneprops.path + item.key;
+      } else {
+        sceneprops.objPaths[item.key] = !scene.hasFSZip()
+          ? sceneprops.path + item.key
+          : item.key;
+      }
+    },
+
+    removeAsset: (key)=> {
+      sceneprops.assetIndex.delete(key);
+      delete sceneprops.objPaths[key];
+    },
+
     getAsset: (key) => {
       return sceneprops.assetIndex.get(key);
     },

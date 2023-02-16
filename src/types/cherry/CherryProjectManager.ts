@@ -33,6 +33,8 @@ export type CherryProjectManager = {
   moveObject: (key: CherryKey, parent?: CherryKey) => any;
   loadPaths: (tree: Asset[]) => void;
   getAsset: (key: CherryKey) => Asset;
+  addAsset: (key: CherryKey, item: any) => void;
+  removeAsset: (key: CherryKey) => void;
   selectScene: (scene: string, callback: () => void) => void;
   // Other methods
   addChangeListener: (callback: (event: any) => void) => void;
