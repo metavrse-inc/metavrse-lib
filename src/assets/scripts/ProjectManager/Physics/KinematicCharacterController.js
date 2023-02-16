@@ -121,6 +121,8 @@ module.exports = (payload) => {
     const addObject = (args) => {
         let o = args.parent;
         let key = o.item.key;
+
+        var mass = Number(params.mass || 2)
         
         var data = {};
 
@@ -221,7 +223,7 @@ module.exports = (payload) => {
         transform.setFromOpenGLMatrix(m4);
 
         var localInertia = new Ammo.btVector3(0, 0, 0);
-        geometry.calculateLocalInertia(2, localInertia);
+        geometry.calculateLocalInertia(mass, localInertia);
 
         var ghostObject = new Ammo.btPairCachingGhostObject();
         ghostObject.setWorldTransform(transform);

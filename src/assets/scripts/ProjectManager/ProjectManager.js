@@ -361,6 +361,8 @@ module.exports = () => {
     moveObject: Scenegraph.moveObject,
     loadPaths: Scenegraph.loadPaths,
     getAsset: Scenegraph.getAsset,
+    addAsset: Scenegraph.addAsset,
+    removeAsset: Scenegraph.removeAsset,
     selectScene: Scenegraph.selectScene,
 
     addChangeListener: Scenegraph.addChangeListener,
