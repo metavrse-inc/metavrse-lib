@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.28.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.27.1...v1.28.0) (2023-02-16)
+
+
+### Features
+
+* AT-27 Expose addasset, exposed mass for kinematic controller ([d6a5a25](https://github.com/metavrse-inc/metavrse-lib/commit/d6a5a25d6de0b046a8ca1dee99a892f306190349))
+
 ### [1.27.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.27.0...v1.27.1) (2023-02-15)
 
 ## [1.27.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.26.0...v1.27.0) (2023-02-14)
