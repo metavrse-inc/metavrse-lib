@@ -352,7 +352,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
     }
 
     for (const id of ids) {
-      object.mesh.set(id, property, null);
+      object.mesh.set(id, property, "");
     }
   };
 

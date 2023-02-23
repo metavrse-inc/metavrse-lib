@@ -141,7 +141,8 @@
         let m4 = mat4.create();
         mat4.fromRotationTranslation(m4, q, position) 
 
-
+        let currentShape = false;
+        let shapePath = "";
         // geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
         switch (params.shape_type) {            
             case 'cylinder':
@@ -153,11 +154,19 @@
             case 'sphere':
                 geometry = new Ammo.btSphereShape( size[1] * 0.5);
                 break;
+            case 'current-shape':
+                currentShape = true;
+                shapePath = (o.zip_id != "default") ? Module.ProjectManager.objPaths[o.zip_id + "_" + String(o.item.id)] : Module.ProjectManager.objPaths[String(o.item.id)]
             case 'custom-mesh':
 
                 try {
-                    let path = (!scene.hasFSZip() && Module.ProjectManager && Module.ProjectManager.archive) ?  Module.ProjectManager.path : "files/";
-                    let om = scene.getObjectGeometry(o.zip_id, path + params.shape_file);
+
+                    if (!currentShape){
+                        shapePath = (o.zip_id != "default" || (scene.hasFSZip() && o.zip_id == "default")) ? "files/" + params.shape_file : Module.ProjectManager.path + params.shape_file;
+                    }
+
+                    let om = scene.getObjectGeometry(o.zip_id, shapePath);
+
                     const mesh = new Ammo.btTriangleMesh(false, false);
                     let triangles = om.triangles;
                     let verts = om.vertices;

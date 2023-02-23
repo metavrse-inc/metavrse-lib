@@ -75,6 +75,7 @@
 
         var geometry;
         geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
+        // geometry = new Ammo.btSphereShape( size[1] * 0.5);
         geometry.setLocalScaling(new Ammo.btVector3(scaleT, scaleT, scaleT));
   
         var transform = new Ammo.btTransform();
@@ -152,6 +153,7 @@
     var v1,v2,m1;
 
     let checkDistance = (el, meshid, level)=> {
+        return;
         if (v1 == undefined){
             v1 = vec3.create();
             v2 = vec3.create();
@@ -159,34 +161,64 @@
         }
 
         if (level != undefined && level >= 0){
-            // el.parent.mesh.set(meshid, "lod_level", level)
+            el.parent.mesh.set(meshid, "lod_level", level)
             el.lod_level = level;
         } else {
-            mat4.getScaling(v1, el.matrix);
+            let v1 = el.scales
             mat4.getTranslation(v2, el.matrix);
 
             let b1 = (el.extents.f1 * v1[0])
             let b2 = (el.extents.f2 * v1[1])
             let b3 = (el.extents.f3 * v1[2])
 
-            let max = (Math.max(b1,b2,b3) * 1.1) / 2;
-            let distance = vec3.distance(v2, Module.controls.target) - max;
+            let diameter = Math.max(b1,b2,b3);
+            let r = diameter / 2;
+            let distance = vec3.distance(v2, Module.controls.position);
+
+            let sy = Module.camera.projection[5]
+            let fovy = 2 * Math.atan(1/sy)
+
+            let computedRadius = (r / (Math.tan(fovy/2) * distance)) * (Module.screen.height / 2)
 
 
-            // let distance = triangleTest.triangleDistance(Module.controls.target, p1, p2, p3);
-            // console.log(distance)
+            let screenArea = Module.canvas.width * Module.canvas.height;
 
-            level = 3;
+            // let computedRadius = r/distance;
+            // computedRadius *= Math.max(Module.screen.width, Module.screen.height) / Module.camera.fov;
 
-            if (distance < 5) level = 0;
-            else if (distance >=5 && distance < 10) level = 1;
-            else if (distance >=10 && distance < 20) level = 2;
 
-            if (el.lod_level != level){
-                // el.parent.mesh.set(meshid, "lod_level", level)
-                el.lod_level = level;
+            let computedArea = Math.PI * (computedRadius * computedRadius);
+
+            let percentageArea = (computedArea / screenArea) * 100;
+
+            if (!isNaN(percentageArea)){
+                // console.log({fovy, computedRadius, computedArea})
+                // level = 3;
+                let perc = ((percentageArea > 100 ? 100 : percentageArea));
+                percentageArea = perc;
+
+                let red = [255,0,0];
+                let green = [0,255,0];
+                let blue = [0,0,255];
+                let purple = [255, 102, 255];
+
+                if (percentageArea >= 45) level = 0;
+                else if (percentageArea < 45 && percentageArea >= 15 ) level = 1;
+                else if (percentageArea < 15 && percentageArea >= 5 ) level = 2;
+                else if (percentageArea < 5 ) level = 3;
+    
+                if (el.lod_level != level){
+
+                    // console.log({ lod_level: el.lod_level, level, computedRadius, perc})
+                    el.parent.mesh.set(meshid, "lod_level", level)
+                    // el.parent.mesh.set(meshid, "albedo_ratio", (perc >= 45 ? red : perc >= 25 ? green : perc >= 5 ? blue : purple))
+                    el.lod_level = level;
+                }
+            } else {
+                    // console.log({sy, fovy, distance, computedRadius})
+
             }
-
+           
             return distance;
 
         }
@@ -215,10 +247,10 @@
                             meshid
                         })
                         if (params.fov_enabled && el.render_fov_visible) el.parent.mesh.set(meshid, "visible", true);
-                        // if (params.lod_enabled) checkDistance(el, meshid);
+                        if (params.lod_enabled) checkDistance(el, meshid);
 
                     } else {
-                        // if (params.lod_enabled) checkDistance(el, meshid);
+                        if (params.lod_enabled) checkDistance(el, meshid);
                         collisionStatus.get(el.item.key).inContact = true;
                     }
                 }
@@ -233,13 +265,12 @@
         collisionStatus.forEach((value,key,map)=>
         {
             if (!value.inContact){
-                // if (params.lod_enabled) checkDistance(value.el, value.meshid);
-
                 if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", false);
                 map.delete(key);
             } else {
                 if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", true);
             }
+            if (params.lod_enabled) checkDistance(value.el, value.meshid);
             
             value.inContact = false;
         });

@@ -62,6 +62,7 @@
         parent,
         center: vec3.create(),
         extents: vec3.create(),
+        scales: vec3.create(),
         matrix : mat4.create(),
         body,
         children: new Map(),
@@ -102,7 +103,7 @@
         let extents = object.extents;
         let center = object.center;
 
-        let scales = vec3.create();
+        let scales = object.scales;
         mat4.getScaling(scales, o.parentOpts.transform)
         let size = [extents.f1, extents.f2, extents.f3]
         

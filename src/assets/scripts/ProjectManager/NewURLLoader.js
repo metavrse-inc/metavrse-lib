@@ -251,8 +251,6 @@ module.exports = (opt) => {
       archive.close();
       archive.open(fullpath + 'project.zip');
       scene.setFSZip(archive);
-      scene.setActiveZip();
-      // scene.setActiveZip("zip_name"); // nothing passed in will set the default zip
 
       const readJsonFile = (filename) => {
         return JSON.parse(archive.fopens(filename));

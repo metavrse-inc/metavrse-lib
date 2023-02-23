@@ -99,13 +99,13 @@ module.exports = () => {
 
       isDirty = true;
     } catch (error) {
-      console.log(error.message);
+      // console.log(error.message);
     }
   };
 
   const loadURL = (url, password) => {
     reset();
-    console.log('> loading url: ' + url);
+    // console.log('> loading url: ' + url);
 
     var logger = url.match(new RegExp('[?&]logger=([^&]+).*$'));
     scene.setLoggerLevel(logger === null ? '<none>' : logger[1]);
@@ -128,7 +128,7 @@ module.exports = () => {
           Scenegraph.path = event.fullpath;
           loadScene({ data: event.project }, true);
         } else {
-          console.log('> error loading url: ' + url);
+          // console.log('> error loading url: ' + url);
         }
       },
       password
