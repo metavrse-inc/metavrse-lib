@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.28.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.28.0...v1.28.1) (2023-02-23)
+
+
+### Bug Fixes
+
+* AT-30 Core fixes for multizip ([c18a135](https://github.com/metavrse-inc/metavrse-lib/commit/c18a135f8edc107b2fd81886792613ae19208732))
+
 ## [1.28.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.27.1...v1.28.0) (2023-02-16)
 
 
