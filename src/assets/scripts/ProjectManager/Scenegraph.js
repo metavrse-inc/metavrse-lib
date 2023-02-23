@@ -128,6 +128,7 @@ module.exports = () => {
   let tmpRedraws = null;
   let tmpOpts = null;
   let objectsLoaded = false;
+  let clearedWebworker = false;
 
   const render = (opts) => {
     // deprecating
@@ -234,8 +235,18 @@ module.exports = () => {
         }
       }
 
-      // scene.clearWebworkers();
+      if (!clearedWebworker){
+        let qsO = scene.getWorkerObjectQueueSize();
+        let qsT = scene.getTextureQueue();
+        
+        if (qsO == 0 && qsT == 0){
+          clearedWebworker = true;
+          scene.clearWebworkers();
+        }
 
+        return;  
+      }
+      
       launched = true;
 
       initControllers();
@@ -294,7 +305,7 @@ module.exports = () => {
         initControllers();
       }
 
-      // scene.clearWebworkers();
+      scene.clearWebworkers();
 
       // TODO: launch scene controller if any
 
@@ -345,7 +356,15 @@ module.exports = () => {
         }
       // }
 
-      // scene.clearWebworkers();      
+      let qsO = scene.getWorkerObjectQueueSize();
+      let qsT = scene.getTextureQueue();
+      
+      if (qsO != 0 || qsT != 0){
+        clearedWebworker = false;
+      } else if (qsO == 0 && qsT == 0 && !clearedWebworker){
+        clearedWebworker = true;
+        scene.clearWebworkers();
+      }    
     }
 
     let responseList = new Map(updatedList);
@@ -607,8 +626,8 @@ module.exports = () => {
   };
 
 
-  const loadPathsZip = (tree, parent, prefix) => {
-    tree.forEach((item) => {
+  const loadPathsZip = async (tree, parent, prefix) => {
+    await tree.forEach(async (item) => {
       if (item.type != 'folder') {
         sceneprops.objPaths[prefix + "_" + item.key] = "files/" + item.key;
       }
@@ -617,13 +636,42 @@ module.exports = () => {
         key: item.key,
         title: item.title,
         type: item.type,
+        url: item.url,
+        async: item.async,
         item,
         parent,
         children: item.children,
       };
       sceneprops.assetIndex.set(prefix + "_" + item.key, leaf);
+      // zip asset inside another zip
+      if (leaf.url != undefined){
+        try {
 
-      if (item.children) loadPathsZip(item.children, leaf, prefix);
+          const item_ = item;
+          let cb = {
+            onDownloadProgress: (response)=> {
+              if (URLLoader) {
+                URLLoader.percentage = response.loaded/response.total;
+                // URLLoader.close();
+              }
+            },
+
+            onFinished: async (zip_object)=> {
+              const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
+              await loadPathsZip(assets, leaf, item_.url);
+              ZIPManager.callbacks.run(item_.url);
+            }
+          }
+
+          if (leaf.async) ZIPManager.addZip(item.url, cb);
+          else await ZIPManager.addZip(item.url, cb);
+
+        } catch (error) {
+          
+        }
+      }
+
+      if (item.children) await loadPathsZip(item.children, leaf, prefix);
     });
   };
 
@@ -665,9 +713,9 @@ module.exports = () => {
               }
             },
 
-            onFinished: (zip_object)=> {
+            onFinished: async (zip_object)=> {
               const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
-              loadPathsZip(assets, leaf, item_.url);
+              await loadPathsZip(assets, leaf, item_.url);
               ZIPManager.callbacks.run(item_.url);
             }
           }
@@ -794,7 +842,7 @@ module.exports = () => {
     opt = opt || {};
 
     let originalKey = child.key;
-    if (opt.prefix) originalKey = child.key.split("_")[1];
+    if (opt.prefix) originalKey = child.key.substring(child.key.lastIndexOf("_")+1);
     
     var payload = {
       key,

@@ -473,6 +473,7 @@ module.exports = (payload) => {
       type: child.type,
       key: child.key,
       title: child.title,
+      id: child.id,
     },
     transformation: {},
     buckets: {},
@@ -1015,7 +1016,7 @@ module.exports = (payload) => {
                   }
               }
           } else if (!isVisible && fov_meshes.length > 0) {
-              removeFOV();
+              // removeFOV();
           }
 
       }
@@ -1180,11 +1181,11 @@ module.exports = (payload) => {
               if (video) {
                 const textureID =
                   video.textureId == null || video.textureId == ''
-                    ? ''
+                    ? 0
                     : video.textureId;
 
                 obj.setParameter(Number(meshid), option, textureID);
-              }
+              } else obj.setParameter(Number(meshid), option, 0);
             } else if (type == 'object') {
               if (rgbs.includes(option)) {
                 obj.setParameter(
@@ -1212,6 +1213,8 @@ module.exports = (payload) => {
                 if (_row.has(option + '_channel')) {
                   var cvalue = getLastValueInMap(_row.get(option + '_channel'));
                   channel = '_' + cvalue;
+                } else if (fieldTypes[option + '_channel']){
+                  channel = '_r';
                 }
 
                 if (pbr_bundle_textures.includes(option)) {
@@ -1225,6 +1228,9 @@ module.exports = (payload) => {
 
                   pbrMeshRow.options += option + channel + ';';
                   pbrMeshRow.paths += getPathByVersion() + value + ';';
+
+                  pbrMeshRow.options += option + "_zip_id" + ';';
+                  pbrMeshRow.paths += zip_id + ';';
                 } else if (transparency_bundle_textures.includes(option)) {
                   let transparencyMeshRow = {
                     options: '',
@@ -1237,12 +1243,15 @@ module.exports = (payload) => {
 
                   transparencyMeshRow.options += option + channel + ';';
                   transparencyMeshRow.paths += getPathByVersion() + value + ';';
+
+                  transparencyMeshRow.options += option + "_zip_id" + ';';
+                  transparencyMeshRow.paths += zip_id + ';';
                 } else
                   obj.setParameter(
                     zip_id, 
                     Number(meshid),
-                    option + channel,
-                    getPathByVersion() + value
+                    `${option};${option}_zip_id;`,
+                    `${getPathByVersion()}${value};${zip_id};`
                   );
               } else {
                 obj.setParameter(zip_id, Number(meshid), option, value);

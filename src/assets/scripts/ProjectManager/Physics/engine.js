@@ -167,8 +167,8 @@
       /// fov
 
       ammoInitalised = true;
-      console.log('Physics initialized')
-      console.log('Gravity: ' + gravity + ' m/s');
+      // console.log('Physics initialized')
+      // console.log('Gravity: ' + gravity + ' m/s');
 
       // resusable
       TRANSFORM_AUX = new Ammo.btTransform();

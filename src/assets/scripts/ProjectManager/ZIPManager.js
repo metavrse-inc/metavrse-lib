@@ -69,6 +69,8 @@
                 }
     
                 zips.set(url, zip_object);
+            } else {
+                resolve();
             }
     
             URLLoader.fetchData(full_url, "", options, (fullpath, status) => {
