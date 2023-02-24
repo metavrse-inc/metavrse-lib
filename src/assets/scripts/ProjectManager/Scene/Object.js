@@ -1227,7 +1227,7 @@ module.exports = (payload) => {
                   else pbrBundle.set(meshid, pbrMeshRow);
 
                   pbrMeshRow.options += option + channel + ';';
-                  pbrMeshRow.paths += getPathByVersion() + value + ';';
+                  pbrMeshRow.paths += ((value != "") ? getPathByVersion():"") + value + ';';
 
                   pbrMeshRow.options += option + "_zip_id" + ';';
                   pbrMeshRow.paths += zip_id + ';';
@@ -1242,7 +1242,7 @@ module.exports = (payload) => {
                   else transparencyBundle.set(meshid, transparencyMeshRow);
 
                   transparencyMeshRow.options += option + channel + ';';
-                  transparencyMeshRow.paths += getPathByVersion() + value + ';';
+                  transparencyMeshRow.paths += ((value != "") ? getPathByVersion():"") + value + ';';
 
                   transparencyMeshRow.options += option + "_zip_id" + ';';
                   transparencyMeshRow.paths += zip_id + ';';
@@ -1251,7 +1251,7 @@ module.exports = (payload) => {
                     zip_id, 
                     Number(meshid),
                     `${option};${option}_zip_id;`,
-                    `${getPathByVersion()}${value};${zip_id};`
+                    `${(value != "") ? getPathByVersion():""}${value};${zip_id};`
                   );
               } else {
                 obj.setParameter(zip_id, Number(meshid), option, value);
