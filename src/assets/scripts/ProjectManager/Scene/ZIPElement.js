@@ -23,6 +23,8 @@
 
     let renderList = [];
 
+    let updateHandlers = new Map();
+
     const insert = (array, value) => {}
     const remove = (array, value) => {}
 
@@ -230,6 +232,14 @@
             parentOpts.transform = transformOut;
 
             renderTransformation = true;
+
+            for (let [key, handler] of updateHandlers) {
+              try {
+                handler('transform', object);
+              } catch (err) {
+                console.log(err);
+              }
+            }
         }
 
         if (renderVisibility || opts.visible != undefined) {
@@ -243,6 +253,14 @@
             }
 
             renderVisibility = true;
+
+            for (let [key, handler] of updateHandlers) {
+              try {
+                handler('visible', object);
+              } catch (err) {
+                console.log(err);
+              }
+            }
         }
 
         // render children
@@ -311,6 +329,18 @@
         getProperties,
         removeLink,
 
+        addChangeListener: (callback) => {
+            updateHandlers.set(callback, callback);
+        },
+
+        removeChangeListener: (callback) => {
+            updateHandlers.delete(callback);
+        },
+
+        clearChangeHandlers: () => {
+            updateHandlers.clear();
+        },
+
         clearRender: ()=> {
             renderList = [];
         },
@@ -318,6 +348,14 @@
         remove: ()=> {
             for (let [key, child] of object.children) {
                 child.remove();
+            }
+
+            for (let [key, handler] of updateHandlers) {
+              try {
+                handler('removed');
+              } catch (err) {
+                console.log(err);
+              }
             }
             
             sceneprops.sceneIndex.delete(object.item.key);
