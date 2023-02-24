@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.29.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.28.2...v1.29.0) (2023-02-24)
+
+
+### Features
+
+* AT-29 Implement gizmo for ZIPElement and ObjectGroup ([fa256a4](https://github.com/metavrse-inc/metavrse-lib/commit/fa256a4b52136188a04054f81bc395c939412976))
+
 ### [1.28.2](https://github.com/metavrse-inc/metavrse-lib/compare/v1.28.1...v1.28.2) (2023-02-24)
 
 
