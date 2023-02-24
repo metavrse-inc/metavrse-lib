@@ -190,6 +190,18 @@ module.exports = (payload) => {
             addToUpdated(object.item.key, 'removed', {prop:'item', value:object.item})
 
         },
+
+        addChangeListener: (callback) => {
+            ObjectGroupModel.addChangeListener(callback);
+        },
+
+        removeChangeListener: (callback) => {
+            ObjectGroupModel.removeChangeListener(callback);
+        },
+
+        clearChangeHandlers: () => {
+            // updateHandlers.clear();
+        },
     })
 
     return object;
