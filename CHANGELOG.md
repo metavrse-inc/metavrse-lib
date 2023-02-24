@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.30.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.29.0...v1.30.0) (2023-02-24)
+
+
+### Features
+
+* AT-29 Add change and remove listener to object group link ([e3b7f81](https://github.com/metavrse-inc/metavrse-lib/commit/e3b7f81b998e005eaecbd3f75d436611bab5150f))
+
 ## [1.29.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.28.2...v1.29.0) (2023-02-24)
 
 
