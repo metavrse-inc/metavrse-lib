@@ -150,9 +150,25 @@ export const manipulateGizmoPosition = (
   target: SelectedObject,
   extentsGizmo: Record<string, number> | undefined,
   extentsTarget: TargetConfig,
-  gizmoMatrix: mat4,
-  targetPivot: Vector3
-): void => {
+  targetPivot: Vector3,
+  viewer: CherryViewer,
+  position: Vector3,
+): vec3 | undefined => {
+  const gizmoMatrix = mat4.create();
+  let obj;
+  if (target.key) {
+    obj = viewer.ProjectManager.getObject(target.key);
+  }
+  if (obj?.item.type === 'object-group' || obj?.item.type === 'ZIPElement') {
+    let objectPosition = vec3.create();
+    if (obj.parentOpts && obj.parentOpts.transform) {
+      const finalGroupPosition = mat4.getTranslation(
+        objectPosition,
+        obj.parentOpts.transform
+      );
+      return finalGroupPosition;
+    }
+  }
   const [scaleX, scaleY, scaleZ] = calculateScalesGizmo(
     extentsTarget,
     extentsGizmo,
@@ -182,6 +198,16 @@ export const manipulateGizmoPosition = (
     mat4.multiply(matrix, matrix, miTarget);
     mat4.multiply(gizmoMatrix, gizmoMatrix, matrix);
   }
+
+  let gizmoCalculatedXYZ = vec3.create();
+  if (obj && obj.parentOpts && obj.parentOpts.transform) {
+    const fm = mat4.clone(gizmoMatrix);
+    mat4.multiply(fm, obj.parentOpts.transform, fm);
+    mat4.getTranslation(gizmoCalculatedXYZ, fm);
+  } else {
+    gizmoCalculatedXYZ = position;
+  }
+  return gizmoCalculatedXYZ;
 };
 
 export const resetGizmo = (
