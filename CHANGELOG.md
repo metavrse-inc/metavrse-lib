@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.30.2](https://github.com/metavrse-inc/metavrse-lib/compare/v1.30.1...v1.30.2) (2023-02-28)
+
+
+### Bug Fixes
+
+* AT-41 removed lod debug code ([63c0ff4](https://github.com/metavrse-inc/metavrse-lib/commit/63c0ff4d71f24dfb16d95de8b844b7f72d5c75ea))
+
 ### [1.30.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.30.0...v1.30.1) (2023-02-28)
 
 
