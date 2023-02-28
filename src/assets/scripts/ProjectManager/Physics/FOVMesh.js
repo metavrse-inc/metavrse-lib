@@ -160,36 +160,59 @@
         render();
     };
 
+    let updateMath = {
+        scales: vec3.create(),
+        finalRotation: quat.create(),
+        q2: quat.create(),
+        m4: mat4.create(),
+        m42: mat4.create(),
+        _p: vec3.create(),
+        q: quat.create(),
+        _q: quat.create(),
+        qParent: quat.create(),
+        position: vec3.create(),
+        positionMesh: vec3.create(),
+        
+        btScales: null,
+        btTransform: null,
+    }
+
     render = (opts) => {
         opts = opts || {};
         if (!isLoaded){
             isLoaded = true;
             TRANSFORM_AUX = new Ammo.btTransform();
+            updateMath.btScales = new Ammo.btVector3();
+            updateMath.btTransform = new Ammo.btTransform();
 
             addObject(payload)
         } else if (isLoaded && body) {
             if (opts.transform) {
-                let scales = vec3.create();
+                let scales = updateMath.scales;
                 mat4.getScaling(scales, opts.transform)
 
-                let q = quat.create();
+                let q = updateMath.q;
                 mat4.getRotation(q, opts.transform);
 
-                let position = vec3.create();
+                let position = updateMath.position;
                 mat4.getTranslation(position, opts.transform)
 
-                let positionMesh = vec3.fromValues(object.center.f1 * scales[0],
+                let positionMesh = updateMath.positionMesh;
+                vec3.set(positionMesh, object.center.f1 * scales[0],
                     object.center.f2 * scales[1], 
                     object.center.f3 * scales[2])
 
-                let m = mat4.create();
-                mat4.fromRotationTranslation(m, q, position);
-                mat4.translate(m, m, positionMesh);
+                let m4 = updateMath.m4;
+                mat4.fromRotationTranslation(m4, q, position);
+                mat4.translate(m4, m4, positionMesh);
 
-                geometry.setLocalScaling(new Ammo.btVector3(...scales));
+
+                let sc = updateMath.btScales;
+                sc.setValue(...scales)
+                geometry.setLocalScaling(sc);
 
                 let moveTransform = body.getWorldTransform();
-                moveTransform.setFromOpenGLMatrix(m);
+                moveTransform.setFromOpenGLMatrix(m4);
                 body.setWorldTransform(moveTransform);
 
             }

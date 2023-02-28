@@ -557,10 +557,9 @@ if (Module['canvas']) {
       navigator.msMaxTouchPoints > 0
     );
   }
-  let c = Module['canvas'].ownerDocument.documentElement;
+  let c = Module['canvas'];//.ownerDocument.documentElement;
 
-  // keyboard
-  document.addEventListener('keydown', (e) => {
+  let keydown = (e)=> {
     // if (!c.parentElement.contains(document.activeElement)) return;
     let tagName = document.activeElement.tagName.toLowerCase();
 
@@ -576,7 +575,10 @@ if (Module['canvas']) {
         e.repeat
       );
     }
-  });
+  }
+  // keyboard
+  document.addEventListener('keydown', keydown);
+  c.addEventListener('keydown', keydown);
 
   c.addEventListener('keypress', (e) => {
     // Module.onKeyEvent('keypress', e.key, e.code, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey, e.repeat);
@@ -586,7 +588,7 @@ if (Module['canvas']) {
     // }
   });
 
-  document.addEventListener('keyup', (e) => {
+  let keyup = (e)=> {
     // if (!c.parentElement.contains(document.activeElement)) return;
 
     let tagName = document.activeElement.tagName.toLowerCase();
@@ -603,7 +605,10 @@ if (Module['canvas']) {
         e.repeat
       );
     }
-  });
+  }
+
+  document.addEventListener('keyup', keyup);
+  c.addEventListener('keyup', keyup);
 
   // mouse
   let getXY = (e) => {

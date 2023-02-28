@@ -258,7 +258,7 @@
          //   console.log("drawContactPoint")
          };
          debugDrawer.reportErrorWarning = function(warningString) {
-           console.warn(warningString);
+         //   console.warn(warningString);
          };
          debugDrawer.draw3dText = function(location, textString) {
          //   console.log("draw3dText", location, textString);
@@ -305,7 +305,7 @@
          //   console.log("drawContactPoint")
          };
          FOV_debugDrawer.reportErrorWarning = function(warningString) {
-           console.warn(warningString);
+         //   console.warn(warningString);
          };
          FOV_debugDrawer.draw3dText = function(location, textString) {
          //   console.log("draw3dText", location, textString);
@@ -351,11 +351,14 @@
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
 
-      let fps = 1 / Module.fps.currentFps;
-      if (isNaN(fps)) fps = 1 / 60;
+      let fixedFps = 1 / Module.fps.maxFps;
+      if (isNaN(fixedFps)) fixedFps = 1 / 60;
 
-      physicsWorld.stepSimulation(fps);
-      FOV_physicsWorld.stepSimulation(fps);
+      let currentFps = 1 / Module.fps.currentFps;
+      if (isNaN(currentFps)) currentFps = 1 / 60;
+
+      physicsWorld.stepSimulation(currentFps, 10, fixedFps);
+      FOV_physicsWorld.stepSimulation(currentFps, 10, fixedFps);
 
       // deprecate
       for (var [key, _u] of syncList) {

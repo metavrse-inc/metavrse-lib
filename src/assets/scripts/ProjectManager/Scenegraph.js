@@ -356,15 +356,18 @@ module.exports = () => {
         }
       // }
 
-      let qsO = scene.getWorkerObjectQueueSize();
-      let qsT = scene.getTextureQueue();
+      if (Module.ProjectManager.projectRunning){
+        let qsO = scene.getWorkerObjectQueueSize();
+        let qsT = scene.getTextureQueue();
+        
+        if (qsO != 0 || qsT != 0){
+          clearedWebworker = false;
+        } else if (qsO == 0 && qsT == 0 && !clearedWebworker){
+          clearedWebworker = true;
+          scene.clearWebworkers();
+        }    
+      }
       
-      if (qsO != 0 || qsT != 0){
-        clearedWebworker = false;
-      } else if (qsO == 0 && qsT == 0 && !clearedWebworker){
-        clearedWebworker = true;
-        scene.clearWebworkers();
-      }    
     }
 
     let responseList = new Map(updatedList);
