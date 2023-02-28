@@ -19,7 +19,7 @@
 
     const surface = Module.getSurface();
     const scene = surface.getScene();
-    const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
+    const { mat4, vec3, vec4, quat } = Module.require('assets/gl-matrix.js');
     const { quaternionToEuler } = Module.require('assets/ProjectManager/Physics/helpers.js');
 
     let renderList = [];
@@ -97,6 +97,7 @@
 
     var isLoaded = false;
     let TRANSFORM_AUX = null;
+    let mov_vec3 = null;
 
     let reAddTimer = null;
     let reAdd = ()=> {
@@ -110,6 +111,7 @@
         if (!isLoaded){
             isLoaded = true;
             TRANSFORM_AUX = new Ammo.btTransform();
+            mov_vec3 = new Ammo.btVector3();
 
             addObject(payload)
             // console.log('adding from FOVBox')
@@ -143,7 +145,8 @@
 
         // vec3.add(target, target, offset);
 
-        moveTransform.setOrigin(new Ammo.btVector3(...Module.controls.target));
+        mov_vec3.setValue(...Module.controls.target);
+        moveTransform.setOrigin(mov_vec3);
 
         body.setWorldTransform(moveTransform);
     }
@@ -173,23 +176,57 @@
 
             let diameter = Math.max(b1,b2,b3);
             let r = diameter / 2;
-            let distance = vec3.distance(v2, Module.controls.position);
 
-            let sy = Module.camera.projection[5]
-            let fovy = 2 * Math.atan(1/sy)
+            let pos = vec4.fromValues(...v2, 1);
+            let center = vec4.create();
+            vec4.transformMat4(center, pos, Module.camera.view);
 
-            let computedRadius = (r / (Math.tan(fovy/2) * distance)) * (Module.screen.height / 2)
+            let p1 = vec4.create();
+            vec4.transformMat4(p1, center, Module.camera.projection);
 
+            let cp = vec4.create();
+            vec4.add(cp, center, [0,r,0,0]);
 
+            let p2 = vec4.create();
+            vec4.transformMat4(p2, cp, Module.camera.projection);
+
+            let cp3 = vec4.create();
+            vec4.add(cp3, center, [r,0,0,0]);
+
+            let p3 = vec4.create();
+            vec4.transformMat4(p3, cp3, Module.camera.projection);
+
+            vec4.divide(p1, p1, [p1[3],p1[3],p1[3],p1[3]])
+            vec4.divide(p2, p2, [p2[3],p2[3],p2[3],p2[3]])
+            vec4.divide(p3, p3, [p3[3],p3[3],p3[3],p3[3]])
+            // vec4.normalize(p1,p1);
+            // vec4.normalize(p2,p2);
+            // vec4.normalize(p3,p3);
+
+            let height = (Math.abs(p1[1] - p2[1]) * 0.5) * Module.screen.height;
+            let width = (Math.abs(p1[0] - p3[0]) * 0.5) * Module.screen.width;
+            let computedArea = height * width * 16;
             let screenArea = Module.canvas.width * Module.canvas.height;
 
-            // let computedRadius = r/distance;
-            // computedRadius *= Math.max(Module.screen.width, Module.screen.height) / Module.camera.fov;
-
-
-            let computedArea = Math.PI * (computedRadius * computedRadius);
-
             let percentageArea = (computedArea / screenArea) * 100;
+            let distance = 1;
+
+            // vec4 center = camera_matrix * vec4(x, y, z, 1)
+            // 2:31
+            // vec4 p1 = projection_matrix * center
+            // 2:32
+            // vec4 p2 = projection_matrix * (center + vec4(0, R, 0, 0))
+            // 2:32
+            // p1 = p1 / p1.w
+            // 2:32
+            // p2 = p2 / p2.w
+            // 2:32
+            // height = abs(p1.y - p2.y) * 0.5 (edited) 
+            // vec4 p3 = projection_matrix * (center + vec4(R, 0, 0, 0))
+            // 2:35
+            // p3 = p3 / p3.w
+            // 2:35
+            // width = abs (p1.x - p3.x) * 0.5
 
             if (!isNaN(percentageArea)){
                 // console.log({fovy, computedRadius, computedArea})
@@ -202,16 +239,16 @@
                 let blue = [0,0,255];
                 let purple = [255, 102, 255];
 
-                if (percentageArea >= 45) level = 0;
-                else if (percentageArea < 45 && percentageArea >= 15 ) level = 1;
+                if (percentageArea >= 35) level = 0;
+                else if (percentageArea < 35 && percentageArea >= 15 ) level = 1;
                 else if (percentageArea < 15 && percentageArea >= 5 ) level = 2;
                 else if (percentageArea < 5 ) level = 3;
     
                 if (el.lod_level != level){
 
-                    // console.log({ lod_level: el.lod_level, level, computedRadius, perc})
+                    // console.log({ lod_level: el.lod_level, level, computedArea, perc})
                     el.parent.mesh.set(meshid, "lod_level", level)
-                    // el.parent.mesh.set(meshid, "albedo_ratio", (perc >= 45 ? red : perc >= 25 ? green : perc >= 5 ? blue : purple))
+                    // el.parent.mesh.set(meshid, "albedo_ratio", (level == 0 ? red : level == 1 ? green : level == 2 ? blue : purple))
                     el.lod_level = level;
                 }
             } else {
@@ -288,7 +325,10 @@
     let reset = ()=> {
         collisionStatus.forEach((value,key,map)=>
         {
-            if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", false);
+            if (params.fov_enabled && value.el.render_fov_visible) {
+                value.el.parent.mesh.set(value.meshid, "visible", false);
+                checkDistance(value.el, value.meshid, 3);
+            }
             map.delete(key);
         });
 

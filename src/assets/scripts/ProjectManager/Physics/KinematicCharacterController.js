@@ -247,7 +247,7 @@ module.exports = (payload) => {
         characterController.setUpInterpolate(true);
         // characterController.setJumpSpeed(Number(data.jumpspeed))
         // characterController.setMaxJumpHeight(0.25)
-        characterController.setMaxSlope(Math.PI / 2)
+        characterController.setMaxSlope(Math.PI / 3)
         // characterGravity = characterController.getGravity();
 
         // btBroadphaseProxy.CollisionFilterGroups.CharacterFilter - 32
@@ -327,12 +327,29 @@ module.exports = (payload) => {
         }
     }
 
+    let updateMath = {
+        scales: vec3.create(),
+        finalRotation: quat.create(),
+        q2: quat.create(),
+        m4: mat4.create(),
+        m42: mat4.create(),
+        _p: vec3.create(),
+        q: quat.create(),
+        _q: quat.create(),
+        qParent: quat.create(),
+        position: vec3.create(),
+        btScales: null,
+        btTransform: null,
+    }
+
     render = (opts) => {
         opts = opts || {};
 
         if (!isLoaded){
             isLoaded = true;
             TRANSFORM_AUX = new Ammo.btTransform();
+            updateMath.btScales = new Ammo.btVector3();
+            updateMath.btTransform = new Ammo.btTransform();
 
             addObject(payload)
         } else if (isLoaded && body) {
@@ -358,29 +375,29 @@ module.exports = (payload) => {
             renderList = [];
             if ((opts.transform || renderTransform) && !Module.ProjectManager.projectRunning) {
                 let o = payload.parent;
-                let scales = vec3.create();
+                let scales = updateMath.scales;
                 mat4.getScaling(scales, o.parentOpts.transform)
 
-                let q = quat.create();
+                let q = updateMath.q;
                 quat.fromEuler(q, ...o.rotate)
 
                 if (o.parent && o.parent.parentOpts){
-                    let qParent = quat.create();
+                    let qParent = updateMath.qParent;
                     mat4.getRotation(qParent, o.parent.parentOpts.transform);
                     quat.multiply(q, qParent, q);
                 }
                 
-                let position = vec3.create();
+                let position = updateMath.position;
                 mat4.getTranslation(position, o.parentOpts.transform)
         
                 // 3d transformation
-                let m4 = mat4.create();
+                let m4 = updateMath.m4;
                 mat4.fromRotationTranslation(m4, q, position) 
 
                 // rigidbody transformation
-                let q2 = quat.create();
+                let q2 = updateMath.q2;
                 quat.fromEuler(q2, ...params.rotate);
-                let m42 = mat4.create();
+                let m42 = updateMath.m42;
                 mat4.fromRotationTranslation(m42, q2, params.position);
 
                 mat4.multiply(m4, m4, m42);
@@ -389,7 +406,9 @@ module.exports = (payload) => {
                 transform.setFromOpenGLMatrix(m4);
 
                 vec3.multiply(scales, scales, params.scale);
-                geometry.setLocalScaling(new Ammo.btVector3(...scales));
+                let sc = updateMath.btScales;
+                sc.setValue(...scales)
+                geometry.setLocalScaling(sc);
 
                 body.setWorldTransform(transform);
 
@@ -399,17 +418,9 @@ module.exports = (payload) => {
     }
 
     let physics_transformation = {
-        position: [0,0,0],
-        rotation: [0,0,0,1],
+        position: vec3.create(),
+        rotation: quat.create(),
         m4 : mat4.create(),
-    }
-
-    let isArrayDifferent = (a1, a2)=> {
-        for (var x=0; x < a1.length; x++){
-            if (a1[x] != a2[x]) return true;
-        }
-
-        return false;
     }
 
     const update = ()=> {
@@ -420,14 +431,19 @@ module.exports = (payload) => {
         var p = TRANSFORM_AUX.getOrigin();
         var q = TRANSFORM_AUX.getRotation();
 
-        var _p = [p.x(), p.y(), p.z()];
-        var _q = [q.x(), q.y(), q.z(), q.w()];
+        var _p = updateMath._p;
+        vec3.set(_p, p.x(), p.y(), p.z())
+        // var _p = [p.x(), p.y(), p.z()];
+
+        var _q = updateMath._q;
+        quat.set(_q, q.x(), q.y(), q.z(), q.w())
+        // var _q = [q.x(), q.y(), q.z(), q.w()];
 
         let mp = false;
         let mr = false;
 
-        if (isArrayDifferent(physics_transformation.position, _p)) mp = true;
-        if (isArrayDifferent(physics_transformation.rotation, _q)) mr = true;
+        if (!vec3.equals(physics_transformation.position, _p)) mp = true;   // approx using epsilon
+        if (!quat.equals(physics_transformation.rotation, _p)) mp = true;   // approx using epsilon
 
         let m4 = physics_transformation.m4;
        
@@ -435,18 +451,21 @@ module.exports = (payload) => {
             physics_transformation.position = _p;
             physics_transformation.rotation = _q;
     
-            let scales = vec3.create();
+            let scales = updateMath.scales;
             mat4.getScaling(scales, o.parentOpts.transform);
     
-            let finalRotation = quat.fromValues(...params.object_rotate);
+
+            let finalRotation = updateMath.finalRotation;
+
+            quat.set(finalRotation, ...params.object_rotate);
             quat.multiply(finalRotation, _q, finalRotation);
             // physics
             mat4.fromRotationTranslationScale(m4, finalRotation, _p, scales);
     
             // physics transformation
-            let q2 = quat.create();
+            let q2 = updateMath.q2;
             quat.fromEuler(q2, ...params.rotate);
-            let m42 = mat4.create();
+            let m42 = updateMath.m42;
             mat4.fromRotationTranslation(m42, q2, params.position);
             mat4.invert(m42, m42)
             
@@ -462,7 +481,7 @@ module.exports = (payload) => {
         try {
             let FOVMeshes = o.FOVMeshes;
             for (var m of FOVMeshes) {
-                m.render({transform: [...m4]})
+                m.render({transform: m4})
             }
 
         } catch (error) {
@@ -470,11 +489,11 @@ module.exports = (payload) => {
         }
 
 
-        if (onUpdate) onUpdate([...m4]);
+        if (onUpdate) onUpdate(m4);
 
         for (var [k, funcUp] of updateHandlers) {
             try {
-                funcUp([...m4]);
+                funcUp(m4);
             } catch (error) {
             }
         }
