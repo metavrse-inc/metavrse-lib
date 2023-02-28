@@ -1009,7 +1009,7 @@ module.exports = (payload) => {
                       fov_meshes.push(obj);
 
                       // if (mesh_enable_fov) object.mesh.set(x, "visible", false);
-                      object.mesh.set(x, "lod_level", 3.0);
+                      // object.mesh.set(x, "lod_level", 3.0);
                       
                       // object.mesh.set(x, "render_back_faces", mesh_render_back_faces);
                   }catch(e){
