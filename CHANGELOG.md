@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.30.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.30.0...v1.30.1) (2023-02-28)
+
+
+### Bug Fixes
+
+* AT-39 memory leak fix physics ([3714099](https://github.com/metavrse-inc/metavrse-lib/commit/37140993ddcbcb6272195d4acf9aae21a51636c3))
+
 ## [1.30.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.29.0...v1.30.0) (2023-02-24)
 
 
