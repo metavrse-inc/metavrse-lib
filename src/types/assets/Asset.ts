@@ -13,4 +13,11 @@ export type Asset = {
   extension?: Extensions;
   url?: String;
   async?: boolean;
+  fileType?: string;
+  intrinsics?: {
+    originalHeight?: number;
+    originalWidth?: number;
+    currentHeight?: number;
+    currentWidth?: number;
+  };
 };
