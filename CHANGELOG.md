@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.31.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.30.2...v1.31.0) (2023-03-05)
+
+
+### Features
+
+* AT-36 Add intrinsics to Asset type ([7b8ecaa](https://github.com/metavrse-inc/metavrse-lib/commit/7b8ecaab3f64089f2ad2756ffee89bf668a9fcb9))
+
 ### [1.30.2](https://github.com/metavrse-inc/metavrse-lib/compare/v1.30.1...v1.30.2) (2023-02-28)
 
 
