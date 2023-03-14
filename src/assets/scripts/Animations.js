@@ -141,12 +141,17 @@ module.exports = () => {
             animation.timing = timing;
         }
 
+        var setSpeed = (speed) => { // 0 - 1 normal 
+            animation.speed = speed;
+        }
+
         return Object.assign({
             play: play,
             pause: pause,
             stop: stop,
             setPos: setPos,
             setTiming: setTiming,
+            setSpeed: setSpeed,
             getPos: () => { return animation.time; },
             getState: () => { return animation.state; },
             setDuration: (ms) => { animation.duration = ms; },
