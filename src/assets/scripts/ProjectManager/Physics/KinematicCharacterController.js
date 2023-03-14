@@ -433,28 +433,25 @@ module.exports = (payload) => {
 
         var _p = updateMath._p;
         vec3.set(_p, p.x(), p.y(), p.z())
-        // var _p = [p.x(), p.y(), p.z()];
 
         var _q = updateMath._q;
         quat.set(_q, q.x(), q.y(), q.z(), q.w())
-        // var _q = [q.x(), q.y(), q.z(), q.w()];
 
         let mp = false;
         let mr = false;
 
         if (!vec3.equals(physics_transformation.position, _p)) mp = true;   // approx using epsilon
-        if (!quat.equals(physics_transformation.rotation, _p)) mp = true;   // approx using epsilon
+        if (!quat.equals(physics_transformation.rotation, _q)) mr = true;   // approx using epsilon
 
         let m4 = physics_transformation.m4;
        
         if (mp || mr){
-            physics_transformation.position = _p;
-            physics_transformation.rotation = _q;
+            vec3.set(physics_transformation.position, ..._p);
+            quat.set(physics_transformation.rotation, ..._q);
     
             let scales = updateMath.scales;
             mat4.getScaling(scales, o.parentOpts.transform);
     
-
             let finalRotation = updateMath.finalRotation;
 
             quat.set(finalRotation, ...params.object_rotate);
@@ -476,19 +473,18 @@ module.exports = (payload) => {
 
             Module.ProjectManager.isDirty = true;
 
+            try {
+                let FOVMeshes = o.FOVMeshes;
+                for (var m of FOVMeshes) {
+                    m.render({transform: m4})
+                }
+    
+            } catch (error) {
+                
+            }
+    
         }
         
-        try {
-            let FOVMeshes = o.FOVMeshes;
-            for (var m of FOVMeshes) {
-                m.render({transform: m4})
-            }
-
-        } catch (error) {
-            
-        }
-
-
         if (onUpdate) onUpdate(m4);
 
         for (var [k, funcUp] of updateHandlers) {

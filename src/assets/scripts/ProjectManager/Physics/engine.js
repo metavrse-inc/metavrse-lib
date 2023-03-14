@@ -161,6 +161,10 @@
       FOV_physicsWorld = new FOV_Ammo.btDiscreteDynamicsWorld(FOV_dispatcher, FOV_broadphase, FOV_solver, FOV_collisionConfiguration);
       FOV_physicsWorld.setGravity(new FOV_Ammo.btVector3(0, Number(gravity), 0));
       FOV_physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new FOV_Ammo.btGhostPairCallback());
+
+      FOV_physicsWorld.getSolverInfo().m_numIterations = 1;
+      // m_dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_ENABLE_FRICTION_DIRECTION_CACHING;  //don't recalculate friction values each frame
+	   // m_dynamicsWorld->getSolverInfo().m_numIterations = 5;                                       //few solver iterations
       
       FOV_ammoInitalised = true;
       

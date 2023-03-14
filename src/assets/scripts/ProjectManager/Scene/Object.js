@@ -29,6 +29,10 @@ module.exports = (payload) => {
   // const { quaternionToEuler } = Module.require('assets/ProjectManager/Physics/helpers.js');
   // const FOVMesh = Module.require('assets/ProjectManager/Physics/FOVMesh.js');
 
+  const World = Module.ProjectManager.getObject("world") || {};
+  if (World.fov_enabled == undefined) World.fov_enabled = false;
+  if (World.lod_enabled == undefined) World.lod_enabled = false;
+
   // helper methods
   var Animations = Module.require('assets/Animations.js')(); // built in animation helper
   const getDiffVec3 = (perc, a1, a2) => {
@@ -963,20 +967,15 @@ module.exports = (payload) => {
   }
 
   const toggleFOV = (isVisible)=> {
+      if (!World.fov_enabled && !World.lod_enabled) return;
+
       // add fov meshes
       if (Module.ProjectManager.projectRunning && !transformation.hud){
+          let mesh_render_back_faces = transformation['render_back_faces'];
+          let mesh_enable_fov = transformation['render_fov_visible'];
+          let mesh_enable_lod = transformation['render_fov_lod'];
 
-          let getVal = (option, meshid)=> {
-
-              const _row = object.meshdata.get(meshid);
-              const m_row = _row[option];
-              if (m_row) {
-                  const idx = m_row.bucket[m_row.bucket.length - 1];
-                  const value = m_row.index[idx].value;
-
-                  return value;
-              }
-          }
+          if (!mesh_enable_fov && !mesh_enable_lod) return;
 
           if (isVisible && fov_meshes.length == 0){
                   let obj = scene.getObject(child.key);
@@ -984,9 +983,6 @@ module.exports = (payload) => {
 
                   for (var x=0; x < meshes_.size(); x++){                
                   try {
-                      let mesh_render_back_faces = transformation['render_back_faces'];
-                      let mesh_enable_fov = transformation['render_fov_visible'];
-                      let mesh_enable_lod = transformation['render_fov_lod'];
                       if (d['data'] && d['data'][x]){
                           let _d = d['data'][x];
 
