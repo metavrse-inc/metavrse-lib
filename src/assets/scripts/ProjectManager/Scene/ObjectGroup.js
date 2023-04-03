@@ -43,7 +43,9 @@ module.exports = (payload) => {
     //
     const finalTransformation = mat4.create();
     let finalVisibility = transformation.visible;
-    let parentOpts = {};
+    let parentOpts = {
+        transform: mat4.create()
+    };
 
     const axisX = vec3.fromValues(1, 0, 0);
     const axisY = vec3.fromValues(0, 1, 0);

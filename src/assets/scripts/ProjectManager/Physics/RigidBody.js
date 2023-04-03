@@ -114,6 +114,22 @@
         let o = args.parent;
         let key = o.item.key;
         let so = scene.getObject(key);
+
+        if (!so){
+            // treat as group
+            so = {
+                getParameterVec3: (type)=> {
+                    if (type == "extent") return {f1: 2, f2: 2, f3: 2}
+                    else if (type == "center") return {f1: 1, f2: 1, f3: 1};
+                },
+                setTransformMatrix: (transform)=> {
+                    for (let [key, child] of o.children) {
+                        if (!(child.type == "RigidBody" || child.type == "KinematicCharacterController")) child.render({transform});
+                    }
+                }
+            }
+        }
+
         _object = so;
         var ghost = Boolean(params.ghost || false)
         var mass = Number(params.mass || 0)
@@ -389,6 +405,8 @@
                 ms.setWorldTransform(transform);
 
                 body.setMotionState(ms);
+                Module.ProjectManager.isDirty = true;
+
             }
         }
     }
@@ -478,7 +496,7 @@
     }
 
     // add to physics world
-    if (scene.getObject(payload.parent.item.key)){
+    if (payload.parent.item.type=="object-group" || scene.getObject(payload.parent.item.key)){
         render();
     }
     // console.log(payload)

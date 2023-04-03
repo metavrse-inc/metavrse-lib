@@ -6,12 +6,17 @@ module.exports = (payload) => {
   let child = payload.child;
   let parent = payload.parent;
   let data = payload.data;
+  let opt = payload.opt;
   const redrawAddMethod = payload.addToRedraw;
   const addToUpdated = payload.addToUpdated;
   let sceneprops = payload.sceneprops;
 
   var loadingState = 'none';
   var loadingCallback = payload.loadingCallback;
+
+  if (opt && opt.ZIPElement){
+    opt.ZIPElement.setQueItem(child.key, true)
+  }
 
   var d = data || {};
 
@@ -1057,6 +1062,9 @@ module.exports = (payload) => {
 
     if (isLoading == 1){
       isLoading = 2;
+      if (opt && opt.ZIPElement){
+        opt.ZIPElement.setQueItem(child.key, false)
+      }
       getAnimationList();
 
     }

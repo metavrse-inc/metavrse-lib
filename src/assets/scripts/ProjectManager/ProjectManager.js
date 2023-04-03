@@ -148,13 +148,14 @@ module.exports = () => {
   };
 
   const loadScene = async (project, launch)=> {
-    if (launch) URLLoader.visible = true;
-    await Scenegraph.generate(Scenegraph.path, project);
-
     if (launch) {
+      URLLoader.visible = true;
       projectRunning = true;
-      Scenegraph.setLaunch(launch);
     }
+
+    await Scenegraph.generate(Scenegraph.path, project);
+      
+    if (launch) Scenegraph.setLaunch(launch);
   };
 
   const loadFromFolder = function (path) {
@@ -267,6 +268,13 @@ module.exports = () => {
         Scenegraph.worldController = v;
       },
     },
+    worldControllers: {
+      get: () => {
+        return Scenegraph.worldControllers;
+      },
+      set: (v) => {
+      },
+    },
     projectRunning: {
       get: () => {
         return projectRunning;
@@ -362,6 +370,8 @@ module.exports = () => {
     loadPaths: Scenegraph.loadPaths,
     getAsset: Scenegraph.getAsset,
     addAsset: Scenegraph.addAsset,
+    addZIPAsset: Scenegraph.addZIPAsset,
+    initControllersZip: Scenegraph.initControllersZip,
     removeAsset: Scenegraph.removeAsset,
     selectScene: Scenegraph.selectScene,
 

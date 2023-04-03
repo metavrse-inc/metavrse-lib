@@ -72,12 +72,14 @@ module.exports = () => {
     config_idx: 0,
 
     assetIndex: new Map(),
+    worldControllers: new Map(),
   };
 
   Module.sceneprops = sceneprops;
 
   let worldControllerkey = '';
   const objectControllerkeys = new Map();
+  const objectControllerkeysZIP = new Map();
 
   const surface = Module.getSurface();
   const scene = surface.getScene();
@@ -98,6 +100,10 @@ module.exports = () => {
 
   let updatedList = new Map();
   let changeHandlers = new Map();
+
+  // 
+  let ZIPLaunchKeys = [];
+  let ZIPAddCallbacks = [];
 
   // async sleep
   const sleep = (ms) => {
@@ -250,6 +256,18 @@ module.exports = () => {
       launched = true;
 
       initControllers();
+      
+      for (var k of ZIPLaunchKeys){
+        initControllersZip(k);
+      }
+
+      for (var k of ZIPAddCallbacks){
+        k();
+      }
+
+      ZIPLaunchKeys = [];
+      ZIPAddCallbacks = [];
+      
       var d_scene =
         sceneprops.project.data['scene'][
           sceneprops.project.data.selected_scene
@@ -261,12 +279,12 @@ module.exports = () => {
         // pass sceneprops.project.data['scene'] instead of selected scene
 
         if (
-          sceneprops.worldController &&
-          typeof sceneprops.worldController.onInit === 'function'
+          sceneprops.worldControllers.get("world") &&
+          typeof sceneprops.worldControllers.get("world").onInit === 'function'
         )
-          sceneprops.worldController.onInit(d_scene, d_assets);
+          sceneprops.worldControllers.get("world").onInit(d_scene, d_assets);
       } catch (e) {
-        sceneprops.worldController = undefined;
+        // sceneprops.worldController = undefined;
         console.log('world error - ' + e.message);
       }
 
@@ -410,11 +428,38 @@ module.exports = () => {
 
       addPrefix(d.tree);
 
+      if (is_async){
+        let zip_loader = (list)=>{        
+          if (list.size == 0){
+            // launch controllers          
+            initControllersZip(obj.item.key);
+            obj.removeLoadingListener(zip_loader);
+          }
+        }
+        
+        obj.addLoadingListener(zip_loader)
+      }
+
+      // add world for zip
+      _addObject({
+        key: "world",
+        type: "world"
+      }, d.data, obj, obj.key, {
+        prefix: obj.item.key,
+        zip_id: obj.url,
+        ZIPElement: obj,
+      });
+
       for (var c of d.tree) {
         _addObject(c, d.data, obj, obj.key, {
           prefix: obj.item.key,
-          zip_id: obj.url
+          zip_id: obj.url,
+          ZIPElement: obj,
         });
+      }
+
+      if (!is_async) {
+        ZIPLaunchKeys.push(obj.item.key)
       }
     }
     if (is_async) ZIPManager.callbacks.add(o.data.url, cb)
@@ -628,6 +673,25 @@ module.exports = () => {
     });
   };
 
+  const addZIPAsset = (leaf, cb)=> {
+    sceneprops.assetIndex.set(leaf.key, leaf);
+
+    let cb_local = {
+      onDownloadProgress: (response)=> {
+        if (cb) cb.onDownloadProgress(response)
+      },
+
+      onFinished: async (zip_object)=> {
+        const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
+        await loadPathsZip(assets, leaf, leaf.url);
+        ZIPManager.callbacks.run(leaf.url);
+
+        if (cb) cb.onFinished(zip_object)
+      }
+    }
+
+    ZIPManager.addZip(leaf.url, cb_local);
+  }
 
   const loadPathsZip = async (tree, parent, prefix) => {
     await tree.forEach(async (item) => {
@@ -717,9 +781,17 @@ module.exports = () => {
             },
 
             onFinished: async (zip_object)=> {
-              const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
-              await loadPathsZip(assets, leaf, item_.url);
-              ZIPManager.callbacks.run(item_.url);
+              let launchAdd = async ()=> {
+                const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
+                await loadPathsZip(assets, leaf, item_.url);
+                ZIPManager.callbacks.run(item_.url);
+              }
+
+              if (!launch || launched) await launchAdd();
+              else {
+                ZIPAddCallbacks.push(launchAdd)                
+              }
+              
             }
           }
 
@@ -860,10 +932,30 @@ module.exports = () => {
 
     var obj;
 
+    let init = ()=>{};
+
+    let addToZIPRow = ()=> {
+      if ( payload.data['controller'] != undefined && payload.data['controller'] != '' && opt.zip_id && Module.ProjectManager.projectRunning)
+      {
+          if (!objectControllerkeysZIP.has(opt.prefix)) objectControllerkeysZIP.set(opt.prefix, new Map());
+          let ziprow = objectControllerkeysZIP.get(opt.prefix);
+          ziprow.set(child.key, {controller: payload.data['controller'], data, originalKey, prefix: opt.prefix, zip_id: opt.zip_id});          
+      }
+    }
+
     switch (child.type) {
+      case 'world':
+        if (opt.zip_id) {
+          addToZIPRow();
+        }else{
+          console.log(payload)
+          obj = WorldModel(payload);
+        }
+        break;
       case 'object-hud':
       case 'object':
         obj = ObjectModel(payload);
+        addToZIPRow();
         break;
       case 'light':
         obj = LightModel(payload);
@@ -884,6 +976,7 @@ module.exports = () => {
 
       case 'HTMLElement':
         obj = HTMLElementModel(payload);
+        addToZIPRow();
         break;
 
       case 'configuration':
@@ -901,6 +994,7 @@ module.exports = () => {
       case 'object-hud-link':
       case 'object-link':
         obj = ObjectLinkModel(payload);
+        addToZIPRow();
         break;
       case 'hud-link':
         obj = HudLinkModel(payload);
@@ -916,6 +1010,7 @@ module.exports = () => {
         break;
       case 'HTMLElement-link':
         obj = HTMLElementLinkModel(payload);
+        addToZIPRow();
         break;
 
       // physics
@@ -956,6 +1051,8 @@ module.exports = () => {
       if (obj.isLoading != undefined) {
         obj.isLoading = false;
       }
+
+      // init();
     }
 
     return obj;
@@ -996,14 +1093,93 @@ module.exports = () => {
     // regenerateLinks(obj);
   };
 
+  const localWorldController = ()=> {
+      // Module is always available
+      // var surface = Module.getSurface();
+      // var scene = surface.getScene();
+
+      var runLoop = (prop, args)=> {
+        args = args || [];
+        for (var [key, controller] of sceneprops.worldControllers) {
+          try {
+            let ret = controller[prop](...args);
+            if ( ret != undefined && !ret) return false;            
+          } catch (error) {
+            // console.error(error)
+          }
+        }
+
+        return true;
+      }
+  
+      var onInit = () => { 
+        return runLoop('onInit'); 
+      }
+      var onRender = () => { 
+        return runLoop('onRender'); 
+      }
+      var onDestroy = function () { 
+        return runLoop('onDestroy'); 
+      }
+      var onMouseEvent = function (event, button, x, y) { 
+        return runLoop('onMouseEvent', [event, button, x, y]); 
+      }
+      var onScroll = function (y) { 
+        return runLoop('onMouseEvent', [y]); 
+      }
+      var onTouchEvent = function (event, touches, pointer, x, y) { 
+        return runLoop('onTouchEvent', [event, touches, pointer, x, y]); 
+      }
+      var onSurfaceChanged = function (rotation, width, height) { 
+        return runLoop('onSurfaceChanged', [rotation, width, height]); 
+      }
+      var onPause = function () { 
+        return runLoop('onPause'); 
+      }
+
+      var onKeyEvent = function (event) { 
+        return runLoop('onKeyEvent', [event]); 
+      }
+
+      var getControllers = ()=> {
+        return sceneprops.worldControllers
+      }
+
+      var setController = (key, controller)=> {
+        sceneprops.worldControllers.set(key, controller)
+      }
+
+      var removeController = (key)=> {
+        sceneprops.worldControllers.delete(key)
+      }
+      
+      return Object.assign({
+          onInit,
+          onRender,
+          onDestroy,
+          onMouseEvent,
+          onScroll,
+          onTouchEvent,
+          onSurfaceChanged,
+          onPause,
+          onKeyEvent,
+          getControllers,
+          setController,
+          removeController
+      })
+  }
+
   const generate = async (fullpath, p) => {
     sceneprops.path = fullpath;
     sceneprops.project = p;
 
     worldControllerkey = '';
     sceneprops.sceneIndex.clear();
-    sceneprops.worldController = undefined;
+    sceneprops.worldController = localWorldController();
     sceneprops.assetIndex.clear();
+    sceneprops.worldControllers.clear();
+
+    
 
     await loadPaths(sceneprops.project.data['assets'].tree);
     // Load world controller
@@ -1038,53 +1214,17 @@ module.exports = () => {
 
           sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
           if (worldControllerkey != '') {
-            sceneprops.worldController = Module.require(worldControllerkey)();
+            
+            sceneprops.worldControllers.set("world", Module.require(worldControllerkey)());
+
+            // sceneprops.worldController = Module.require(worldControllerkey)();
           }
         } catch (e) {
           console.error(worldControllerkey + ':' + e.message);
-          sceneprops.worldController = undefined;
+          // sceneprops.worldController = undefined;
         }
       }
-    } else if (p.data.version >= 1) {
-      p.data.selected_scene = p.data.starting_scene;
-
-      const getWorldItem = (tree) => {
-        for (let x = 0; x < tree.length; x++) {
-          if (tree[x].key == 'world') return tree[x];
-        }
-
-        return undefined;
-      };
-
-      let child = getWorldItem(p.data.scene[p.data.selected_scene].tree);
-      let data = p.data.scene[p.data.selected_scene].data;
-
-      if (child) {
-        if (data[child.key]['controller'] != '')
-          worldControllerkey = data[child.key]['controller'];
-
-        try {
-          let payload = {
-            child,
-            parent: undefined,
-            data: data[child.key],
-            addToRedraw,
-            addToUpdated,
-            sceneprops,
-            opt: {},
-          };
-
-          let obj = WorldModel(payload);
-
-          sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
-          if (worldControllerkey != '')
-            sceneprops.worldController = Module.require(worldControllerkey)();
-        } catch (e) {
-          console.error(worldControllerkey + ':' + e.message);
-          sceneprops.worldController = undefined;
-        }
-      }
-    }
+    } 
 
     constructGraph();
   };
@@ -1092,6 +1232,97 @@ module.exports = () => {
   const setLaunch = (enabled) => {
     launch = enabled;
     launched = false;
+  };
+
+
+  let zipWorld = new Map();
+  const initControllersZip = (prefix) => {
+    if (!objectControllerkeysZIP.has(prefix)) return;
+    
+    let list = objectControllerkeysZIP.get(prefix);
+    
+    for (let [key, pkg] of list) {
+      let value = pkg.controller;
+      let sceneData = pkg.data;
+      let originalKey = pkg.originalKey;
+      let item = {};
+      let prefix = pkg.prefix;
+      try {
+        let ZIPModule = {
+          _zip: {
+            zip_id: pkg.zip_id,
+            prefix: pkg.prefix,
+          },
+          ...Module
+        }
+
+        let PM = 
+        
+        {...Module.ProjectManager,...scenegraph};
+
+        PM.getObject = (key)=> {
+          return Module.ProjectManager.getObject(prefix + "_" + key);
+        }
+
+        PM.Physics = Physics;
+        PM.objectControllers = Module.ProjectManager.objectControllers;
+        PM.ZIPManager = ZIPManager;
+
+        ZIPModule.ProjectManager = PM;
+
+        let options = {
+          archive: Module.ProjectManager.ZIPManager.zips.get(pkg.zip_id),
+          Module: ZIPModule,
+        }
+        
+        ZIPModule.require = (script)=> {
+          return Module.require(script, options);
+        }
+
+        if (key == "world"){
+          let world = Module.require(value, options)();
+          zipWorld.set(pkg.prefix, world);
+          sceneprops.worldControllers.set(pkg.prefix + "_world", world);
+          try {
+            world.onInit();            
+          } catch (error) {
+            
+          }
+        } else {
+          let o = Module.ProjectManager.getObject(key);
+          item = o.item;
+          // console.log(item)
+  
+          
+  
+          sceneprops.objectControllers[String(key)] = Module.require(value, options)(
+            (zipWorld.has(pkg.prefix)) ? zipWorld.get(pkg.prefix) : null
+          );
+  
+          if (sceneprops.objectControllers[String(key)].key != undefined) {
+            sceneprops.objectControllers[String(key)].key = String(key);
+          }
+          // special method pull custom data for code snippet
+          if (
+            sceneData[String(originalKey)] &&
+            sceneData[String(originalKey)]['code'] &&
+            sceneData[String(originalKey)]['code'][String(value)] &&
+            sceneprops.objectControllers[String(key)]._setInspectorData
+          ) {
+            sceneprops.objectControllers[String(key)]._setInspectorData(
+              sceneData[String(originalKey)]['code'][String(value)]
+            );
+          }
+          
+        }
+
+
+      } catch (e) {
+        console.error(item, key + ':' + value + ' : ' + e.message);
+      }
+    }
+
+    objectControllerkeysZIP.delete(prefix);
   };
 
   const initControllers = () => {
@@ -1106,7 +1337,7 @@ module.exports = () => {
         item = o.item;
 
         sceneprops.objectControllers[String(key)] = Module.require(value)(
-          sceneprops.worldController
+          sceneprops.worldControllers.get("world")
         );
 
         if (sceneprops.objectControllers[String(key)].key != undefined) {
@@ -1179,6 +1410,14 @@ module.exports = () => {
         sceneprops.worldController = v;
       },
     },
+    worldControllers: {
+      get: () => {
+        return sceneprops.worldControllers;
+      },
+      set: (v) => {
+        // sceneprops.worldController = v;
+      },
+    },
     meshControllers: {
       get: () => {
         return sceneprops.meshControllers;
@@ -1245,6 +1484,9 @@ module.exports = () => {
     getObjects: () => {
       return sceneprops.sceneIndex;
     },
+
+    addZIPAsset,
+    initControllersZip,
 
     addAsset: (key, item)=> {
       sceneprops.assetIndex.set(key, item);
