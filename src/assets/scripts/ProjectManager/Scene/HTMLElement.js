@@ -31,12 +31,25 @@
 
     let updateHandlers = new Map();
 
+    let zip_id = (payload.opt && payload.opt.zip_id) ? payload.opt.zip_id : (d['zip_id'] !== undefined ? d['zip_id'] : "default");
+
     const getFile = (file, buffer) => {
         try {
-            const archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
+            var _f;
+
+            let archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
+            if (zip_id != "default") {
+                let zip_node = Module.ProjectManager.ZIPManager.zips.get(zip_id);
+                archive = zip_node.archive;
+
+                _f = archive.fopen("files/" + file);
+
+                if (buffer) return _f;
+                return new TextDecoder("utf-8").decode(_f);
+            }
+
             const path = Module.ProjectManager.path;
             const projectVersion = Module.ProjectManager.project.data.version;
-            var _f;
             if (file.includes("assets/")) {
                 _f = surface.readBinary(file);
             } else if (!scene.hasFSZip()) {
