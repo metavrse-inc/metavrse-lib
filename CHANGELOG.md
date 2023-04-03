@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.32.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.31.1...v1.32.0) (2023-04-03)
+
+
+### Features
+
+* AT-87 exposed js for zips ([3712407](https://github.com/metavrse-inc/metavrse-lib/commit/37124078a8c1f7ac25afea5447494e0f8dce6b16))
+
 ### [1.31.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.31.0...v1.31.1) (2023-03-14)
 
 
