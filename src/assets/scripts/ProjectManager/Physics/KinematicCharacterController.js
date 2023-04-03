@@ -127,6 +127,22 @@ module.exports = (payload) => {
         var data = {};
 
         let so = scene.getObject(key);
+
+        if (!so){
+            // treat as group
+            so = {
+                getParameterVec3: (type)=> {
+                    if (type == "extent") return {f1: 2, f2: 2, f3: 2}
+                    else if (type == "center") return {f1: 1, f2: 1, f3: 1};
+                },
+                setTransformMatrix: (transform)=> {
+                    for (let [key, child] of o.children) {
+                        if (!(child.type == "RigidBody" || child.type == "KinematicCharacterController")) child.render({transform});
+                    }
+                }
+            }
+        }
+
         _object = so;
 
         extents = so.getParameterVec3("extent");
@@ -411,6 +427,7 @@ module.exports = (payload) => {
                 geometry.setLocalScaling(sc);
 
                 body.setWorldTransform(transform);
+                Module.ProjectManager.isDirty = true;
 
                 // body.setMotionState(ms);
             }
@@ -496,7 +513,7 @@ module.exports = (payload) => {
     }
 
     // add to physics world
-    if (scene.getObject(payload.parent.item.key)){
+    if (payload.parent.item.type=="object-group" || scene.getObject(payload.parent.item.key)){
         render();
     }
     // console.log(payload)

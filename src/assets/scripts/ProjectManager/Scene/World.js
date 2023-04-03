@@ -220,6 +220,7 @@ module.exports = (payload) => {
           v = getLastValueInMap(getProperties(row.type));
           if (Module.ProjectManager.objPaths[v])
             scene.loadSkybox(Module.ProjectManager.objPaths[v]);
+          else if (v.trim()!="") scene.loadSkybox(v);
           else scene.loadSkybox('');
           break;
         case 'fps':

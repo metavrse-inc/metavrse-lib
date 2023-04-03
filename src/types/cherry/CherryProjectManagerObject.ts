@@ -118,6 +118,10 @@ export type CherryProjectManagerObject = {
   removeChangeListener: (callback: any) => void;
   clearChangeHandlers: () => void;
 
+  addLoadingListener: (callback: any) => void;
+  removeLoadingListener: (callback: any) => void;
+  clearLoadingHandlers: () => void;
+
   play: () => void;
   pause: () => void;
 

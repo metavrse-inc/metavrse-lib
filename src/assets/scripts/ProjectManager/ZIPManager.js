@@ -72,8 +72,7 @@
             } else {
                 resolve();
             }
-    
-            URLLoader.fetchData(full_url, "", options, (fullpath, status) => {
+            URLLoader.fetchData(full_url, "", options, async (fullpath, status) => {
                 if (!fullpath) {
                     console.error('No data found!');
                     reject();
@@ -83,7 +82,7 @@
                 let zip_object = zips.get(url);
 
                 if (zip_object.ready && status == "304"){
-                    if (options.onFinished) options.onFinished(zip_object);
+                    if (options.onFinished) await options.onFinished(zip_object);
                     resolve(zip_object)
                     return;
                 }
@@ -95,7 +94,7 @@
                 zip_object.archive.open(fullpath);
                 scene.setFSZip(url, zip_object.archive);
 
-                if (options.onFinished) options.onFinished(zip_object);
+                if (options.onFinished) await options.onFinished(zip_object);
                 resolve(zip_object);
             })
         

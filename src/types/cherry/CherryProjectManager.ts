@@ -34,6 +34,8 @@ export type CherryProjectManager = {
   loadPaths: (tree: Asset[]) => void;
   getAsset: (key: CherryKey) => Asset;
   addAsset: (key: CherryKey, item: any) => void;
+  addZIPAsset: (leaf : any, cb : any) => void;
+  initControllersZip: (key : string) => void;
   removeAsset: (key: CherryKey) => void;
   selectScene: (scene: string, callback: () => void) => void;
   // Other methods
@@ -48,4 +50,10 @@ export type CherryProjectManager = {
   archive: any;
   published_url: string;
   ZIPManager: any;
+  worldController?: any;
+  worldControllers?: any;
+  projectRunning: boolean;
+  launched: boolean;
+  objPaths: any;
+  Physics: any;
 };

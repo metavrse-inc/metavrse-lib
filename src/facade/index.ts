@@ -19,7 +19,7 @@ import { CherryObjectInfo } from '../types/cherry/CherryObjectInfo';
 import { CherryObjectAnimations } from '../types/facade/CherryObjectAnimations';
 import { CherryObjectByPixel, CherrySurfaceSceneObject, Vector3 } from '..';
 import { gizmoFacade } from './gizmo';
-import { ConfigurationNode, HTMLHudNode } from '../types';
+import { CherryProjectManagerObject, ConfigurationNode, HTMLHudNode } from '../types';
 import { zoomFacade } from './zoom';
 import { htmlFacade } from './htmlHud';
 import * as Module from 'module';
@@ -108,12 +108,17 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
     cherryViewer._main();
 
-    const scopedEval = (script : string) => {
+    const scopedEval = (script : string, options: any) => {
       let scene = cherryViewer.getSurface().getScene();
-      return (Function( 'Module', 'scene', 'return (' + script + ')' ).bind(window)(cherryViewer, scene));
+      let Module = cherryViewer;
+      if (options.archive){
+        Module = options.Module;
+      }
+      return (Function( 'Module', 'scene', 'return (' + script + ')' ).bind(window)(Module, scene));
     }
 
-    cherryViewer.require = (filePath: any) => {
+    cherryViewer.require = (filePath: any, options?: any) => {
+      options = options || {};
       if (cherryViewer.require_cache[filePath]) {
         return cherryViewer.require_cache[filePath];
       }
@@ -123,7 +128,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
         cherryViewer.ProjectManager.project.data.version != undefined) ? cherryViewer.ProjectManager.project.data.version : 2;
       const surface = cherryViewer.getSurface();
       const scene = surface.getScene();
-      const archive =
+      let archive =
         cherryViewer.ProjectManager && cherryViewer.ProjectManager.archive
           ? cherryViewer.ProjectManager.archive
           : undefined;
@@ -132,14 +137,23 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
       if (filePath.includes('assets/')) {
         file = surface.readBinary(filePath);
-      } else if (!scene.hasFSZip()) {
+      } else if (!scene.hasFSZip() && options.archive == undefined) {
         file = surface.readBinary(path + filePath);
       } else {
+        let fPath = filePath;
+        let isZip = false;
+        if (options.archive) {          
+          isZip = true;
+          let parsed = fPath.split("_");
+          fPath = parsed[parsed.length-1];
+          archive = options.archive.archive;
+        }
+
         // If zip file exists load files based on version
         if (/^\d+\.\d+\..+$/.test(projectVersion)) {
-          file = archive.fopen(path + filePath);
+          file = archive.fopen((isZip ? "files/" : path) + fPath);
         } else {
-          file = archive.fopen(filePath);
+          file = archive.fopen(fPath);
         }
       }
 
@@ -152,7 +166,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
       ${script}
       return module.exports;}('${filePath}'))`;
 
-      cherryViewer.require_cache[filePath] = scopedEval(scriptWrapper);
+      cherryViewer.require_cache[filePath] = scopedEval(scriptWrapper, options);
       // cherryViewer.require_cache[filePath] = eval(scriptWrapper);
 
       return cherryViewer.require_cache[filePath];

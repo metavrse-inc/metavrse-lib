@@ -48,7 +48,9 @@
     //
     const finalTransformation = mat4.create();
     let finalVisibility = transformation.visible;
-    let parentOpts = {};
+    let parentOpts = {
+        transform: mat4.create()
+    };
 
     const axisX = vec3.fromValues(1, 0, 0);
     const axisY = vec3.fromValues(0, 1, 0);
@@ -302,6 +304,34 @@
 
     if (object.parent) object.parent.children.set(child.key, object);
 
+    let loadingQue = new Map();
+    let loadingListener = new Map();
+
+    let setQueItem = (key, downloading)=> {
+        if (downloading) loadingQue.set(key, downloading);
+        else loadingQue.delete(key);
+
+        for (let [key, handler] of loadingListener) {
+            try {
+              handler(loadingQue);
+            } catch (err) {
+            //   console.log(err);
+            }
+        }
+    }
+
+    let addLoadingListener = (callback) => {
+        loadingListener.set(callback, callback);
+    }
+  
+    let removeLoadingListener = (callback) => {
+        loadingListener.delete(callback);
+    }
+  
+    let clearLoadingHandlers = () => {
+        loadingListener.clear();
+    }
+
     // Props and Methods
     Object.defineProperties(object, {
         parentOpts: { get: () => { return parentOpts; }, set: (v) => { } },
@@ -328,6 +358,11 @@
         getProperty,
         getProperties,
         removeLink,
+
+        setQueItem,
+        addLoadingListener,
+        removeLoadingListener,
+        clearLoadingHandlers,
 
         addChangeListener: (callback) => {
             updateHandlers.set(callback, callback);
