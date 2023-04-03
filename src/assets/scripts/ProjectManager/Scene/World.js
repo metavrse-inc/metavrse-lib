@@ -28,28 +28,36 @@ module.exports = (payload) => {
 
   const getFile = (file, buffer) => {
     try {
-      const archive =
-        Module.ProjectManager && Module.ProjectManager.archive
-          ? Module.ProjectManager.archive
-          : undefined;
       var _f;
-      const projectVersion = Module.ProjectManager.project.data.version;
-      const path = Module.ProjectManager.path;
 
-      if (file.includes('assets/')) {
-        _f = surface.readBinary(file);
-      } else if (!scene.hasFSZip()) {
-        _f = surface.readBinary(path + file);
-      } else {
-        if (/^\d+\.\d+\..+$/.test(projectVersion)) {
-          _f = archive.fopen(path + file);
-        } else {
-          _f = archive.fopen(file);
-        }
-      }
+            let archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
+            if (zip_id != "default") {
+                let zip_node = Module.ProjectManager.ZIPManager.zips.get(zip_id);
+                archive = zip_node.archive;
 
-      if (buffer) return _f;
-      return new TextDecoder('utf-8').decode(_f);
+                _f = archive.fopen("files/" + file);
+
+                if (buffer) return _f;
+                return new TextDecoder("utf-8").decode(_f);
+            }
+
+            const path = Module.ProjectManager.path;
+            const projectVersion = Module.ProjectManager.project.data.version;
+            if (file.includes("assets/")) {
+                _f = surface.readBinary(file);
+            } else if (!scene.hasFSZip()) {
+                _f = surface.readBinary(path + file);
+            } else {
+              // If zip file exists load files based on version
+              if (/^\d+\.\d+\..+$/.test(projectVersion)) {
+                _f = archive.fopen(path + file);
+              } else {
+                _f = archive.fopen(file);
+              }
+            }
+
+            if (buffer) return _f;
+            return new TextDecoder("utf-8").decode(_f);
     } catch (e) {
       return;
     }
