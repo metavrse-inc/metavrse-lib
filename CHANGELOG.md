@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.32.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.0...v1.32.1) (2023-04-03)
+
+
+### Bug Fixes
+
+* HTML-1234 world fix ([4b0fcea](https://github.com/metavrse-inc/metavrse-lib/commit/4b0fcead1dd222c03a4f77ce0ab2f0b9a284d29f))
+
 ## [1.32.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.31.1...v1.32.0) (2023-04-03)
 
 
