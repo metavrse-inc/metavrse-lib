@@ -1280,11 +1280,11 @@ module.exports = () => {
         }
 
         if (key == "world"){
-          let world = Module.require(value, options)();
-          zipWorld.set(pkg.prefix, world);
-          sceneprops.worldControllers.set(pkg.prefix + "_world", world);
+          const _world = Module.require(value, options)();
+          zipWorld.set(pkg.prefix, _world);
+          sceneprops.worldControllers.set(pkg.prefix + "_world", _world);
           try {
-            world.onInit();            
+            _world.onInit();            
           } catch (error) {
             
           }

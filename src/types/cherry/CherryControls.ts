@@ -26,4 +26,5 @@ export type CherryControls = {
   autoDollyEnabled: boolean;
   isDirty: boolean;
   clickEnabled: boolean;
+  animation: any;
 };
