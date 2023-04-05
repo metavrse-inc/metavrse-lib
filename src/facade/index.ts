@@ -119,8 +119,13 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
     cherryViewer.require = (filePath: any, options?: any) => {
       options = options || {};
-      if (cherryViewer.require_cache[filePath]) {
-        return cherryViewer.require_cache[filePath];
+      let prefix = "";
+      if (options.Module){
+        prefix = options.Module._zip.prefix + "_";
+      }
+
+      if (cherryViewer.require_cache[prefix+filePath]) {
+        return cherryViewer.require_cache[prefix+filePath];
       }
       const path = cherryViewer.ProjectManager.path;
       const projectVersion = (cherryViewer.ProjectManager.project && 
@@ -134,6 +139,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
           : undefined;
 
       let file;
+      let isZip = false; // multizip
 
       if (filePath.includes('assets/')) {
         file = surface.readBinary(filePath);
@@ -141,7 +147,6 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
         file = surface.readBinary(path + filePath);
       } else {
         let fPath = filePath;
-        let isZip = false;
         if (options.archive) {          
           isZip = true;
           let parsed = fPath.split("_");
@@ -159,17 +164,17 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
 
       const script = new TextDecoder('utf-8').decode(file);
 
-      const scriptWrapper = `(function (__scriptFilePath='${filePath}') {
+      const scriptWrapper = `(function (__scriptFilePath='${prefix+filePath}') {
       var module = {
       exports: {}
       }, exports = module.exports;
       ${script}
-      return module.exports;}('${filePath}'))`;
+      return module.exports;}('${prefix+filePath}'))`;
 
-      cherryViewer.require_cache[filePath] = scopedEval(scriptWrapper, options);
+      cherryViewer.require_cache[prefix+filePath] = scopedEval(scriptWrapper, options);
       // cherryViewer.require_cache[filePath] = eval(scriptWrapper);
 
-      return cherryViewer.require_cache[filePath];
+      return cherryViewer.require_cache[prefix+filePath];
     };
   };
 

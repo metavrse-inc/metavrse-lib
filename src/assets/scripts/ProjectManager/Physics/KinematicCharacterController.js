@@ -105,11 +105,11 @@ module.exports = (payload) => {
     }
 
     const remove = ()=> {
+        Physics.removeUpdate(child.key);
         updateHandlers.clear();
         onUpdate = null;
 
         if (parent) parent.children.delete(child.key);
-        Physics.removeUpdate(child.key);
 
         deleteBody();        
     }
@@ -440,8 +440,14 @@ module.exports = (payload) => {
         m4 : mat4.create(),
     }
 
-    const update = ()=> {
-        if (params.mass <= 0 || !isLoaded || !body) return;
+    const update = (forced)=> {
+        forced = forced || false;
+        if (!isLoaded || !body) return;
+
+        if (forced && params.mass == 0){
+            // go in
+        }
+        else if (params.mass <= 0) return;
 
         let o = payload.parent;
         TRANSFORM_AUX = body.getWorldTransform()

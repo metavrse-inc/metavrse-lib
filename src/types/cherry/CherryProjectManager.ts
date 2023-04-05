@@ -56,4 +56,5 @@ export type CherryProjectManager = {
   launched: boolean;
   objPaths: any;
   Physics: any;
+  objectControllers: any;
 };
