@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.32.3](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.2...v1.32.3) (2023-04-06)
+
+
+### Bug Fixes
+
+* WA-1 patch css ([671dd5c](https://github.com/metavrse-inc/metavrse-lib/commit/671dd5c1e8550bf8744c69f408b267557c1aeb86))
+
 ### [1.32.2](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.1...v1.32.2) (2023-04-05)
 
 
