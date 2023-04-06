@@ -26,6 +26,9 @@ module.exports = (payload) => {
 
   let renderList = [];
 
+  let zip_id = (payload.opt && payload.opt.zip_id) ? payload.opt.zip_id : "default";
+  let prefix = (payload.opt && payload.opt.prefix) ? payload.opt.prefix + "_" : "";
+
   const getFile = (file, buffer) => {
     try {
       var _f;
@@ -336,10 +339,10 @@ module.exports = (payload) => {
 
     if (renderCSS && Module.canvas) {
       // init
-      let cssdom = Module.canvas.parentElement?.querySelector(`#css_world`);
+      let cssdom = Module.canvas.parentElement?.querySelector(`#${prefix}css_world`);
       if (!cssdom) {
         cssdom = document.createElement('style');
-        cssdom.id = 'css_world';
+        cssdom.id = `${prefix}css_world`;
         Module.canvas.parentElement.appendChild(cssdom);
       }
 
@@ -418,10 +421,10 @@ module.exports = (payload) => {
 
   // init
   if (Module.canvas) {
-    let cssdom = Module.canvas.parentElement.querySelector(`#css_world`);
+    let cssdom = Module.canvas.parentElement?.querySelector(`#${prefix}css_world`);
     if (!cssdom) {
       cssdom = document.createElement('style');
-      cssdom.id = 'css_world';
+      cssdom.id = `${prefix}css_world`;
       Module.canvas.parentElement.appendChild(cssdom);
     }
   }

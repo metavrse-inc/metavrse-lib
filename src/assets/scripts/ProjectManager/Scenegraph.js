@@ -945,10 +945,13 @@ module.exports = () => {
 
     switch (child.type) {
       case 'world':
-        if (opt.zip_id) {
+        if (opt.zip_id) {          
+          if (sceneprops.worldController && payload.data['css']){
+            sceneprops.worldController.addCSS(payload.opt.zip_id, payload.opt.prefix, payload.data['css']);
+          }
           addToZIPRow();
         }else{
-          console.log(payload)
+          // console.log(payload)
           obj = WorldModel(payload);
         }
         break;
@@ -1152,6 +1155,36 @@ module.exports = () => {
       var removeController = (key)=> {
         sceneprops.worldControllers.delete(key)
       }
+
+      var addCSS = (zip_id, prefix, file)=> {        
+        let cssdom = Module.canvas.parentElement.querySelector(`#c${prefix}_css_world`);
+        if (!cssdom) {
+          cssdom = document.createElement('style');
+          cssdom.id = `c${prefix}_css_world`;
+          Module.canvas.parentElement.appendChild(cssdom);
+        }
+
+        let csstext = '';
+
+        try {
+          const zip = Module.ProjectManager.ZIPManager.zips.get(zip_id)
+          let uftFile = zip.archive.fopen("files/" + file);
+          csstext = new TextDecoder('utf-8').decode(new Uint8Array(uftFile));
+          // console.log(csstext)
+        } catch (e) {
+          console.error(e);
+        }
+
+        cssdom.innerHTML = csstext;
+      }
+
+      var removeCSS = (prefix)=> {
+        let cssdom = Module.canvas.parentElement.querySelector(`#c${prefix}_css_world`);
+        if (!cssdom) return;
+
+        Module.canvas.parentElement.removeChild(cssdom);
+
+      }
       
       return Object.assign({
           onInit,
@@ -1165,7 +1198,9 @@ module.exports = () => {
           onKeyEvent,
           getControllers,
           setController,
-          removeController
+          removeController,
+          addCSS,
+          removeCSS
       })
   }
 
