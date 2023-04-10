@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.32.4](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.3...v1.32.4) (2023-04-10)
+
+
+### Bug Fixes
+
+* WA-12 update multizip project manager ([290d817](https://github.com/metavrse-inc/metavrse-lib/commit/290d8179978123ae3148f3b0f2c15a0b3b9724ed))
+
 ### [1.32.3](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.2...v1.32.3) (2023-04-06)
 
 
