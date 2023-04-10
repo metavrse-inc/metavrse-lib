@@ -247,7 +247,7 @@ module.exports = () => {
         
         if (qsO == 0 && qsT == 0){
           clearedWebworker = true;
-          scene.clearWebworkers();
+          // scene.clearWebworkers();
         }
 
         return;  
@@ -257,16 +257,18 @@ module.exports = () => {
 
       initControllers();
       
-      for (var k of ZIPLaunchKeys){
-        initControllersZip(k);
-      }
-
-      for (var k of ZIPAddCallbacks){
-        k();
-      }
-
-      ZIPLaunchKeys = [];
-      ZIPAddCallbacks = [];
+      requestAnimationFrame(()=>{
+        for (var k of ZIPLaunchKeys){
+          initControllersZip(k);
+        }
+  
+        for (var k of ZIPAddCallbacks){
+          k();
+        }
+  
+        ZIPLaunchKeys = [];
+        ZIPAddCallbacks = [];
+      })
       
       var d_scene =
         sceneprops.project.data['scene'][
@@ -784,12 +786,16 @@ module.exports = () => {
               let launchAdd = async ()=> {
                 const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
                 await loadPathsZip(assets, leaf, item_.url);
-                ZIPManager.callbacks.run(item_.url);
+                requestAnimationFrame(()=>{
+                  ZIPManager.callbacks.run(item_.url);
+                })
               }
 
               if (!launch || launched) await launchAdd();
               else {
-                ZIPAddCallbacks.push(launchAdd)                
+                requestAnimationFrame(()=>{
+                  ZIPAddCallbacks.push(launchAdd)       
+                })         
               }
               
             }
@@ -906,8 +912,8 @@ module.exports = () => {
 
   }
 
-  const addObject = (child, data, parent, key) => {
-    const obj = _addObject(child, data, parent, key);
+  const addObject = (child, data, parent, key, opt) => {
+    const obj = _addObject(child, data, parent, key, opt);
     // regenerateLinks(obj);
 
     return obj;
@@ -1282,6 +1288,7 @@ module.exports = () => {
       let originalKey = pkg.originalKey;
       let item = {};
       let prefix = pkg.prefix;
+      let zip_id = pkg.zip_id;
       try {
         let ZIPModule = {
           _zip: {
@@ -1297,6 +1304,26 @@ module.exports = () => {
 
         PM.getObject = (key)=> {
           return Module.ProjectManager.getObject(prefix + "_" + key);
+        }
+
+        PM.getAsset = (key)=> {
+          return Module.ProjectManager.getAsset(zip_id + "_" + key);
+        }
+
+        PM.addObject = (node, data, parent)=> {
+          let addPrefix = (leaf)=> {
+            for (var node of leaf) {
+              if (node.key) node.key = prefix + "_" + node.key;
+              if (node.skey) node.skey = prefix + "_" + node.skey;
+              if (node.children) addPrefix(node.children);
+            }
+          }
+    
+          addPrefix([node]);
+          return Module.ProjectManager.addObject(node, data, parent, "", {
+            prefix,
+            zip_id,
+          });
         }
 
         PM.Physics = Physics;

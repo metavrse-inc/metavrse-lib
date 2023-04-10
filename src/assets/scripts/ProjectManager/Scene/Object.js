@@ -301,6 +301,7 @@ module.exports = (payload) => {
     getPos,
     getState,
     setDuration,
+    getCurrentAnimation: ()=> { return animationTimer },
 
     addChangeListener: (callback) => {
       animationHandlers.set(callback, callback);
