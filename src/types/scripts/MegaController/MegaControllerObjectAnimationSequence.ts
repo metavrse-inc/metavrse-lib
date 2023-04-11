@@ -12,6 +12,7 @@ export type MegaControllerObjectAnimationSequence = {
     animationid: number;
     start: number;
     end: number;
+    endTime: number;
     delay: number;
     reverse: boolean;
     speed: number;
