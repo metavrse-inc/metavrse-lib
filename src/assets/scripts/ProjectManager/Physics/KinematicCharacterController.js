@@ -52,7 +52,7 @@ module.exports = (payload) => {
     var render = () => { }; // header declaration
 
     let params = {
-        "mass": (_d["mass"] !== undefined) ? _d['mass'] : 0,
+        "mass": (_d["mass"] !== undefined) ? Number(_d['mass']) : 2,
 
         // shapes
         "shape_type": (_d["shape_type"] !== undefined) ? _d['shape_type'] : "bounding-box",
@@ -122,7 +122,7 @@ module.exports = (payload) => {
         let o = args.parent;
         let key = o.item.key;
 
-        var mass = Number(params.mass || 2)
+        var mass = params.mass;
         
         var data = {};
 
@@ -276,7 +276,8 @@ module.exports = (payload) => {
             applyParam({type: 'set', prop, value: props[prop]})
         })
 
-        PhysicsWorld.addCollisionObject(ghostObject, 32, -1);
+        if (mass == 0) PhysicsWorld.addCollisionObject(ghostObject, 2, -1);
+        else PhysicsWorld.addCollisionObject(ghostObject, 32, -1);
         PhysicsWorld.addAction(characterController);
   
      }
@@ -389,7 +390,7 @@ module.exports = (payload) => {
             }
 
             renderList = [];
-            if ((opts.transform || renderTransform) && !Module.ProjectManager.projectRunning) {
+            if ((opts.transform || renderTransform) && (!Module.ProjectManager.projectRunning || (Module.ProjectManager.projectRunning && params.mass == 0))) {
                 let o = payload.parent;
                 let scales = updateMath.scales;
                 mat4.getScaling(scales, o.parentOpts.transform)

@@ -50,7 +50,7 @@
     var render = () => { }; // header declaration
 
     let params = {
-        "mass": (_d["mass"] !== undefined) ? _d['mass'] : 0,
+        "mass": (_d["mass"] !== undefined) ? Number(_d['mass']) : 0,
         "ghost": (_d["ghost"] !== undefined) ? _d['ghost'] : false,
 
         // shapes
@@ -132,7 +132,7 @@
 
         _object = so;
         var ghost = Boolean(params.ghost || false)
-        var mass = Number(params.mass || 0)
+        var mass = params.mass;
         var friction = Number(args.friction || 0)
   
         extents = so.getParameterVec3("extent");
@@ -359,7 +359,7 @@
             }
 
             renderList = [];
-            if ((opts.transform || renderTransform) && !Module.ProjectManager.projectRunning) {
+            if ((opts.transform || renderTransform) && (!Module.ProjectManager.projectRunning || (Module.ProjectManager.projectRunning && params.mass == 0))) {
                 let o = payload.parent;
                 let scales = updateMath.scales;
                 mat4.getScaling(scales, o.parentOpts.transform)
@@ -425,8 +425,14 @@
         return false;
     }
 
-    const update = ()=> {
+    const update = (forced)=> {
+        forced = forced || false;
         if (!isLoaded || !body) return;
+
+        if (forced && params.mass == 0){
+            // go in
+        }
+        else if (params.mass <= 0) return;
 
         let o = payload.parent;
 
