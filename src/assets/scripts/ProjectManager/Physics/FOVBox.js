@@ -290,6 +290,24 @@
                         if (params.lod_enabled) checkDistance(el, meshid);
                         collisionStatus.get(el.item.key).inContact = true;
                     }
+                } else if (el.item.type == "FOVMeshObject"){
+                    let ks = el.item.key.split("_")
+                    let key = ks[0];
+                    let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
+
+                    if (!collisionStatus.has(el.item.key)){
+                        collisionStatus.set(el.item.key, {
+                            inContact: true,
+                            el,
+                            meshid
+                        })
+                        if (params.fov_enabled && el.render_fov_visible) el.parent.visible = true;
+                        if (params.lod_enabled) checkDistance(el, meshid);
+
+                    } else {
+                        if (params.lod_enabled) checkDistance(el, meshid);
+                        collisionStatus.get(el.item.key).inContact = true;
+                    }
                 }
 
                 
@@ -302,10 +320,19 @@
         collisionStatus.forEach((value,key,map)=>
         {
             if (!value.inContact){
-                if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", false);
+                if (value.el.item.type == "FOVMeshObject"){
+                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.visible = false;
+                }
+                else {
+                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", false);
+                }
                 map.delete(key);
             } else {
-                if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", true);
+                if (value.el.item.type == "FOVMeshObject"){
+                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.visible = true;
+                }else {
+                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", true);
+                }
             }
             if (params.lod_enabled) checkDistance(value.el, value.meshid);
             

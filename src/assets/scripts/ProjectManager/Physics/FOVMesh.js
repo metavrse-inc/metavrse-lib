@@ -97,36 +97,60 @@
         var mass = Number(params.mass || 0)
         var friction = Number(args.friction || 0)
   
-        object.extents = so.getParameterVec3(args.data.mesh, "extent");
-        object.center = so.getParameterVec3(args.data.mesh,"center")
+        if (object.item.type == "FOVMeshObject"){
+            object.extents = so.getParameterVec3("extent");
+            object.center = so.getParameterVec3("center");
+        } else {
+            object.extents = so.getParameterVec3(args.data.mesh, "extent");
+            object.center = so.getParameterVec3(args.data.mesh,"center");
+        }
 
         let extents = object.extents;
         let center = object.center;
-
-        let scales = object.scales;
-        mat4.getScaling(scales, o.parentOpts.transform)
-        let size = [extents.f1, extents.f2, extents.f3]
-        
         let q = quat.create();
-        quat.fromEuler(q, ...o.rotate)
-
-        if (o.parent && o.parent.parentOpts){
-            let qParent = quat.create();
-            mat4.getRotation(qParent, o.parent.parentOpts.transform);
-            quat.multiply(q, qParent, q);
-        }
-        
-        let positionOriginal = vec3.create();
-        mat4.getTranslation(positionOriginal, o.parentOpts.transform)
-  
-        let position = vec3.fromValues(object.center.f1 * scales[0],
-            object.center.f2 * scales[1], 
-            object.center.f3 * scales[2])
-
-        mat4.fromRotationTranslation(object.matrix, q, positionOriginal);
-        
+        let size = [1,1,1];
+        let scales = object.scales;
         let m = object.matrix;
-        mat4.translate(m, m, position);
+
+        if (object.item.type == "FOVMeshObject"){
+            mat4.getScaling(scales, o.parentOpts.transform)
+            size = [extents.f1, extents.f2, extents.f3]
+            
+            quat.fromEuler(q, ...o.rotate)
+    
+            if (o.parent && o.parent.parentOpts){
+                let qParent = quat.create();
+                mat4.getRotation(qParent, o.parent.parentOpts.transform);
+                quat.multiply(q, qParent, q );
+            }
+    
+            let position = vec3.create();
+            mat4.getTranslation(position, o.parentOpts.transform)
+      
+            mat4.fromRotationTranslation(m, q, position) 
+        } else {
+            mat4.getScaling(scales, o.parentOpts.transform)
+            size = [extents.f1, extents.f2, extents.f3]
+            
+            quat.fromEuler(q, ...o.rotate)
+
+            if (o.parent && o.parent.parentOpts){
+                let qParent = quat.create();
+                mat4.getRotation(qParent, o.parent.parentOpts.transform);
+                quat.multiply(q, qParent, q);
+            }
+            
+            let positionOriginal = vec3.create();
+            mat4.getTranslation(positionOriginal, o.parentOpts.transform)
+    
+            let position = vec3.fromValues(object.center.f1 * scales[0],
+                object.center.f2 * scales[1], 
+                object.center.f3 * scales[2])
+
+            mat4.fromRotationTranslation(object.matrix, q, positionOriginal);
+            
+            mat4.translate(m, m, position);
+        }
         
         q = args.q || q;
         key = args.key || key;
@@ -140,8 +164,8 @@
         body = new Ammo.btPairCachingGhostObject();
         body.setCollisionShape(geometry);
         body.setWorldTransform(transform);
-        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_KINEMATIC_OBJECT);
-        body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
+        body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_KINEMATIC_OBJECT);
+        // body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
         body.setUserIndex(object.idx);
   
         PhysicsWorld.addCollisionObject(body, 16);

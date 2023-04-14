@@ -984,39 +984,55 @@ module.exports = (payload) => {
           if (!mesh_enable_fov && !mesh_enable_lod) return;
 
           if (isVisible && fov_meshes.length == 0){
+            
                   let obj = scene.getObject(child.key);
-                  let meshes_ = obj.getMeshes();
 
-                  for (var x=0; x < meshes_.size(); x++){                
-                  try {
-                      if (d['data'] && d['data'][x]){
-                          let _d = d['data'][x];
+                  let pl = {
+                    child: {type:'FOVMeshObject', key: child.key + "_object" },
+                    parent: object,
+                    render_fov_visible: mesh_enable_fov,                            
+                    render_fov_lod: mesh_enable_lod,                            
+                    data: {
+                        mesh: 0,
+                    }
+                }
+                
+                if (mesh_enable_fov) object.visible = false;
 
-                          if (_d['render_back_faces'] > -1) mesh_render_back_faces = Boolean(_d['render_back_faces']);
-                          if (_d['enable_lod'] > -1) mesh_enable_lod = Boolean(_d['enable_lod']);
-                          if (_d['enable_fov'] > -1) mesh_enable_fov = Boolean(_d['enable_fov']);
+                fov_meshes.push(Physics.add(pl));
+
+                  // let meshes_ = obj.getMeshes();
+
+                  // for (var x=0; x < meshes_.size(); x++){                
+                  // try {
+                  //     if (d['data'] && d['data'][x]){
+                  //         let _d = d['data'][x];
+
+                  //         if (_d['render_back_faces'] > -1) mesh_render_back_faces = Boolean(_d['render_back_faces']);
+                  //         if (_d['enable_lod'] > -1) mesh_enable_lod = Boolean(_d['enable_lod']);
+                  //         if (_d['enable_fov'] > -1) mesh_enable_fov = Boolean(_d['enable_fov']);
                           
-                      }
-                      let pl = {
-                          child: {type:'FOVMesh', key: child.key + "_" + x},
-                          parent: object,
-                          render_fov_visible: mesh_enable_fov,                            
-                          render_fov_lod: mesh_enable_lod,                            
-                          data: {
-                              mesh: x,
-                          }
-                      }
+                  //     }
+                  //     let pl = {
+                  //         child: {type:'FOVMesh', key: child.key + "_" + x},
+                  //         parent: object,
+                  //         render_fov_visible: mesh_enable_fov,                            
+                  //         render_fov_lod: mesh_enable_lod,                            
+                  //         data: {
+                  //             mesh: x,
+                  //         }
+                  //     }
 
-                      let obj = Physics.add(pl);
-                      fov_meshes.push(obj);
+                  //     let obj = Physics.add(pl);
+                  //     fov_meshes.push(obj);
 
-                      // if (mesh_enable_fov) object.mesh.set(x, "visible", false);
-                      // object.mesh.set(x, "lod_level", 3.0);
+                  //     // if (mesh_enable_fov) object.mesh.set(x, "visible", false);
+                  //     // object.mesh.set(x, "lod_level", 3.0);
                       
-                      // object.mesh.set(x, "render_back_faces", mesh_render_back_faces);
-                  }catch(e){
-                  }
-              }
+                  //     // object.mesh.set(x, "render_back_faces", mesh_render_back_faces);
+                  // }catch(e){
+                  // }
+              // }
           } else if (!isVisible && fov_meshes.length > 0) {
               // removeFOV();
           }

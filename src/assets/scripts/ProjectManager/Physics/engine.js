@@ -638,6 +638,7 @@
          case 'RigidBody':  obj = RigidBody(args); break;
          case 'KinematicCharacterController':  obj = KinematicCharacterController(args); break;
          case 'FOVMesh':  obj = FOVMesh(args); break;
+         case 'FOVMeshObject':  obj = FOVMesh(args); break;
             
       }
 
@@ -709,6 +710,19 @@
                   el.parent.mesh.set(meshid, "visible", false);
                } else {
                   el.parent.mesh.set(meshid, "visible", true);
+               }
+            } else if (el.item.type == "FOVMeshObject"){
+               // let ks = el.item.key.split("_")
+               // let key = ks[0];
+               // let meshid = ks[1];
+               // let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
+
+               el.render_fov_visible = fov_enabled && el.render_fov_visible
+               if (el.render_fov_visible) 
+               {
+                  el.parent.visible = false;
+               } else {
+                  el.parent.visible = true;
                }
             }
          }

@@ -49,6 +49,7 @@ export type CherryProjectManager = {
   project?: any;
   archive: any;
   published_url: string;
+  published_postfix: string;
   ZIPManager: any;
   worldController?: any;
   worldControllers?: any;

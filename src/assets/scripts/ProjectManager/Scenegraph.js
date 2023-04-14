@@ -146,7 +146,7 @@ module.exports = () => {
     let local_redraws = new Map(redraws);
     redraws.clear();
 
-    if (!Module.ProjectManager.projectRunning){
+    // if (!Module.ProjectManager.projectRunning){
       for (const [key, value] of local_redraws) {
         if (opts && opts[key]) {
           if (opts[key]['parentMat'])
@@ -156,28 +156,28 @@ module.exports = () => {
           value.render(opts);
         }
       }
-    } else {
-      for (const [key, value] of local_redraws) {
-        let pass = true;
-        if (value.item.type == "object" && value.zip_id != "default"){
-          let obj = scene.getObject(value.item.key);
-          if (!obj || obj.getStatus() == 0){
-            if (obj) redraws.set(key, value);
-            pass = false;
-          }
-        }
+    // } else {
+    //   for (const [key, value] of local_redraws) {
+    //     let pass = true;
+    //     if (value.item.type == "object" && value.zip_id != "default"){
+    //       let obj = scene.getObject(value.item.key);
+    //       if (!obj || obj.getStatus() == 0){
+    //         if (obj) redraws.set(key, value);
+    //         pass = false;
+    //       }
+    //     }
   
-        if (pass){
-          if (tmpOpts && tmpOpts[key]) {
-            if (tmpOpts[key]['parentMat'])
-              tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
-            value.render(tmpOpts[key]);
-          } else {
-            value.render(tmpOpts);
-          }
-        }
-      }
-    }
+    //     if (pass){
+    //       if (tmpOpts && tmpOpts[key]) {
+    //         if (tmpOpts[key]['parentMat'])
+    //           tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
+    //         value.render(tmpOpts[key]);
+    //       } else {
+    //         value.render(tmpOpts);
+    //       }
+    //     }
+    //   }
+    // }
 
     if (launch && !launched) {
       if (tmpRedraws == null) {
@@ -941,7 +941,7 @@ module.exports = () => {
     let init = ()=>{};
 
     let addToZIPRow = ()=> {
-      if ( payload.data['controller'] != undefined && payload.data['controller'] != '' && opt.zip_id && Module.ProjectManager.projectRunning)
+      if ( payload && payload.data && payload.data['controller'] != undefined && payload.data['controller'] != '' && opt.zip_id && Module.ProjectManager.projectRunning)
       {
           if (!objectControllerkeysZIP.has(opt.prefix)) objectControllerkeysZIP.set(opt.prefix, new Map());
           let ziprow = objectControllerkeysZIP.get(opt.prefix);
@@ -1163,25 +1163,29 @@ module.exports = () => {
       }
 
       var addCSS = (zip_id, prefix, file)=> {        
-        let cssdom = Module.canvas.parentElement.querySelector(`#c${prefix}_css_world`);
+        
+        let cssdom = Module.canvas.parentElement.querySelector(`#c${CSS.escape(zip_id)}_css_world`);
         if (!cssdom) {
           cssdom = document.createElement('style');
-          cssdom.id = `c${prefix}_css_world`;
+          cssdom.id = `c${CSS.escape(zip_id)}_css_world`;
           Module.canvas.parentElement.appendChild(cssdom);
+
+          let csstext = '';
+  
+          try {
+            const zip = Module.ProjectManager.ZIPManager.zips.get(zip_id)
+            let uftFile = zip.archive.fopen("files/" + file);
+            csstext = new TextDecoder('utf-8').decode(new Uint8Array(uftFile));
+            // console.log(csstext)
+          } catch (e) {
+            console.error(e);
+          }
+  
+          cssdom.innerHTML = csstext;
+        } else {
+          // already added
         }
 
-        let csstext = '';
-
-        try {
-          const zip = Module.ProjectManager.ZIPManager.zips.get(zip_id)
-          let uftFile = zip.archive.fopen("files/" + file);
-          csstext = new TextDecoder('utf-8').decode(new Uint8Array(uftFile));
-          // console.log(csstext)
-        } catch (e) {
-          console.error(e);
-        }
-
-        cssdom.innerHTML = csstext;
       }
 
       var removeCSS = (prefix)=> {

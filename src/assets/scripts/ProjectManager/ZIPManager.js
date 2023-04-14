@@ -59,7 +59,7 @@
     const addZip = (url, options)=> {
         return new Promise((resolve, reject) => {
             // if not url use base published url
-            let full_url = (isURL(url)) ? url : Module.ProjectManager.published_url + "/" + url;
+            let full_url = (isURL(url)) ? url : Module.ProjectManager.published_url + "/" + url + Module.ProjectManager.published_postfix;
             
             if (!zips.has(url)){
                 let zip_object = {

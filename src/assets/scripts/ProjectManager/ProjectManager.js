@@ -22,6 +22,7 @@ module.exports = () => {
   let projectRunning = false;
 
   let published_url =  location.protocol + '//' + location.host;
+  let published_postfix =  "";
 
   const surface = Module.getSurface();
   const scene = surface.getScene();
@@ -341,6 +342,15 @@ module.exports = () => {
       },
       set: (v) => {
         published_url = v;
+      },
+    },
+
+    published_postfix: {
+      get: () => {
+        return published_postfix;
+      },
+      set: (v) => {
+        published_postfix = v;
       },
     },
 

@@ -14,7 +14,7 @@ export type CherrySurfaceScene = {
   removeObject: (key: CherryKey) => void;
   enableShadowsFOV: (value: boolean) => void;  
   enableShadows: (value: boolean) => void;  
-
+  enableFOVforAnimated: (value: boolean) => void;  
   setShadowsMethod: (value: number) => void;  
   setShadowsLightDirection: (x: number,y: number,z: number) => void;  
   setShadowsTextureSize: (x: number,y: number) => void;  
