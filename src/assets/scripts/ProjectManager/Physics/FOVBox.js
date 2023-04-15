@@ -301,7 +301,14 @@
                             el,
                             meshid
                         })
-                        if (params.fov_enabled && el.render_fov_visible) el.parent.visible = true;
+                        if (params.fov_enabled && el.render_fov_visible) {
+                            if (el.object) {
+                                el.object.setParameter('visible', el.parent.parentOpts.visible);
+                            }
+
+                            // el.parent.visible = true;
+                        }
+                        
                         if (params.lod_enabled) checkDistance(el, meshid);
 
                     } else {
@@ -321,7 +328,8 @@
         {
             if (!value.inContact){
                 if (value.el.item.type == "FOVMeshObject"){
-                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.visible = false;
+                    if (params.fov_enabled && value.el.render_fov_visible && value.el.object) value.el.object.setParameter('visible', false);
+                    // if (el.object) el.object.setParameter('visible', el.parent.visible);
                 }
                 else {
                     if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", false);
@@ -329,7 +337,9 @@
                 map.delete(key);
             } else {
                 if (value.el.item.type == "FOVMeshObject"){
-                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.visible = true;
+                    if (params.fov_enabled && value.el.render_fov_visible && value.el.object) {
+                        value.el.object.setParameter('visible', value.el.parent.parentOpts.visible);
+                    }
                 }else {
                     if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", true);
                 }

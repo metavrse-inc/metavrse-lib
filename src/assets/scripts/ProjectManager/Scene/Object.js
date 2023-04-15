@@ -997,7 +997,8 @@ module.exports = (payload) => {
                     }
                 }
                 
-                if (mesh_enable_fov) object.visible = false;
+      
+                if (mesh_enable_fov) obj.setParameter('visible', false);
 
                 fov_meshes.push(Physics.add(pl));
 

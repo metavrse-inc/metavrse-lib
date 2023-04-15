@@ -258,16 +258,18 @@ module.exports = () => {
       initControllers();
       
       requestAnimationFrame(()=>{
-        for (var k of ZIPLaunchKeys){
-          initControllersZip(k);
-        }
-  
-        for (var k of ZIPAddCallbacks){
-          k();
-        }
-  
-        ZIPLaunchKeys = [];
-        ZIPAddCallbacks = [];
+        requestAnimationFrame(()=>{
+          for (var k of ZIPLaunchKeys){
+            initControllersZip(k);
+          }
+    
+          for (var k of ZIPAddCallbacks){
+            k();
+          }
+    
+          ZIPLaunchKeys = [];
+          ZIPAddCallbacks = [];
+        })
       })
       
       var d_scene =
@@ -967,7 +969,10 @@ module.exports = () => {
         addToZIPRow();
         break;
       case 'light':
-        obj = LightModel(payload);
+        if (opt.zip_id) {          
+        }else{
+          obj = LightModel(payload);
+        }
         break;
       case 'hud':
         obj = HudModel(payload);

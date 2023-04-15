@@ -87,10 +87,11 @@
     
     let _object = null;
     var geometry;
+    var so = null;
     const addObject = (args) => {
         let o = args.parent;
         let key = o.item.key;
-        let so = scene.getObject(key);
+        so = scene.getObject(key);
         if (!so) return;
 
         _object = so;
@@ -164,8 +165,8 @@
         body = new Ammo.btPairCachingGhostObject();
         body.setCollisionShape(geometry);
         body.setWorldTransform(transform);
-        body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_KINEMATIC_OBJECT);
-        // body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
+        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_KINEMATIC_OBJECT);
+        body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
         body.setUserIndex(object.idx);
   
         PhysicsWorld.addCollisionObject(body, 16);
@@ -258,6 +259,7 @@
 
     // Props and Methods
     Object.defineProperties(object, {
+        object: { get: () => { return so; }, set: (v) => {} },
         // orientation: { get: () => { return (Module.ProjectManager.projectRunning) ? world.orientation : 0; }, set: (v) => { world.orientation = v; } },
     })
     
