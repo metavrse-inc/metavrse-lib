@@ -14,8 +14,13 @@ module.exports = (payload) => {
   var loadingState = 'none';
   var loadingCallback = payload.loadingCallback;
 
+  let loadingTimeout;
+
   if (opt && opt.ZIPElement){
-    opt.ZIPElement.setQueItem(child.key, true)
+    opt.ZIPElement.setQueItem(child.key, true);
+    loadingTimeout = setTimeout(() => {
+      opt.ZIPElement.setQueItem(child.key, false)
+    }, 10000);
   }
 
   var d = data || {};
@@ -1081,6 +1086,7 @@ module.exports = (payload) => {
     if (isLoading == 1){
       isLoading = 2;
       if (opt && opt.ZIPElement){
+        if (loadingTimeout) clearTimeout(loadingTimeout)
         opt.ZIPElement.setQueItem(child.key, false)
       }
       getAnimationList();
