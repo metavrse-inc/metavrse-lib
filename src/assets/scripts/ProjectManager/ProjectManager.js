@@ -3,15 +3,15 @@
  */
 module.exports = () => {
   const { mat4, vec3 } = Module.require('assets/gl-matrix.js');
-  const URLLoader = Module.require('assets/ProjectManager/URLLoader.js')({
-    visible: true,
-    percentage: 0,
-  });
+  // const URLLoader = Module.require('assets/ProjectManager/URLLoader.js')({
+  //   visible: true,
+  //   percentage: 0,
+  // });
   const NewURLLoader = Module.require(
     'assets/ProjectManager/NewURLLoader.js'
   )();
   const Scenegraph = Module.require('assets/ProjectManager/Scenegraph.js')();
-  Scenegraph.URLLoader = URLLoader;
+  Scenegraph.URLLoader = NewURLLoader;
 
   let manager = {}; // holds manager props and methods
 
@@ -84,7 +84,7 @@ module.exports = () => {
 
       Module.resetCamera();
 
-      URLLoader.visible = false;
+      // URLLoader.visible = false;
 
       if (archive !== null) archive.close();
 
@@ -120,20 +120,20 @@ module.exports = () => {
       Module.canvas.style.visibility = 'hidden';
     }
 
-    URLLoader.visible = true;
-    URLLoader.getPackage(
-      url,
-      (event) => {
-        if (event) {
-          // Load Project
-          Scenegraph.path = event.fullpath;
-          loadScene({ data: event.project }, true);
-        } else {
-          // console.log('> error loading url: ' + url);
-        }
-      },
-      password
-    );
+    // URLLoader.visible = true;
+    // URLLoader.getPackage(
+    //   url,
+    //   (event) => {
+    //     if (event) {
+    //       // Load Project
+    //       Scenegraph.path = event.fullpath;
+    //       loadScene({ data: event.project }, true);
+    //     } else {
+    //       // console.log('> error loading url: ' + url);
+    //     }
+    //   },
+    //   password
+    // );
   };
 
   const sleep = (ms) => {
@@ -150,7 +150,7 @@ module.exports = () => {
 
   const loadScene = async (project, launch)=> {
     if (launch) {
-      URLLoader.visible = true;
+      // URLLoader.visible = true;
       projectRunning = true;
     }
 
@@ -188,7 +188,18 @@ module.exports = () => {
     model: {},
   };
 
+  // texture ignores
+  let textureIgnores = [];
+
   Object.defineProperties(manager, {
+    textureIgnores: {
+      get: () => {
+        return textureIgnores;
+      },
+      set: (v) => {
+        textureIgnores;
+      },
+    },
     path: {
       get: () => {
         return Scenegraph.path;

@@ -58,4 +58,5 @@ export type CherryProjectManager = {
   objPaths: any;
   Physics: any;
   objectControllers: any;
+  textureIgnores: any;
 };

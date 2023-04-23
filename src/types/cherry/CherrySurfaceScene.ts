@@ -19,4 +19,8 @@ export type CherrySurfaceScene = {
   setShadowsLightDirection: (x: number,y: number,z: number) => void;  
   setShadowsTextureSize: (x: number,y: number) => void;  
   setMaxImageDimension: (value: number) => void;  
+  setWebworkerCount: (value: number) => void;  
+  clearWebworkers: () => void;
+  getWorkerObjectQueueSize: () => number;
+  getTextureQueue: () => number;  
 };

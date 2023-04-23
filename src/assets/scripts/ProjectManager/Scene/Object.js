@@ -1052,6 +1052,16 @@ module.exports = (payload) => {
     let obj = scene.getObject(child.key);
     let isLoaded = true;
     if (!obj) {
+
+      if (child.type == "object-hud"){  // tmp  fix for starburst
+        if (opt && opt.ZIPElement){
+          if (loadingTimeout) clearTimeout(loadingTimeout)
+          opt.ZIPElement.setQueItem(child.key, false)
+        }
+        renderList = [];
+        return;
+      }
+
       const path = !isNaN(child.id) && zip_id == "default"
         ? Module.ProjectManager.objPaths[String(child.id)]
         : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
@@ -1236,6 +1246,8 @@ module.exports = (payload) => {
               }
             } else {
               if (textures.includes(option)) {
+                if (window && window.textureIgnores && window.textureIgnores.includes(option)) continue;
+                // if (option == "ao_texture" || option == "normal_texture") continue;
                 let channel = '';
 
                 if (_row.has(option + '_channel')) {
@@ -1274,7 +1286,8 @@ module.exports = (payload) => {
 
                   transparencyMeshRow.options += option + "_zip_id" + ';';
                   transparencyMeshRow.paths += zip_id + ';';
-                } else
+                } 
+                else
                   obj.setParameter(
                     zip_id, 
                     Number(meshid),

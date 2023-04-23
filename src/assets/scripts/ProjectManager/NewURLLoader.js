@@ -6,14 +6,26 @@
 module.exports = (opt) => {
   opt = opt || {};
 
+  const getMobileOS = () => {
+    const ua = navigator.userAgent
+    if (/android/i.test(ua)) {
+      return "Android"
+    }
+    else if ((/iPad|iPhone|iPod/.test(ua)) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)){
+      return "iOS"
+    }
+    return "Other"
+}
+
   let idb;
   let localdb;
-  if (Module.canvas) idb = Module.require('assets/idb.js')();
+  if (Module.canvas) idb = Module.require('assets/idb.js');
+
   const surface = Module.getSurface();
   const scene = surface.getScene();
   const axios = Module.require('assets/axios.min.js');
 
-  const { pullFilesIDB } = Module.require( 'assets/ProjectManager/URLLoader.js' )();
+  // const { pullFilesIDB } = Module.require( 'assets/ProjectManager/URLLoader.js' )();
 
   const sleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -22,14 +34,29 @@ module.exports = (opt) => {
   const newLoader = {};
   // let fullpath = '/';
 
+  // let initDB = async ()=> {
+  //   localdb = await idb.openDB('workspace', 21, {
+  //     upgrade(db) {
+  //       db.createObjectStore('FILE_DATA');
+  //     },
+  //   });
+  // }
+
+  // initDB();
+
   const storeInDB = async (fullpath, data)=> {
-    // if (!localdb){
-      const localdb = await idb.openDB('workspace', 21, {
-        upgrade(db) {
-          db.createObjectStore('FILE_DATA');
-        },
-      });
-    // }
+    await idb.setItem(path, data);
+
+
+
+    return;
+    if (!localdb){
+      // localdb = await idb.openDB('workspace', 21, {
+      //   upgrade(db) {
+      //     db.createObjectStore('FILE_DATA');
+      //   },
+      // });
+    }
 
     let tx = localdb.transaction('FILE_DATA', 'readwrite');
 
@@ -45,12 +72,12 @@ module.exports = (opt) => {
     );
     await tx.done;
 
-    localdb.close();
+    // localdb.close();
     // localdb = null;
     tx = null;
 
     // give GC a chance
-    await sleep(100);
+    await sleep(300);
   }
 
   // Somewhere inside this file we need to put the new endpoint
@@ -66,7 +93,9 @@ module.exports = (opt) => {
       headers.Authorization = `Basic ${btoa(`user:${password}`)}`;
     }
 
-    if (lastTimeDownloaded) {
+    let isIOS = getMobileOS() == "iOS";
+
+    if (lastTimeDownloaded && !isIOS) {
       headers['If-Modified-Since'] = lastTimeDownloaded;
     }
 
@@ -88,27 +117,25 @@ module.exports = (opt) => {
           return status >= 200 && status <= 404; // custom
         },
       };
-
-      axios.get(url, config)
-        .then( (res) => {
+      let urlO = new URL(url);
+      // urlO.searchParams.set("ts", Date.now())
+      axios.get(urlO.toString(), config)
+        .then( async (res) => {
           if (res.status === 200) {
             if (!res.data || !res.headers) {
               options.onProjectFileInvalid && options.onProjectFileInvalid();
               return;
             }
-            localStorage.setItem(lsKey, res.headers['last-modified']);
+
+            if (!isIOS) localStorage.setItem(lsKey, res.headers['last-modified']);
 
             const data = new Uint8Array(res.data);
-
-            if (Module.canvas) {
+            Module.FS.writeFile(
+              fullpath + 'project.zip',
+              data
+            );
               
-              storeInDB(fullpath, res.data);
-
-              Module.FS.writeFile(
-                fullpath + 'project.zip',
-                data
-              );
-            }
+            if (!isIOS) idb.setItem(fullpath + 'project.zip', new Uint8Array(res.data));
 
             callback(fullpath + 'project.zip', res.status);
           }
@@ -117,7 +144,12 @@ module.exports = (opt) => {
             
             let loadLocal = async (fullpath, status)=>{
               try {
-                await pullFilesIDB(fullpath);
+                let zip = await idb.getItem(fullpath);
+                const data = new Uint8Array(zip);
+                Module.FS.writeFile(
+                  fullpath,
+                  data
+                );
   
                 options.onProjectLoadingStart && options.onProjectLoadingStart();
   
@@ -136,7 +168,7 @@ module.exports = (opt) => {
               }
             }
 
-            loadLocal(fullpath + 'project.zip', res.status);
+            await loadLocal(fullpath + 'project.zip', res.status);
           }
 
           if (res.status === 404) {
@@ -300,7 +332,15 @@ module.exports = (opt) => {
     });
   };
 
+  // Props and Methods
+  Object.defineProperties(newLoader, {
+    percentage: { get: () => { return 0; }, set: (v) => {} },
+    // orientation: { get: () => { return (Module.ProjectManager.projectRunning) ? world.orientation : 0; }, set: (v) => { world.orientation = v; } },
+  })
+
+
   return Object.assign(newLoader, {
+    close: ()=> {},
     loadURL,
     fetchData,
     mergeConfigurationsIntoTree

@@ -134,6 +134,7 @@ module.exports = () => {
   let tmpRedraws = null;
   let tmpOpts = null;
   let objectsLoaded = false;
+  let texturesLoaded = false;
   let clearedWebworker = false;
 
   const render = (opts) => {
@@ -220,12 +221,13 @@ module.exports = () => {
 
           return;
         }
-      } else {
+      } else if (!texturesLoaded) {
         let qs = scene.getTextureQueue();
         if (qs == 0) {
+          texturesLoaded = true;
           if (URLLoader) {
             URLLoader.percentage = 1.0;
-            URLLoader.close();
+            // URLLoader.close();
           }
 
           if (Module.canvas) Module.canvas.style.visibility = 'initial';
@@ -241,24 +243,24 @@ module.exports = () => {
         }
       }
 
-      if (!clearedWebworker){
-        let qsO = scene.getWorkerObjectQueueSize();
-        let qsT = scene.getTextureQueue();
+      // if (!clearedWebworker){
+      //   let qsO = scene.getWorkerObjectQueueSize();
+      //   let qsT = scene.getTextureQueue();
         
-        if (qsO == 0 && qsT == 0){
-          clearedWebworker = true;
-          // scene.clearWebworkers();
-        }
+      //   if (qsO == 0 && qsT == 0){
+      //     clearedWebworker = true;
+      //     scene.clearWebworkers();
+      //   }
 
-        return;  
-      }
+      //   return;  
+      // }
       
       launched = true;
 
       initControllers();
       
-      requestAnimationFrame(()=>{
-        requestAnimationFrame(()=>{
+      // requestAnimationFrame(()=>{
+      //   requestAnimationFrame(()=>{
           for (var k of ZIPLaunchKeys){
             initControllersZip(k);
           }
@@ -269,8 +271,8 @@ module.exports = () => {
     
           ZIPLaunchKeys = [];
           ZIPAddCallbacks = [];
-        })
-      })
+      //   })
+      // })
       
       var d_scene =
         sceneprops.project.data['scene'][
@@ -327,7 +329,7 @@ module.exports = () => {
         initControllers();
       }
 
-      scene.clearWebworkers();
+      // scene.clearWebworkers();
 
       // TODO: launch scene controller if any
 
@@ -379,15 +381,15 @@ module.exports = () => {
       // }
 
       if (Module.ProjectManager.projectRunning){
-        let qsO = scene.getWorkerObjectQueueSize();
-        let qsT = scene.getTextureQueue();
+        // let qsO = scene.getWorkerObjectQueueSize();
+        // let qsT = scene.getTextureQueue();
         
-        if (qsO != 0 || qsT != 0){
-          clearedWebworker = false;
-        } else if (qsO == 0 && qsT == 0 && !clearedWebworker){
-          clearedWebworker = true;
-          scene.clearWebworkers();
-        }    
+        // if (qsO != 0 || qsT != 0){
+        //   clearedWebworker = false;
+        // } else if (qsO == 0 && qsT == 0 && !clearedWebworker){
+        //   clearedWebworker = true;
+        //   scene.clearWebworkers();
+        // }    
       }
       
     }

@@ -163,14 +163,21 @@ module.exports = (opt) => {
     return new Promise((resolve) => setTimeout(resolve, ms));
   };
 
-  const pullFilesIDB = async (path) => {
+  let pulledDB = new Map();
+  const pullFilesIDB = async (path, localdb) => {
     if (path == undefined) path = fullpath;
 
-    let localdb = await idb.openDB('workspace', 21, {
-      upgrade(db) {
-        db.createObjectStore('FILE_DATA');
-      },
-    });
+    if (pulledDB.has(path)) return;
+
+    pulledDB.set(path, true);
+
+    // if (!localdb){
+    //   localdb = await idb.openDB('workspace', 21, {
+    //     upgrade(db) {
+    //       db.createObjectStore('FILE_DATA');
+    //     },
+    //   });
+    // }
 
     let tx = localdb.transaction('FILE_DATA', 'readonly');
     let store = tx.objectStore('FILE_DATA');
@@ -191,10 +198,10 @@ module.exports = (opt) => {
       else if (typeof entry === 'string') Module.FS.writeFile(idx, entry);
     }
 
-    localdb.close();
-    localdb = null;
+    // localdb.close();
+    // localdb = null;
 
-    // await sleep(100);
+    await sleep(300);
 
     return true;
   };

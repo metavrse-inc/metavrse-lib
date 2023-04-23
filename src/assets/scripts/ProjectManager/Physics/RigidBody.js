@@ -248,9 +248,9 @@
         body.setFriction(friction);
         if (ghost) {
             // body.setCollisionFlags(4)
-            body.setCollisionFlags(body.getCollisionFlags() | 4 | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
+            body.setCollisionFlags(body.getCollisionFlags() | 4);
         } else if (mass == 0) {
-            body.setCollisionFlags(body.getCollisionFlags() | 1 | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT)
+            body.setCollisionFlags(body.getCollisionFlags() | 1)
         } else {
             // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT)
         }
