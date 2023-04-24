@@ -807,6 +807,7 @@ module.exports = (payload) => {
   const setPropertyMesh = (meshid, prop, value, key) => {
     meshid = String(meshid);
 
+    let isLink = false;
     if (key == undefined) {
       if (transformation['meshes'][meshid] == undefined) {
         transformation['meshes'][meshid] = {};
@@ -822,7 +823,8 @@ module.exports = (payload) => {
         prop,
         value,
       });
-    } else {
+    } else {      
+      isLink = true;
       // we are trying to add a link check if there is a default value
       if (transformation['meshes'][meshid] == undefined) {
         transformation['meshes'][meshid] = {};
@@ -832,7 +834,7 @@ module.exports = (payload) => {
 
       if (meshrow[prop] == undefined){
         let mesh = object.meshlinks.has(meshid) ? object.meshlinks.get(meshid) : new Map();
-        meshrow[prop] = paintedProperty(meshid, prop);
+        // meshrow[prop] = paintedProperty(meshid, prop);
         console.log('nothing found when link activated', meshrow, prop)
         let buckets = new Map();
         buckets.set(object.item.key, meshrow[prop]);
@@ -861,16 +863,14 @@ module.exports = (payload) => {
 
       let buckets = new Map();
       let meshrow = transformation['meshes'][meshid];
-      meshrow[prop] =
-        meshrow[prop] == undefined
-          ? paintedProperty(meshid, prop)
-          : meshrow[prop];
+      console.log(key, object.item, 'no bucket')
+      // meshrow[prop] = meshrow[prop] == undefined ? paintedProperty(meshid, prop) : meshrow[prop];
       buckets.set(object.item.key, meshrow[prop]);
       mesh.set(prop, buckets);
 
       object.meshlinks.set(meshid, mesh);
     }
-
+////////////////////
     let buckets = mesh.has(prop) ? mesh.get(prop) : new Map();
 
     // if mesh does not have a default prop and trying to add link
@@ -880,17 +880,22 @@ module.exports = (payload) => {
       }
 
       let meshrow = transformation['meshes'][meshid];
-      meshrow[prop] =
-        meshrow[prop] == undefined
-          ? paintedProperty(meshid, prop)
-          : meshrow[prop];
+      console.log(key, object.item, 'no default prop')
+      // meshrow[prop] = meshrow[prop] == undefined ? paintedProperty(meshid, prop) : meshrow[prop];
       buckets.set(object.item.key, meshrow[prop]);
       mesh.set(prop, buckets);
 
       object.meshlinks.set(meshid, mesh);
     }
 
-    buckets.set(key, value);
+    // if (isLink){
+    //   console.log('link', {meshid, prop, value, key})
+    //   return;
+    // }
+
+    buckets.set(key, JSON.parse(JSON.stringify(value)));
+////////////
+    
 
     let lastKey = getLastKeyInMap(buckets);
 
@@ -1053,14 +1058,14 @@ module.exports = (payload) => {
     let isLoaded = true;
     if (!obj) {
 
-      if (child.type == "object-hud"){  // tmp  fix for starburst
+      // if (child.type == "object-hud"){  // tmp  fix for starburst
         // if (opt && opt.ZIPElement){
         //   if (loadingTimeout) clearTimeout(loadingTimeout)
         //   opt.ZIPElement.setQueItem(child.key, false)
         // }
-        renderList = [];
-        return;
-      }
+        // renderList = [];
+        // return;
+      // }
 
       const path = !isNaN(child.id) && zip_id == "default"
         ? Module.ProjectManager.objPaths[String(child.id)]
@@ -1094,11 +1099,7 @@ module.exports = (payload) => {
     }
 
     if (isLoading == 1){
-      isLoading = 2;
-      if (opt && opt.ZIPElement){
-        if (loadingTimeout) clearTimeout(loadingTimeout)
-        opt.ZIPElement.setQueItem(child.key, false)
-      }
+      isLoading = 2;      
       getAnimationList();
 
     }
@@ -1419,6 +1420,10 @@ module.exports = (payload) => {
 
     if (loadingState == 'loading') {
       loadingState = 'loaded';
+      if (opt && opt.ZIPElement){
+        if (loadingTimeout) clearTimeout(loadingTimeout)
+        opt.ZIPElement.setQueItem(child.key, false)
+      }
       if (loadingCallback) loadingCallback(object);
     }
 
