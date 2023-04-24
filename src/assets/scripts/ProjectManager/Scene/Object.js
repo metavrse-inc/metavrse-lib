@@ -1054,10 +1054,10 @@ module.exports = (payload) => {
     if (!obj) {
 
       if (child.type == "object-hud"){  // tmp  fix for starburst
-        if (opt && opt.ZIPElement){
-          if (loadingTimeout) clearTimeout(loadingTimeout)
-          opt.ZIPElement.setQueItem(child.key, false)
-        }
+        // if (opt && opt.ZIPElement){
+        //   if (loadingTimeout) clearTimeout(loadingTimeout)
+        //   opt.ZIPElement.setQueItem(child.key, false)
+        // }
         renderList = [];
         return;
       }
