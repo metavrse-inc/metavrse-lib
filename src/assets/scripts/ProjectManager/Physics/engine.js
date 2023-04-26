@@ -166,11 +166,8 @@
       // m_dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_ENABLE_FRICTION_DIRECTION_CACHING;  //don't recalculate friction values each frame
 	   // m_dynamicsWorld->getSolverInfo().m_numIterations = 5;                                       //few solver iterations
       
-      FOV_ammoInitalised = true;
       
-      /// fov
-
-      ammoInitalised = true;
+      /// fov      
       // console.log('Physics initialized')
       // console.log('Gravity: ' + gravity + ' m/s');
 
@@ -327,6 +324,9 @@
       }
 
       addFOVBox();
+
+      FOV_ammoInitalised = true;
+      ammoInitalised = true;
    }
 
    let MVPf = mat4.create();
@@ -362,7 +362,7 @@
       if (isNaN(currentFps)) currentFps = 1 / 60;
 
       physicsWorld.stepSimulation(currentFps, 10, fixedFps);
-      FOV_physicsWorld.stepSimulation(currentFps, 10, fixedFps);
+      FOV_physicsWorld.stepSimulation(currentFps, 1, 1/5);
 
       // deprecate
       for (var [key, _u] of syncList) {
@@ -643,7 +643,7 @@
       }
 
       if (obj){
-         if (type != "FOVMesh") renderList.set(args.idx, obj)
+         if (type != "FOVMesh" && type != "FOVMeshObject") renderList.set(args.idx, obj)
          allList.set(args.idx, obj)
          return obj;
       }
@@ -675,6 +675,7 @@
    }
 
    const removeUpdate = (key)=> {
+      allList.delete(key);
       renderList.delete(key);
       
       try {
@@ -781,6 +782,7 @@
       toggleFOV,
 
       reset,
-      debugDraw
+      debugDraw,
+      isReady : ()=> {return (FOV_ammoInitalised && ammoInitalised)}
    })
 }

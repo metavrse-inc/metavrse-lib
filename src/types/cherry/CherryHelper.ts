@@ -11,6 +11,7 @@ type ChangedPosition = {
   
 type ChangedData = ChangedPosition;
 export type ChangeListenerEvent = Map<string, Map<string, ChangedData[]>>;
+const sleep = (m: number) => new Promise(r => setTimeout(r, m));
 
 const createViewer3DInstance = async (
     canvas: HTMLCanvasElement,
@@ -40,6 +41,10 @@ const createViewer3DInstance = async (
   
     const facade = cherryFacade(viewer);
     await facade.loadAssetsAndRun(scripts);
+
+    while (!viewer.ProjectManager.Physics.isReady()){
+      await sleep(100);
+    }
   
     // window.Module = viewer;
     // viewer.ProjectManager.path = "";

@@ -993,7 +993,7 @@ module.exports = (payload) => {
 
           if (!mesh_enable_fov && !mesh_enable_lod) return;
 
-          if (isVisible && fov_meshes.length == 0){
+          if (fov_meshes.length == 0){
             
                   let obj = scene.getObject(child.key);
 
@@ -1100,8 +1100,11 @@ module.exports = (payload) => {
 
     if (isLoading == 1){
       isLoading = 2;      
+      if (opt && opt.ZIPElement){
+        if (loadingTimeout) clearTimeout(loadingTimeout)
+        opt.ZIPElement.setQueItem(child.key, false)
+      }
       getAnimationList();
-
     }
 
     if (d['autoscaled']) {
@@ -1419,11 +1422,7 @@ module.exports = (payload) => {
     }
 
     if (loadingState == 'loading') {
-      loadingState = 'loaded';
-      if (opt && opt.ZIPElement){
-        if (loadingTimeout) clearTimeout(loadingTimeout)
-        opt.ZIPElement.setQueItem(child.key, false)
-      }
+      loadingState = 'loaded';      
       if (loadingCallback) loadingCallback(object);
     }
 
@@ -1764,11 +1763,20 @@ module.exports = (payload) => {
     },
 
     remove: () => {
+      for (var m of fov_meshes) { try { m.remove(); } catch (error) {} }
+
       if (animationTimer) animationTimer.stop();
 
       if (animationDelay) {
         clearTimeout(animationDelay);
         animationDelay = null;
+      }
+
+      try {
+        sceneprops.objectControllers[child.key] = undefined;
+        delete sceneprops.objectControllers[child.key];
+      } catch (error) {
+        
       }
 
       for (let [key, child] of object.children) {
@@ -1783,16 +1791,12 @@ module.exports = (payload) => {
         }
       }
 
-      for (var m of fov_meshes) {
-        m.remove();
-      }
-
       m = [];
 
       sceneprops.sceneIndex.delete(object.item.key);
       if (object.parent) object.parent.children.delete(object.item.key);
 
-      scene.removeObject(object.item.key);
+      try { scene.removeObject(object.item.key); } catch (error) {}
       Module.ProjectManager.isDirty = true;
 
       addToUpdated(object.item.key, 'removed', {

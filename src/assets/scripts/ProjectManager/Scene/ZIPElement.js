@@ -381,15 +381,19 @@
         },
 
         remove: ()=> {
+            try {
+                sceneprops.worldControllers.delete(object.item.key + "_world")
+            } catch (error) {}
+
             for (let [key, child] of object.children) {
-                child.remove();
+                try { child.remove(); } catch (error) {}
             }
 
             for (let [key, handler] of updateHandlers) {
               try {
                 handler('removed');
               } catch (err) {
-                console.log(err);
+                // console.log(err);
               }
             }
             

@@ -138,47 +138,20 @@ module.exports = () => {
   let clearedWebworker = false;
 
   const render = (opts) => {
-    // deprecating
-    // if (!isEmpty(sceneprops.redraw)) processRedraw(opts);
-    // deprecating
-
     if (Module.ProjectManager.projectRunning) Physics.render();
 
     let local_redraws = new Map(redraws);
     redraws.clear();
 
-    // if (!Module.ProjectManager.projectRunning){
-      for (const [key, value] of local_redraws) {
-        if (opts && opts[key]) {
-          if (opts[key]['parentMat'])
-            opts[key]['transform'] = opts[key]['parentMat'];
-          value.render(opts[key]);
-        } else {
-          value.render(opts);
-        }
+    for (const [key, value] of local_redraws) {
+      if (opts && opts[key]) {
+        if (opts[key]['parentMat'])
+          opts[key]['transform'] = opts[key]['parentMat'];
+        value.render(opts[key]);
+      } else {
+        value.render(opts);
       }
-    // } else {
-    //   for (const [key, value] of local_redraws) {
-    //     let pass = true;
-    //     if (value.item.type == "object" && value.zip_id != "default"){
-    //       let obj = scene.getObject(value.item.key);
-    //       if (!obj || obj.getStatus() == 0){
-    //         if (obj) redraws.set(key, value);
-    //         pass = false;
-    //       }
-    //     }
-  
-    //     if (pass){
-    //       if (tmpOpts && tmpOpts[key]) {
-    //         if (tmpOpts[key]['parentMat'])
-    //           tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
-    //         value.render(tmpOpts[key]);
-    //       } else {
-    //         value.render(tmpOpts);
-    //       }
-    //     }
-    //   }
-    // }
+    }
 
     if (launch && !launched) {
       if (tmpRedraws == null) {
@@ -243,36 +216,32 @@ module.exports = () => {
         }
       }
 
-      // if (!clearedWebworker){
-      //   let qsO = scene.getWorkerObjectQueueSize();
-      //   let qsT = scene.getTextureQueue();
+      if (!clearedWebworker){
+        let qsO = scene.getWorkerObjectQueueSize();
+        let qsT = scene.getTextureQueue();
         
-      //   if (qsO == 0 && qsT == 0){
-      //     clearedWebworker = true;
-      //     scene.clearWebworkers();
-      //   }
+        if (qsO == 0 && qsT == 0){
+          clearedWebworker = true;
+          scene.clearWebworkers();
+        }
 
-      //   return;  
-      // }
+        return;  
+      }
       
       launched = true;
 
       initControllers();
       
-      // requestAnimationFrame(()=>{
-      //   requestAnimationFrame(()=>{
-          for (var k of ZIPLaunchKeys){
-            initControllersZip(k);
-          }
-    
-          for (var k of ZIPAddCallbacks){
-            k();
-          }
-    
-          ZIPLaunchKeys = [];
-          ZIPAddCallbacks = [];
-      //   })
-      // })
+      for (var k of ZIPLaunchKeys){
+        initControllersZip(k);
+      }
+
+      for (var k of ZIPAddCallbacks){
+        k();
+      }
+
+      ZIPLaunchKeys = [];
+      ZIPAddCallbacks = [];
       
       var d_scene =
         sceneprops.project.data['scene'][
@@ -1591,6 +1560,12 @@ module.exports = () => {
     selectScene,
 
     reset: () => {
+      for (var [key, obj] of sceneprops.sceneIndex){
+        // clear root items
+        try { if(!obj.parent) obj.remove(); } catch (error) {}
+      }
+      sceneprops.sceneIndex.clear();
+      sceneList = [];
       Physics.reset();
       queueSize = 0;
       redraws.clear();
@@ -1600,7 +1575,6 @@ module.exports = () => {
       sceneprops.objectControllers = {};
       sceneprops.worldController = undefined;
       sceneprops.meshControllers = {};
-      sceneprops.sceneIndex.clear();
       sceneprops.configurations.clear();
       sceneprops.assetIndex.clear();
       sceneprops.config_idx = 0;

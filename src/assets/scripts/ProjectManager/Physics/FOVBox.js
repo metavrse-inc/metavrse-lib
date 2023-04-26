@@ -267,6 +267,8 @@
         move();
         var overlapping = body.getNumOverlappingObjects();
         for (var x=0; x < overlapping; x++){
+            if (body.getNumOverlappingObjects() != overlapping) return;
+            
             let obj = body.getOverlappingObject(x);
             let idx = obj.getUserIndex();     
 

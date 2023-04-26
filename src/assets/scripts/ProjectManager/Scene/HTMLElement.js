@@ -885,12 +885,17 @@
         },
 
         remove: ()=> {
+            try {
+                sceneprops.objectControllers[child.key] = undefined;
+                delete sceneprops.objectControllers[child.key];
+            } catch (error) {}
+
             for (let [key, child] of object.children) {
-                child.remove();
+                try { child.remove(); } catch (error) {}
             }
 
             for (let [key, handler] of updateHandlers) {
-                handler("removed");
+                try { handler("removed"); } catch (error) {}
             }
             
             sceneprops.sceneIndex.delete(object.item.key);

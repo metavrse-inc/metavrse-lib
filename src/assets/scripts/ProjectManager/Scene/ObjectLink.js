@@ -450,11 +450,16 @@ module.exports = (payload) => {
     removeLink,
 
     remove: () => {
+      try {
+        sceneprops.objectControllers[child.key] = undefined;
+        delete sceneprops.objectControllers[child.key];
+      } catch (error) {}
+
       for (let [key, child] of object.children) {
-        child.remove();
+        try { child.remove(); } catch (error) {}
       }
 
-      removeLinks();
+      try { removeLinks(); } catch (error) {}
 
       sceneprops.sceneIndex.delete(object.item.key);
       if (object.parent) object.parent.children.delete(object.item.key);

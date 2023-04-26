@@ -80,7 +80,7 @@
 
     const remove = ()=> {
         if (parent) parent.children.delete(child.key);
-        // Physics.removeUpdate(child.key);
+        Physics.removeUpdate(child.key);
 
         deleteBody();        
     }
