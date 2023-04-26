@@ -76,7 +76,7 @@ module.exports = (payload) => {
     let HTMLModel = sceneprops.sceneIndex.get(child.skey);
 
     const isParentAvailable = ()=> {
-        if (HTMLModel != undefined) return true;
+        // if (HTMLModel != undefined) return true;
 
         HTMLModel = sceneprops.sceneIndex.get(child.skey);
 

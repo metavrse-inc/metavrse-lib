@@ -89,7 +89,7 @@ module.exports = (payload) => {
     let VideoModel = sceneprops.sceneIndex.get(child.skey);
 
     const isParentAvailable = ()=> {
-        if (VideoModel != undefined) return true;
+        // if (VideoModel != undefined) return true;
 
         VideoModel = sceneprops.sceneIndex.get(child.skey);
 

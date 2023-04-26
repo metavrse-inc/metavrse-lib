@@ -66,7 +66,7 @@
     let CameraModel = sceneprops.sceneIndex.get(child.skey);
 
     const isParentAvailable = ()=> {
-        if (CameraModel != undefined) return true;
+        // if (CameraModel != undefined) return true;
 
         CameraModel = sceneprops.sceneIndex.get(child.skey);
 
