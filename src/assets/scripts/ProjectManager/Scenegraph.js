@@ -542,7 +542,7 @@ module.exports = () => {
       if (obj) {
         sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
 
-        if (!payload.parent) sceneList.push(obj); // only for root items
+        // if (!payload.parent) sceneList.push(obj); // only for root items
 
         if (obj.item.type == "ZIPElement") addZip(obj, false);
 

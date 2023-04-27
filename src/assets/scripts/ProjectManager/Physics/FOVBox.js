@@ -293,9 +293,9 @@
                         collisionStatus.get(el.item.key).inContact = true;
                     }
                 } else if (el.item.type == "FOVMeshObject"){
-                    let ks = el.item.key.split("_")
-                    let key = ks[0];
+                    // let ks = el.item.key.split("_")
                     let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
+                    let key = el.item.key.replace("_"+meshid, "");
 
                     if (!collisionStatus.has(el.item.key)){
                         collisionStatus.set(el.item.key, {
@@ -304,8 +304,9 @@
                             meshid
                         })
                         if (params.fov_enabled && el.render_fov_visible) {
-                            if (el.object) {
-                                el.object.setParameter('visible', el.parent.parentOpts.visible);
+                            let obj = scene.getObject(key);
+                            if (obj) {
+                                obj.setParameter('visible', el.parent.parentOpts.visible);
                             }
 
                             // el.parent.visible = true;
@@ -330,7 +331,11 @@
         {
             if (!value.inContact){
                 if (value.el.item.type == "FOVMeshObject"){
-                    if (params.fov_enabled && value.el.render_fov_visible && value.el.object) value.el.object.setParameter('visible', false);
+                    let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
+                    let key = value.el.item.key.replace("_"+meshid, "");
+
+                    let obj = scene.getObject(key);
+                    if (params.fov_enabled && value.el.render_fov_visible && obj) obj.setParameter('visible', false);
                     // if (el.object) el.object.setParameter('visible', el.parent.visible);
                 }
                 else {
@@ -339,8 +344,11 @@
                 map.delete(key);
             } else {
                 if (value.el.item.type == "FOVMeshObject"){
-                    if (params.fov_enabled && value.el.render_fov_visible && value.el.object) {
-                        value.el.object.setParameter('visible', value.el.parent.parentOpts.visible);
+                    let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
+                    let key = value.el.item.key.replace("_"+meshid, "");
+                    let obj = scene.getObject(key);
+                    if (params.fov_enabled && value.el.render_fov_visible && obj) {
+                        obj.setParameter('visible', value.el.parent.parentOpts.visible);
                     }
                 }else {
                     if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", true);
