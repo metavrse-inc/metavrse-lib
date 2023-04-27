@@ -752,6 +752,8 @@
       }
     }
 
+   let isResetting = false;
+
    Object.defineProperties(_physics, {
       CollisionFlags: { get: () => { return CollisionFlags; }, set: (v) => {} },
       Ammo: { get: () => { return Ammo; }, set: (v) => {} },
@@ -760,6 +762,7 @@
 
       FOV_Ammo: { get: () => { return FOV_Ammo; }, set: (v) => {} },
       FOV_PhysicsWorld: { get: () => { return FOV_physicsWorld; }, set: (v) => {} },
+      isResetting: { get: () => { return isResetting; }, set: (v) => { isResetting = v} },
    })
 
    return Object.assign(_physics, {

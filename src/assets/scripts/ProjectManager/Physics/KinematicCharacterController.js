@@ -111,9 +111,13 @@ module.exports = (payload) => {
 
         if (parent) parent.children.delete(child.key);
 
-        setTimeout(()=>{
+        if (Physics.isResetting){
             deleteBody();
-        })
+        }else{
+            setTimeout(()=>{
+                deleteBody();
+            });
+        }
     }
     
     var geometry;
@@ -370,9 +374,13 @@ module.exports = (payload) => {
             updateMath.btScales = new Ammo.btVector3();
             updateMath.btTransform = new Ammo.btTransform();
 
-            setTimeout(()=>{
+            if (Physics.isResetting){
                 addObject(payload)
-            })
+            }else{
+                setTimeout(()=>{
+                    addObject(payload)
+                });
+            }
         } else if (isLoaded && body) {
             let renderTransform = false;
             let reInsert = false;

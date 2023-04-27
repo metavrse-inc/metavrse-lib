@@ -47,6 +47,8 @@ module.exports = () => {
 
   let redraws = new Map();
 
+  let isResetting = false;
+
   var URLLoader;
 
   const Physics = Module.require('assets/ProjectManager/Physics/engine.js')();
@@ -1560,6 +1562,8 @@ module.exports = () => {
     selectScene,
 
     reset: () => {
+      isResetting = true;
+      Physics.isResetting = true;
       for (var [key, obj] of sceneprops.sceneIndex){
         // clear root items
         try { if(!obj.parent) obj.remove(); } catch (error) {}

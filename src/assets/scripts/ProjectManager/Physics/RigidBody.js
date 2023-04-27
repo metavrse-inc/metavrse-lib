@@ -103,9 +103,14 @@
         if (parent) parent.children.delete(child.key);
         Physics.removeUpdate(child.key);
 
-        setTimeout(()=>{
+        if (Physics.isResetting){
             deleteBody();        
-        });
+        }else{
+            setTimeout(()=>{
+                deleteBody();        
+            });
+        }
+
     }
     
     let _object = null;
@@ -340,9 +345,14 @@
             updateMath.btScales = new Ammo.btVector3();
             updateMath.btTransform = new Ammo.btTransform();
 
-            setTimeout(()=>{
+            if (Physics.isResetting){
                 addObject(payload)
-            })
+            }else{
+                setTimeout(()=>{
+                    addObject(payload)
+                });
+            }
+            
         } else if (isLoaded && body) {
             let reInsert = false;
             // console.log(opts, renderList)
