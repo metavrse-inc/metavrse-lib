@@ -62,7 +62,7 @@ Module.resetCamera = function () {
     distance: 3.5,
     onTap: (button, x, y) => {
       if (Module.ProjectManager.projectRunning) {
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           try {
             const p = scene.getObjectByPixel(parseInt(x), parseInt(y));
             if (p && p.object && p.object.object_ptr() != null) {
@@ -124,7 +124,7 @@ Module.resetCamera = function () {
           } catch (e) {
             console.error(e);
           }
-        }, 0);
+        });
       } else if (
         !Module.ProjectManager.projectRunning &&
         Module.Handlers &&
@@ -260,7 +260,9 @@ Module.render = function () {
     if (width != canvas.width || height != canvas.height) {
       canvas.width = width;
       canvas.height = height;
-      surface.onSurfaceChanged(width, height);
+      requestAnimationFrame(()=>{
+        surface.onSurfaceChanged(width, height);
+      })
     }
   } else if (Module.setFixedSize) {
     const World = Module.ProjectManager.getObject('world');
@@ -281,7 +283,9 @@ Module.render = function () {
     const height = ~~(canvas.clientHeight * Module.pixelDensity);
     if (width != Module.screen.width || height != Module.screen.height) {
       Module.setFixedSize(width, height, Module.pixelDensity);
-      surface.onSurfaceChanged(canvas.rotation, width, height);
+      requestAnimationFrame(()=>{
+        surface.onSurfaceChanged(canvas.rotation, width, height);
+      })
     }
   }
 
@@ -387,128 +391,143 @@ Module.onDestroy = function () {
 };
 
 Module.onMouseEvent = function (event, button, x, y) {
-  // mouseQue.push([event, button, x, y])
-  var resp = true;
-  if (
-    Module.ProjectManager.projectRunning &&
-    Module.ProjectManager.worldController &&
-    typeof Module.ProjectManager.worldController.onMouseEvent === 'function'
-  )
-    resp = Module.ProjectManager.worldController.onMouseEvent(
-      event,
-      button,
-      x,
-      y
-    );
-  else if (
-    !Module.ProjectManager.projectRunning &&
-    Module.Handlers &&
-    typeof Module.Handlers.onMouseEvent === 'function'
-  )
-    resp = Module.Handlers.onMouseEvent(event, button, x, y);
+  requestAnimationFrame(()=>{
+    // mouseQue.push([event, button, x, y])
+    var resp = true;
+    if (
+      Module.ProjectManager.projectRunning &&
+      Module.ProjectManager.worldController &&
+      typeof Module.ProjectManager.worldController.onMouseEvent === 'function'
+    )
+      resp = Module.ProjectManager.worldController.onMouseEvent(
+        event,
+        button,
+        x,
+        y
+      );
+    else if (
+      !Module.ProjectManager.projectRunning &&
+      Module.Handlers &&
+      typeof Module.Handlers.onMouseEvent === 'function'
+    )
+      resp = Module.Handlers.onMouseEvent(event, button, x, y);
+  
+    if (resp == undefined || resp)
+      Module.controls.onMouseEvent(event, button, x, y);
+    Module.ProjectManager.isDirty = true;
 
-  if (resp == undefined || resp)
-    Module.controls.onMouseEvent(event, button, x, y);
-  Module.ProjectManager.isDirty = true;
+  })
 };
 
 Module.onScroll = function (y) {
-  var res = true;
-  if (
-    Module.ProjectManager.projectRunning &&
-    Module.ProjectManager.worldController &&
-    typeof Module.ProjectManager.worldController.onScroll === 'function'
-  )
-    res = Module.ProjectManager.worldController.onScroll(y);
-  else if (Module.Handlers && typeof Module.Handlers.onScroll === 'function')
-    res = Module.Handlers.onScroll(y);
+  requestAnimationFrame(()=>{
+    var res = true;
+    if (
+      Module.ProjectManager.projectRunning &&
+      Module.ProjectManager.worldController &&
+      typeof Module.ProjectManager.worldController.onScroll === 'function'
+    )
+      res = Module.ProjectManager.worldController.onScroll(y);
+    else if (Module.Handlers && typeof Module.Handlers.onScroll === 'function')
+      res = Module.Handlers.onScroll(y);
+  
+    if (res == undefined || res) Module.controls.onScroll(y);
+    Module.ProjectManager.isDirty = true;
 
-  if (res == undefined || res) Module.controls.onScroll(y);
-  Module.ProjectManager.isDirty = true;
+  })
 };
 
 Module.onTouchEvent = function (event, touches, pointer, x, y) {
   // touchQue.push([event, touches, pointer, x, y]);
-  var resp = true;
-  if (
-    Module.ProjectManager.projectRunning &&
-    Module.ProjectManager.worldController &&
-    typeof Module.ProjectManager.worldController.onTouchEvent === 'function'
-  )
-    resp = Module.ProjectManager.worldController.onTouchEvent(
-      event,
-      touches,
-      pointer,
-      x,
-      y
-    );
-  else if (
-    !Module.ProjectManager.projectRunning &&
-    Module.Handlers &&
-    typeof Module.Handlers.onTouchEvent === 'function'
-  )
-    resp = Module.Handlers.onTouchEvent(event, touches, pointer, x, y);
+  requestAnimationFrame(()=>{
+    var resp = true;
+    if (
+      Module.ProjectManager.projectRunning &&
+      Module.ProjectManager.worldController &&
+      typeof Module.ProjectManager.worldController.onTouchEvent === 'function'
+    )
+      resp = Module.ProjectManager.worldController.onTouchEvent(
+        event,
+        touches,
+        pointer,
+        x,
+        y
+      );
+    else if (
+      !Module.ProjectManager.projectRunning &&
+      Module.Handlers &&
+      typeof Module.Handlers.onTouchEvent === 'function'
+    )
+      resp = Module.Handlers.onTouchEvent(event, touches, pointer, x, y);
+  
+    if (resp == undefined || resp)
+      Module.controls.onTouchEvent(event, touches, pointer, x, y);
+    Module.ProjectManager.isDirty = true;
 
-  if (resp == undefined || resp)
-    Module.controls.onTouchEvent(event, touches, pointer, x, y);
-  Module.ProjectManager.isDirty = true;
+  })
 };
 
 Module.onSurfaceChanged = function (rotation, width, height) {
   Module.screen.width = width;
   Module.screen.height = height;
 
-  try {
-    const World = Module.ProjectManager.getObject('world');
-    if (World) {
-      let dpr =
-        typeof devicePixelRatio !== 'undefined' && devicePixelRatio
-          ? devicePixelRatio
-          : 1;
-      Module['pixelDensity'] = 1 + (dpr - 1) * World.dpr;
+  let run = ()=>{
+    try {
+      const World = Module.ProjectManager.getObject('world');
+      if (World) {
+        let dpr =
+          typeof devicePixelRatio !== 'undefined' && devicePixelRatio
+            ? devicePixelRatio
+            : 1;
+        Module['pixelDensity'] = 1 + (dpr - 1) * World.dpr;
+      }
+    } catch (error) {
+      if (Module.canvas) {
+        let dpr =
+          typeof devicePixelRatio !== 'undefined' && devicePixelRatio
+            ? devicePixelRatio
+            : 1;
+        Module['pixelDensity'] = 1 + (dpr - 1) * 0.5;
+      }
     }
-  } catch (error) {
-    if (Module.canvas) {
-      let dpr =
-        typeof devicePixelRatio !== 'undefined' && devicePixelRatio
-          ? devicePixelRatio
-          : 1;
-      Module['pixelDensity'] = 1 + (dpr - 1) * 0.5;
+  
+    // for (var [k, o] of Module.ProjectManager.getObjects()) {
+    //   if (o.addToRedraw) o.addToRedraw('transform');
+    // }
+  
+    let res = false;
+    if (
+      Module.ProjectManager.projectRunning &&
+      Module.ProjectManager.worldController &&
+      typeof Module.ProjectManager.worldController.onSurfaceChanged === 'function'
+    )
+      res = Module.ProjectManager.worldController.onSurfaceChanged(
+        rotation,
+        width,
+        height
+      );
+    else if (
+      !Module.ProjectManager.projectRunning &&
+      Module.Handlers &&
+      typeof Module.Handlers.onSurfaceChanged === 'function'
+    )
+      Module.Handlers.onSurfaceChanged(rotation, width, height);
+    Module.camera.viewport = [rotation, 0, width, height];
+    Module.ProjectManager.isDirty = true;
+  
+    if (eventListeners.has('onSurfaceChanged')) {
+      const listeners = eventListeners.get('onSurfaceChanged');
+      for (const [key, listener] of listeners) {
+        try {
+          listener(rotation, width, height);
+        } catch (error) {}
+      }
     }
+
   }
 
-  // for (var [k, o] of Module.ProjectManager.getObjects()) {
-  //   if (o.addToRedraw) o.addToRedraw('transform');
-  // }
+  requestAnimationFrame(run)
 
-  let res = false;
-  if (
-    Module.ProjectManager.projectRunning &&
-    Module.ProjectManager.worldController &&
-    typeof Module.ProjectManager.worldController.onSurfaceChanged === 'function'
-  )
-    res = Module.ProjectManager.worldController.onSurfaceChanged(
-      rotation,
-      width,
-      height
-    );
-  else if (
-    !Module.ProjectManager.projectRunning &&
-    Module.Handlers &&
-    typeof Module.Handlers.onSurfaceChanged === 'function'
-  )
-    Module.Handlers.onSurfaceChanged(rotation, width, height);
-  Module.camera.viewport = [rotation, 0, width, height];
-  Module.ProjectManager.isDirty = true;
-
-  if (eventListeners.has('onSurfaceChanged')) {
-    const listeners = eventListeners.get('onSurfaceChanged');
-    for (const [key, listener] of listeners) {
-      try {
-        listener(rotation, width, height);
-      } catch (error) {}
-    }
-  }
 };
 
 Module.onPause = function () {};
