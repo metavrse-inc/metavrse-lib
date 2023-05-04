@@ -81,8 +81,22 @@
     const remove = ()=> {
         if (parent) parent.children.delete(child.key);
         Physics.removeUpdate(child.key);
-
-        deleteBody();        
+        
+        if (Physics.isResetting){
+            try {
+                deleteBody();
+            } catch (error) {
+                
+            }
+        }else{
+            setTimeout(()=>{
+                try {
+                    deleteBody();
+                } catch (error) {
+                    
+                }
+            });
+        }
     }
     
     let _object = null;
@@ -113,45 +127,27 @@
         let scales = object.scales;
         let m = object.matrix;
 
-        if (object.item.type == "FOVMeshObject"){
-            mat4.getScaling(scales, o.parentOpts.transform)
-            size = [extents.f1, extents.f2, extents.f3]
-            
-            quat.fromEuler(q, ...o.rotate)
-    
-            if (o.parent && o.parent.parentOpts){
-                let qParent = quat.create();
-                mat4.getRotation(qParent, o.parent.parentOpts.transform);
-                quat.multiply(q, qParent, q );
-            }
-    
-            let position = vec3.create();
-            mat4.getTranslation(position, o.parentOpts.transform)
-      
-            mat4.fromRotationTranslation(m, q, position) 
-        } else {
-            mat4.getScaling(scales, o.parentOpts.transform)
-            size = [extents.f1, extents.f2, extents.f3]
-            
-            quat.fromEuler(q, ...o.rotate)
+        mat4.getScaling(scales, o.parentOpts.transform)
+        size = [extents.f1, extents.f2, extents.f3]
+        
+        quat.fromEuler(q, ...o.rotate)
 
-            if (o.parent && o.parent.parentOpts){
-                let qParent = quat.create();
-                mat4.getRotation(qParent, o.parent.parentOpts.transform);
-                quat.multiply(q, qParent, q);
-            }
-            
-            let positionOriginal = vec3.create();
-            mat4.getTranslation(positionOriginal, o.parentOpts.transform)
-    
-            let position = vec3.fromValues(object.center.f1 * scales[0],
-                object.center.f2 * scales[1], 
-                object.center.f3 * scales[2])
-
-            mat4.fromRotationTranslation(object.matrix, q, positionOriginal);
-            
-            mat4.translate(m, m, position);
+        if (o.parent && o.parent.parentOpts){
+            let qParent = quat.create();
+            mat4.getRotation(qParent, o.parent.parentOpts.transform);
+            quat.multiply(q, qParent, q);
         }
+        
+        let positionOriginal = vec3.create();
+        mat4.getTranslation(positionOriginal, o.parentOpts.transform)
+
+        let position = vec3.fromValues(object.center.f1 * scales[0],
+            object.center.f2 * scales[1], 
+            object.center.f3 * scales[2])
+
+        mat4.fromRotationTranslation(object.matrix, q, positionOriginal);
+        
+        mat4.translate(m, m, position);
         
         q = args.q || q;
         key = args.key || key;
@@ -210,7 +206,21 @@
             updateMath.btScales = new Ammo.btVector3();
             updateMath.btTransform = new Ammo.btTransform();
 
-            addObject(payload)
+            if (Physics.isResetting){
+                try {
+                    addObject(payload)
+                } catch (error) {
+                    
+                }
+            }else{
+                setTimeout(()=>{
+                    try {
+                        addObject(payload)
+                    } catch (error) {
+                        
+                    }
+                });
+            }
         } else if (isLoaded && body) {
             if (opts.transform) {
                 let scales = updateMath.scales;

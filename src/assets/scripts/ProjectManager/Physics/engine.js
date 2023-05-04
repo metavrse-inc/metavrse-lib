@@ -596,6 +596,16 @@
    }
 
    const reset = ()=> {
+      if (Physics.isResetting){
+         _reset(); 
+       }else{
+         setTimeout(()=>{
+            _reset(); 
+         });
+       }
+   }
+
+   const _reset = ()=> {
       syncList.clear();   
 
       for (var [key, val] of objectIndexes){

@@ -1010,7 +1010,7 @@ module.exports = (payload) => {
       
                 if (mesh_enable_fov) obj.setParameter('visible', false);
 
-                fov_meshes.push(Physics.add(pl));
+                fov_meshes.push(Physics.add(pl));                  
 
                   // let meshes_ = obj.getMeshes();
 
@@ -1044,7 +1044,10 @@ module.exports = (payload) => {
                   // }catch(e){
                   // }
               // }
-          } else if (!isVisible && fov_meshes.length > 0) {
+          } else if (fov_meshes.length > 0) {
+              for (var m of fov_meshes){
+                m.render(parentOpts.transform)
+              }
               // removeFOV();
           }
 
@@ -1058,15 +1061,6 @@ module.exports = (payload) => {
     let isLoaded = true;
     if (!obj) {
 
-      // if (child.type == "object-hud"){  // tmp  fix for starburst
-        // if (opt && opt.ZIPElement){
-        //   if (loadingTimeout) clearTimeout(loadingTimeout)
-        //   opt.ZIPElement.setQueItem(child.key, false)
-        // }
-        // renderList = [];
-        // return;
-      // }
-
       const path = !isNaN(child.id) && zip_id == "default"
         ? Module.ProjectManager.objPaths[String(child.id)]
         : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
@@ -1074,11 +1068,19 @@ module.exports = (payload) => {
         obj = scene.addObject(zip_id, String(child.key), path);
         isLoading = 1;
       } catch (error) {
+        if (opt && opt.ZIPElement){
+          if (loadingTimeout) clearTimeout(loadingTimeout)
+          opt.ZIPElement.setQueItem(child.key, false)
+        }
         renderList = [];
         return;
       }
 
       if (!obj) {
+        if (opt && opt.ZIPElement){
+          if (loadingTimeout) clearTimeout(loadingTimeout)
+          opt.ZIPElement.setQueItem(child.key, false)
+        }
         renderList = [];
         return;
       }
@@ -1397,8 +1399,6 @@ module.exports = (payload) => {
       }
       obj.setParameter('visible', parentOpts.visible);
       renderVisibility = true;
-
-      toggleFOV(parentOpts.visible);
       
       for (let [key, handler] of updateHandlers) {
         try {
@@ -1407,6 +1407,12 @@ module.exports = (payload) => {
           console.log(err);
         }
       }
+    }
+
+    if (renderTransformation){
+      setTimeout(() => {
+        toggleFOV(parentOpts.visible);        
+      });
     }
 
     for (let [meshid, value] of pbrBundle) {
@@ -1763,7 +1769,13 @@ module.exports = (payload) => {
     },
 
     remove: () => {
-      for (var m of fov_meshes) { try { m.remove(); } catch (error) {} }
+      // if (Physics.isResetting){
+      //   removeFOV(); 
+      // }else{
+      //   setTimeout(()=>{
+          removeFOV(); 
+      //   });
+      // }
 
       if (animationTimer) animationTimer.stop();
 
