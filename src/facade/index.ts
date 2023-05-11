@@ -222,8 +222,9 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
    * @param key
    * @returns Object meshes
    */
-  const getObjectMeshes = (key: CherryKey): CherryObjectMeshes => {
+  const getObjectMeshes = (key: CherryKey): CherryObjectMeshes | undefined => {
     const sceneObject = scene.getObject(key);
+    if (!sceneObject) return;
     const meshes = sceneObject.getMeshes();
     const meshMaterials = sceneObject.getMeshMaterials();
     const meshGroups = sceneObject.getMeshGroups();
@@ -480,7 +481,9 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
         // object.removeChangeListener(changeListenerFN);
 
         // Change material shader to PBR
-        const meshesIds = getObjectMeshes(key).objectMeshes.map(
+        const meshes = getObjectMeshes(key);
+        if (!meshes) return;
+        const meshesIds = meshes.objectMeshes.map(
           (mesh) => mesh.mesh_id
         );
 
