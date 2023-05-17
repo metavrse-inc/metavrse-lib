@@ -192,10 +192,12 @@ module.exports = (payload) => {
         },
 
         addChangeListener: (callback) => {
+            if (!isParentAvailable()) return;
             ObjectGroupModel.addChangeListener(callback);
         },
 
         removeChangeListener: (callback) => {
+            if (!isParentAvailable()) return;
             ObjectGroupModel.removeChangeListener(callback);
         },
 

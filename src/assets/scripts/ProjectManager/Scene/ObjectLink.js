@@ -471,10 +471,12 @@ module.exports = (payload) => {
     },
 
     addChangeListener: (callback) => {
+      if (!isParentAvailable()) return;
       ObjectModel.addChangeListener(callback);
     },
 
     removeChangeListener: (callback) => {
+      if (!isParentAvailable()) return;
       ObjectModel.removeChangeListener(callback);
     },
 
