@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.33.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.17...v1.33.0) (2023-05-18)
+
+
+### Features
+
+* AT-136 Add front_facing field to Entity and property GetterSetter ([5684a42](https://github.com/metavrse-inc/metavrse-lib/commit/5684a4273881e980e8c68e6cf06fe8ae52550ede))
+
+
+### Bug Fixes
+
+* AT-147 Return if parent scene object does not exist ([47ead7d](https://github.com/metavrse-inc/metavrse-lib/commit/47ead7d7729a869d3c0ea85f44d4d2324ea15028))
+
 ### [1.32.17](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.16...v1.32.17) (2023-05-04)
 
 ### [1.32.16](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.15...v1.32.16) (2023-04-27)
