@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.33.1](https://github.com/metavrse-inc/metavrse-lib/compare/v1.33.0...v1.33.1) (2023-05-23)
+
 ## [1.33.0](https://github.com/metavrse-inc/metavrse-lib/compare/v1.32.17...v1.33.0) (2023-05-18)
 
 
