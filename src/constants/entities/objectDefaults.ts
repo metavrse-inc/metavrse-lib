@@ -13,4 +13,5 @@ export const objectDefaults: Omit<ObjectEntity, 'key'> = {
   show_shadow: false,
   cast_shadow: false,
   visible: true,
+  frame: ["0",0],
 };

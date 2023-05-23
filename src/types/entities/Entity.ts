@@ -6,6 +6,7 @@ import { RGB } from '../common/RGB';
 import { Code, ConfigurationNodeType, TreeNodeType } from '..';
 import { StandardPropertiesHyphen } from 'csstype';
 import { HTMLHudSupportedTags } from './HTMLHudSupportedTags';
+import { CherryAnimationFrame } from '../cherry/CherryAnimationFrame';
 
 export type Entity = {
   key: CherryKey;
@@ -30,6 +31,8 @@ export type Entity = {
   render_fov_visible?: boolean;
   render_fov_lod?: boolean;
   front_facing?: boolean;
+
+  frame?: CherryAnimationFrame;
 
   // asset zip
   url?: string;

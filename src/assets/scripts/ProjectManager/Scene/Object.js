@@ -1344,7 +1344,7 @@ module.exports = (payload) => {
             const vcs = getLastValueInMap(getProperties('frame'));
 
             let opts = {
-              id: vcs[0], // animation id (index # from animations list)
+              id: Number(vcs[0]), // animation id (index # from animations list)
               raw: true,
             };
             playAnimation(opts);

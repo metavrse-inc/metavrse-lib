@@ -32,6 +32,7 @@ export type GetterSetterPropertyType =
   | 'render_back_faces' 
   | 'render_fov_visible'
   | 'front_facing'
+  | 'frame'
 
   // Video
   | 'src'
