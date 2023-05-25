@@ -166,7 +166,7 @@
     }
 
     if (!ParentElement){
-        console.log(object)
+        // console.log(object)
     }
 
     let links = {
@@ -420,7 +420,7 @@
                                 v = `data:image/png;base64,${toBase64(new Uint8Array(file))}`
                                 
                             } catch (error) {
-                                console.log(error)
+                                // console.log(error)
                             }
                         }
                     }
@@ -464,7 +464,7 @@
     
                 }
             } catch (error) {
-                console.log(error)
+                // console.log(error)
                 
             }
             
@@ -546,7 +546,7 @@
                                 val = `url(data:image/png;base64,${toBase64(new Uint8Array(file))})`
                                 
                             } catch (error) {
-                                console.log(error)
+                                // console.log(error)
                             }
                         }
 
@@ -581,7 +581,7 @@
                 }                
                 
             } catch (error) {
-                console.log(error)
+                // console.log(error)
 
             }
         }
@@ -682,7 +682,7 @@
         if (cssdom) Module.canvas.parentElement.removeChild(cssdom);
         
     } catch (error) {
-        console.log(error)
+        // console.log(error)
         
     }
     
@@ -691,7 +691,7 @@
         if (obj) ParentElement.removeChild(obj);
         
     } catch (error) {
-        console.log(error)
+        // console.log(error)
         
     }
 
@@ -906,7 +906,7 @@
                 if (obj) ParentElement.removeChild(obj);
                 
             } catch (error) {
-                console.log(error)
+                // console.log(error)
                 
             }
 
@@ -915,7 +915,7 @@
                 
                 if (cssobj) Module.canvas.parentElement.removeChild(cssobj);
             } catch (error) {
-                console.log(error)
+                // console.log(error)
             }
 
             // scene.removeObject(object.item.key);

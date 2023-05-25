@@ -385,6 +385,12 @@
                 sceneprops.worldControllers.delete(object.item.key + "_world")
             } catch (error) {}
 
+            try {
+                let cssdom = Module.canvas.parentElement.querySelector(`#${CSS.escape("c" + transformation.url)}_css_world`);
+                if (cssdom) Module.canvas.parentElement.removeChild(cssdom);
+            } catch (e){
+            }
+
             for (let [key, child] of object.children) {
                 try { child.remove(); } catch (error) {}
             }

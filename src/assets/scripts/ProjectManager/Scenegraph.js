@@ -1142,10 +1142,10 @@ module.exports = () => {
 
       var addCSS = (zip_id, prefix, file)=> {        
         
-        let cssdom = Module.canvas.parentElement.querySelector(`#c${CSS.escape(zip_id)}_css_world`);
+        let cssdom = Module.canvas.parentElement.querySelector(`#${CSS.escape("c"+zip_id)}_css_world`);
         if (!cssdom) {
           cssdom = document.createElement('style');
-          cssdom.id = `c${CSS.escape(zip_id)}_css_world`;
+          cssdom.id = `${CSS.escape("c" + zip_id)}_css_world`;
           Module.canvas.parentElement.appendChild(cssdom);
 
           let csstext = '';
