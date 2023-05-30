@@ -1065,7 +1065,7 @@ module.exports = (payload) => {
         ? Module.ProjectManager.objPaths[String(child.id)]
         : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
       try {
-        obj = scene.addObject(zip_id, String(child.key), path);
+        obj = scene.addObject(String(child.key), path + "@" + zip_id);
         isLoading = 1;
       } catch (error) {
         if (opt && opt.ZIPElement){
@@ -1179,10 +1179,9 @@ module.exports = (payload) => {
 
             if (option == 'render_back_faces') {
               if (value > -1) {
-                obj.setParameter(zip_id, Number(meshid), option, Boolean(value));
+                obj.setParameter(Number(meshid), option, Boolean(value));
               } else {
                 obj.setParameter(
-                  zip_id, 
                   Number(meshid),
                   option,
                   transformation[option]
@@ -1233,7 +1232,6 @@ module.exports = (payload) => {
             } else if (type == 'object') {
               if (rgbs.includes(option)) {
                 obj.setParameter(
-                  zip_id, 
                   Number(meshid),
                   option,
                   value[0] / 255,
@@ -1242,7 +1240,6 @@ module.exports = (payload) => {
                 );
               } else {
                 obj.setParameter(
-                  zip_id, 
                   Number(meshid),
                   option,
                   value[0],
@@ -1253,7 +1250,6 @@ module.exports = (payload) => {
             } else {
               if (textures.includes(option)) {
                 if (window && window.textureIgnores && window.textureIgnores.includes(option)) continue;
-                // if (option == "ao_texture" || option == "normal_texture") continue;
                 let channel = '';
 
                 if (_row.has(option + '_channel')) {
@@ -1272,11 +1268,11 @@ module.exports = (payload) => {
                   if (pbrBundle.has(meshid)) pbrMeshRow = pbrBundle.get(meshid);
                   else pbrBundle.set(meshid, pbrMeshRow);
 
-                  pbrMeshRow.options += option + channel + ';';
-                  pbrMeshRow.paths += ((value != "") ? getPathByVersion():"") + value + ';';
+                  let cur_path = ((value != "") ? getPathByVersion():"") + value;
+                  if (cur_path != "") cur_path += '@' + zip_id;
 
-                  pbrMeshRow.options += option + "_zip_id" + ';';
-                  pbrMeshRow.paths += zip_id + ';';
+                  pbrMeshRow.options += option + channel + ';';
+                  pbrMeshRow.paths += cur_path + ';';
                 } else if (transparency_bundle_textures.includes(option)) {
                   let transparencyMeshRow = {
                     options: '',
@@ -1287,21 +1283,19 @@ module.exports = (payload) => {
                     transparencyMeshRow = transparencyBundle.get(meshid);
                   else transparencyBundle.set(meshid, transparencyMeshRow);
 
-                  transparencyMeshRow.options += option + channel + ';';
-                  transparencyMeshRow.paths += ((value != "") ? getPathByVersion():"") + value + ';';
+                  let cur_path = ((value != "") ? getPathByVersion():"") + value;
+                  if (cur_path != "") cur_path += '@' + zip_id;
 
-                  transparencyMeshRow.options += option + "_zip_id" + ';';
-                  transparencyMeshRow.paths += zip_id + ';';
-                } 
-                else
-                  obj.setParameter(
-                    zip_id, 
-                    Number(meshid),
-                    `${option};${option}_zip_id;`,
-                    `${(value != "") ? getPathByVersion():""}${value};${zip_id};`
-                  );
+                  transparencyMeshRow.options += option + channel + ';';
+                  transparencyMeshRow.paths += cur_path + ';';
+                } else {
+                  let cur_path = ((value != "") ? getPathByVersion():"") + value;
+                  if (cur_path != "") cur_path += '@' + zip_id;
+
+                  obj.setParameter(Number(meshid), option, cur_path);
+                }
               } else {
-                obj.setParameter(zip_id, Number(meshid), option, value);
+                obj.setParameter(Number(meshid), option, value);
               }
             }
 
@@ -1379,7 +1373,7 @@ module.exports = (payload) => {
         try {
           handler('transform', obj);
         } catch (err) {
-          console.log(err);
+          // console.log(err);
         }
       }
     }
@@ -1404,7 +1398,7 @@ module.exports = (payload) => {
         try {
           handler('visible', obj);
         } catch (err) {
-          console.log(err);
+          // console.log(err);
         }
       }
     }
@@ -1416,11 +1410,11 @@ module.exports = (payload) => {
     }
 
     for (let [meshid, value] of pbrBundle) {
-      obj.setParameter(zip_id, Number(meshid), value.options, value.paths);
+      obj.setParameter(Number(meshid), value.options, value.paths);
     }
 
     for (let [meshid, value] of transparencyBundle) {
-      obj.setParameter(zip_id, Number(meshid), value.options, value.paths);
+      obj.setParameter(Number(meshid), value.options, value.paths);
     }
 
     if (renderTransformation || renderVisibility || renderMesh) {

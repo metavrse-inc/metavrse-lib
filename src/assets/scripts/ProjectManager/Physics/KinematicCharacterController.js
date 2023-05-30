@@ -199,7 +199,7 @@ module.exports = (payload) => {
                         shapePath = (o.zip_id != "default" || (scene.hasFSZip() && o.zip_id == "default")) ? "files/" + params.shape_file : Module.ProjectManager.path + params.shape_file;
                     }
 
-                    let om = scene.getObjectGeometry(o.zip_id, shapePath);
+                    let om = scene.getObjectGeometry(shapePath + "@" + o.zip_id);
                     const mesh = new Ammo.btTriangleMesh(false, false);
                     let triangles = om.triangles;
                     let verts = om.vertices;
