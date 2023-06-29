@@ -11,7 +11,8 @@ export const zoomFacade = (
   pm: CherryProjectManager,
   cherryViewer: CherryViewer
 ) => {
-  const zoomToObject = (
+  
+  const _zoomToObject = (
     gizmoTargetKey: string,
     largestExtent: number,
     calculatedXYZ: vec3
@@ -63,6 +64,18 @@ export const zoomFacade = (
     cherryViewer.controls.distance = distance * DISTANCE_MULTIPLIER;
     cherryViewer.controls.target = calculatedXYZ as Vector3;
   };
+
+  const zoomToObject = (
+    gizmoTargetKey: string,
+    largestExtent: number,
+    calculatedXYZ: vec3
+  ) => {
+    try {
+      _zoomToObject(gizmoTargetKey, largestExtent, calculatedXYZ)
+    } catch (error) {
+      
+    }
+  }
 
   const zoomToMesh = (
     sceneObject: CherrySurfaceSceneObject,

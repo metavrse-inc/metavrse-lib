@@ -152,11 +152,14 @@
     }
 
     let collisionStatus = new Map();
+    let updateTimeout = new Map();
 
     var v1,v2,m1;
 
-    let checkDistance = (el, meshid, level)=> {
-        return;
+    let checkDistance = (elobj, meshid, level)=> {
+        let el = Physics.get(elobj.idx);
+        if (!el) return;
+
         if (v1 == undefined){
             v1 = vec3.create();
             v2 = vec3.create();
@@ -164,7 +167,11 @@
         }
 
         if (level != undefined && level >= 0){
-            el.parent.mesh.set(meshid, "lod_level", level)
+            if (el.item.type == "FOVMeshObject"){
+
+            }else{
+                el.parent.mesh.set(meshid, "lod_level", level)
+            }
             el.lod_level = level;
         } else {
             let v1 = el.scales
@@ -176,6 +183,7 @@
 
             let diameter = Math.max(b1,b2,b3);
             let r = diameter / 2;
+            let avgLength = (b1 + b2 + b3) / 3;
 
             let pos = vec4.fromValues(...v2, 1);
             let center = vec4.create();
@@ -199,9 +207,9 @@
             vec4.divide(p1, p1, [p1[3],p1[3],p1[3],p1[3]])
             vec4.divide(p2, p2, [p2[3],p2[3],p2[3],p2[3]])
             vec4.divide(p3, p3, [p3[3],p3[3],p3[3],p3[3]])
-            // vec4.normalize(p1,p1);
-            // vec4.normalize(p2,p2);
-            // vec4.normalize(p3,p3);
+            vec4.normalize(p1,p1);
+            vec4.normalize(p2,p2);
+            vec4.normalize(p3,p3);
 
             let height = (Math.abs(p1[1] - p2[1]) * 0.5) * Module.screen.height;
             let width = (Math.abs(p1[0] - p3[0]) * 0.5) * Module.screen.width;
@@ -209,7 +217,9 @@
             let screenArea = Module.canvas.width * Module.canvas.height;
 
             let percentageArea = (computedArea / screenArea) * 100;
-            let distance = 1;
+            let posWorld = vec3.create();
+            mat4.getTranslation(posWorld, el.matrix)
+            let distance = vec3.distance(Module.controls.position, posWorld);
 
             // vec4 center = camera_matrix * vec4(x, y, z, 1)
             // 2:31
@@ -232,23 +242,59 @@
                 // console.log({fovy, computedRadius, computedArea})
                 // level = 3;
                 let perc = ((percentageArea > 100 ? 100 : percentageArea));
-                percentageArea = perc;
+                percentageArea = perc * ( avgLength / distance);
+                // console.log(distance)
 
                 let red = [255,0,0];
                 let green = [0,255,0];
                 let blue = [0,0,255];
                 let purple = [255, 102, 255];
 
+                let greenA = [0,255,0];
+                let greenB = [0,128,0];
+                let greenC = [0,64,0];
+                let greenD = [0,32,0];
+
+
                 if (percentageArea >= 35) level = 0;
                 else if (percentageArea < 35 && percentageArea >= 15 ) level = 1;
                 else if (percentageArea < 15 && percentageArea >= 5 ) level = 2;
                 else if (percentageArea < 5 ) level = 3;
-    
                 if (el.lod_level != level){
 
-                    // console.log({ lod_level: el.lod_level, level, computedArea, perc})
-                    el.parent.mesh.set(meshid, "lod_level", level)
-                    // el.parent.mesh.set(meshid, "albedo_ratio", (level == 0 ? red : level == 1 ? green : level == 2 ? blue : purple))
+                    // el.parent.mesh.set(meshid, "lod_level", level)
+                    if (el.item.type == "FOVMeshObject"){
+                        let timeout = updateTimeout.get(el.item.key);
+                        if (timeout) clearTimeout(timeout);
+
+                        const key = el.item.key.replace("_"+meshid, "");
+                        const parent = el.parent;
+
+                        timeout = setTimeout(()=>{
+                            try {
+                                let obj = scene.getObject(key);
+                                let meshes_ = obj.getMeshes();
+                                for (var x=0; x < meshes_.size(); x++){                
+                                    try {
+                                        parent.mesh.set(x, "lod_level", level)
+                                        // el.parent.mesh.set(x, "albedo_ratio", (level == 0 ? greenC : level == 1 ? greenB : level == 2 ? greenA : greenD))
+                                        // el.parent.mesh.set(x, "albedo_ratio", (level == 0 ? greenA : level == 1 ? greenB : level == 2 ? greenC : greenD))
+                                    } catch (e) {}
+                                }                            
+
+                                obj.setActiveGeometryLOD(level);
+                            } catch (error) {
+                                
+                            }
+                        }, 1000)
+
+                        updateTimeout.set(el.item.key, timeout)
+
+                        
+                    } else {
+                        el.parent.mesh.set(meshid, "albedo_ratio", (level == 0 ? red : level == 1 ? green : level == 2 ? blue : purple))
+                    }
+
                     el.lod_level = level;
                 }
             } else {
@@ -300,7 +346,8 @@
                     if (!collisionStatus.has(el.item.key)){
                         collisionStatus.set(el.item.key, {
                             inContact: true,
-                            el,
+                            el : {item: el.item},
+                            idx,
                             meshid
                         })
                         if (params.fov_enabled && el.render_fov_visible) {
@@ -336,6 +383,32 @@
 
                     let obj = scene.getObject(key);
                     if (params.fov_enabled && value.el.render_fov_visible && obj) obj.setParameter('visible', false);
+                    if (params.lod_enabled && obj) {
+                        let timeout = updateTimeout.get(value.el.item.key);
+                        if (timeout) clearTimeout(timeout);
+
+                        const key = value.el.item.key.replace("_"+meshid, "");
+                        const parent = value.el.parent;
+
+                        timeout = setTimeout(()=>{
+                            try {
+                                let obj = scene.getObject(key);
+                                let meshes_ = obj.getMeshes();
+                                for (var x=0; x < meshes_.size(); x++){                
+                                    try {
+                                        parent.mesh.set(x, "lod_level", 3)
+                                    } catch (e) {}
+                                  }
+                                obj.setActiveGeometryLOD(3);
+                                
+                            } catch (error) {
+                                
+                            }
+                        }, 1000)
+
+                        updateTimeout.set(value.el.item.key, timeout)
+
+                    }
                     // if (el.object) el.object.setParameter('visible', el.parent.visible);
                 }
                 else {

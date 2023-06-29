@@ -372,6 +372,15 @@ module.exports = () => {
       set: (v) => {
       },
     },
+
+    URLLoader: {
+      get: () => {
+        return Scenegraph.URLLoader;
+      },
+      set: (v) => {
+        Scenegraph.URLLoader = v;
+      },
+    },
   });
 
   return Object.assign(manager, {

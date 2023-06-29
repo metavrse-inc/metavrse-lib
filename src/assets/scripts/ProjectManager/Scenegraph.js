@@ -137,10 +137,37 @@ module.exports = () => {
   let tmpOpts = null;
   let objectsLoaded = false;
   let texturesLoaded = false;
-  let clearedWebworker = false;
+  let clearedWebworker = true;
 
   const render = (opts) => {
     if (Module.ProjectManager.projectRunning) Physics.render();
+
+    if (Module.ProjectManager.projectRunning && launched){
+      if (ZIPAddCallbacks.length > 0){
+        while (ZIPAddCallbacks.length > 0){
+          let k = ZIPAddCallbacks.pop();
+          k();
+        }
+
+      }else if (ZIPLaunchKeys.length > 0){
+        while (ZIPLaunchKeys.length > 0){
+          let k = ZIPLaunchKeys.pop();
+          initControllersZip(k);
+        }
+      } else {
+        let qsO = scene.getWorkerObjectQueueSize();
+        let qsT = scene.getTextureQueue();
+        
+        if (qsO != 0 || qsT != 0){
+          clearedWebworker = false;
+        } else if (qsO == 0 && qsT == 0 && !clearedWebworker){
+          clearedWebworker = true;
+          scene.clearWebworkers();
+          return;
+        }    
+      }
+
+    }
 
     let local_redraws = new Map(redraws);
     redraws.clear();
@@ -218,33 +245,22 @@ module.exports = () => {
         }
       }
 
-      if (!clearedWebworker){
-        let qsO = scene.getWorkerObjectQueueSize();
-        let qsT = scene.getTextureQueue();
+      // if (!clearedWebworker){
+      //   let qsO = scene.getWorkerObjectQueueSize();
+      //   let qsT = scene.getTextureQueue();
         
-        if (qsO == 0 && qsT == 0){
-          clearedWebworker = true;
-          scene.clearWebworkers();
-        }
+      //   if (qsO == 0 && qsT == 0){
+      //     clearedWebworker = true;
+      //     scene.clearWebworkers();
+      //   }
 
-        return;  
-      }
+      //   return;  
+      // }
       
       launched = true;
 
       initControllers();
-      
-      for (var k of ZIPLaunchKeys){
-        initControllersZip(k);
-      }
 
-      for (var k of ZIPAddCallbacks){
-        k();
-      }
-
-      ZIPLaunchKeys = [];
-      ZIPAddCallbacks = [];
-      
       var d_scene =
         sceneprops.project.data['scene'][
           sceneprops.project.data.selected_scene
@@ -315,6 +331,7 @@ module.exports = () => {
 
       launchScene = false;
     } else {
+
       if (tmpRedraws == null) {
         tmpRedraws = new Map(local_redraws);
         tmpOpts = JSON.stringify(JSON.stringify(opts));
@@ -349,19 +366,7 @@ module.exports = () => {
           tmpRedraws = null;
           tmpOpts = null;
         }
-      // }
-
-      if (Module.ProjectManager.projectRunning){
-        // let qsO = scene.getWorkerObjectQueueSize();
-        // let qsT = scene.getTextureQueue();
-        
-        // if (qsO != 0 || qsT != 0){
-        //   clearedWebworker = false;
-        // } else if (qsO == 0 && qsT == 0 && !clearedWebworker){
-        //   clearedWebworker = true;
-        //   scene.clearWebworkers();
-        // }    
-      }
+      // }     
       
     }
 
@@ -721,6 +726,8 @@ module.exports = () => {
 
   const regenerateMeshes = () => {};
 
+  let assets_texture = new Map();
+
   const loadPaths = async (tree, parent) => {
     // tree.forEach(async (item) => {
     for (var item of tree) {
@@ -731,6 +738,22 @@ module.exports = () => {
           sceneprops.objPaths[item.key] = !scene.hasFSZip()
             ? sceneprops.path + item.key
             : item.key;
+        }
+        
+        if (item.type == 'image'){
+          let path = sceneprops.objPaths[item.key];
+
+          if (parent == undefined || parent.type !='image'){
+            let texture = scene.addTexture(path);
+            assets_texture.set(item.key, {
+              texture,
+              paths: [path]
+            });
+          } else if (parent && parent.type == 'image') {
+            let asset = assets_texture.get(parent.key);
+            asset.texture.addLOD(path, asset.paths.length)
+            asset.paths.push(path)
+          }
         }
       }
 
@@ -1285,10 +1308,16 @@ module.exports = () => {
         {...Module.ProjectManager,...scenegraph};
 
         PM.getObject = (key)=> {
+          let sub = key.includes(prefix + "_");
+          if (sub) return Module.ProjectManager.getObject(key);
+
           return Module.ProjectManager.getObject(prefix + "_" + key);
         }
 
         PM.getAsset = (key)=> {
+          let sub = key.includes(zip_id + "_");
+          if (sub) return Module.ProjectManager.getAsset(key);
+
           return Module.ProjectManager.getAsset(zip_id + "_" + key);
         }
 

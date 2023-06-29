@@ -833,20 +833,11 @@ module.exports = (payload) => {
       let meshrow = transformation['meshes'][meshid];
 
       if (meshrow[prop] == undefined){
-        let mesh = object.meshlinks.has(meshid) ? object.meshlinks.get(meshid) : new Map();
-        // meshrow[prop] = paintedProperty(meshid, prop);
-        console.log('nothing found when link activated', meshrow, prop)
-        let buckets = new Map();
-        buckets.set(object.item.key, meshrow[prop]);
-
-        mesh.set(prop, buckets);
-
-        object.meshlinks.set(meshid, mesh);
-
+        meshrow[prop] = paintedProperty(meshid, prop);
         addToUpdated(object.item.key, 'added', {
           meshid,
-          prop: prop,
-          value: meshrow[prop],
+          prop,
+          value : meshrow[prop],
         });
       }
     }
@@ -863,7 +854,7 @@ module.exports = (payload) => {
 
       let buckets = new Map();
       let meshrow = transformation['meshes'][meshid];
-      console.log(key, object.item, 'no bucket')
+      // console.log(key, object.item, 'no bucket')
       // meshrow[prop] = meshrow[prop] == undefined ? paintedProperty(meshid, prop) : meshrow[prop];
       buckets.set(object.item.key, meshrow[prop]);
       mesh.set(prop, buckets);
@@ -880,7 +871,7 @@ module.exports = (payload) => {
       }
 
       let meshrow = transformation['meshes'][meshid];
-      console.log(key, object.item, 'no default prop')
+      // console.log(key, object.item, 'no default prop')
       // meshrow[prop] = meshrow[prop] == undefined ? paintedProperty(meshid, prop) : meshrow[prop];
       buckets.set(object.item.key, meshrow[prop]);
       mesh.set(prop, buckets);
@@ -1012,6 +1003,14 @@ module.exports = (payload) => {
 
                 fov_meshes.push(Physics.add(pl));                  
 
+                let meshes_ = obj.getMeshes();
+
+                for (var x=0; x < meshes_.size(); x++){                
+                  try {
+                    object.mesh.set(x, "lod_level", 3.0);
+                  } catch (e) {}
+                }
+
                   // let meshes_ = obj.getMeshes();
 
                   // for (var x=0; x < meshes_.size(); x++){                
@@ -1061,11 +1060,41 @@ module.exports = (payload) => {
     let isLoaded = true;
     if (!obj) {
 
-      const path = !isNaN(child.id) && zip_id == "default"
-        ? Module.ProjectManager.objPaths[String(child.id)]
-        : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
       try {
-        obj = scene.addObject(String(child.key), path + "@" + zip_id);
+        
+        const path = !isNaN(child.id) && zip_id == "default"
+          ? Module.ProjectManager.objPaths[String(child.id)]
+          : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
+
+        if (World.lod_enabled) {
+          let paths = [];
+          paths.push(path);
+          let asset = Module.ProjectManager.getAsset(child.id);
+  
+          if (Module.ProjectManager.projectRunning && asset.children){
+            let x=0;
+            for (var a of asset.children){
+              x++;
+              const pathLOD = !isNaN(a.key) && zip_id == "default"
+              ? Module.ProjectManager.objPaths[String(a.key)]
+              : (!isNaN(a.key) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(a.key)]: String(a.key);
+  
+              paths.push(pathLOD);
+            }
+          }
+  
+          for (var lx = paths.length - 1; lx >= 0; lx--){
+            if (lx == paths.length - 1){
+              obj = scene.addObject(String(child.key), paths[lx] + "@" + zip_id, lx);
+            } else {
+              obj.addGeometryLOD(paths[lx] + "@" + zip_id, lx)
+            }
+          }
+
+        } else{
+          obj = scene.addObject(String(child.key), path + "@" + zip_id);
+        }
+
         isLoading = 1;
       } catch (error) {
         if (opt && opt.ZIPElement){
@@ -1107,6 +1136,16 @@ module.exports = (payload) => {
         opt.ZIPElement.setQueItem(child.key, false)
       }
       getAnimationList();
+
+      if (World.lod_enabled){
+        let meshes_ = obj.getMeshes();
+  
+        for (var x=0; x < meshes_.size(); x++){                
+          try {
+            obj.setParameter(x, "lod_level", 3.0);
+          } catch (e) {}
+        }
+      }
     }
 
     if (d['autoscaled']) {

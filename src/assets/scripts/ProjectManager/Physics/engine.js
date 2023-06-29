@@ -723,17 +723,13 @@
                   el.parent.mesh.set(meshid, "visible", true);
                }
             } else if (el.item.type == "FOVMeshObject"){
-               // let ks = el.item.key.split("_")
-               // let key = ks[0];
-               // let meshid = ks[1];
-               // let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
+               let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
+               let key = el.item.key.replace("_"+meshid, "");
 
                el.render_fov_visible = fov_enabled && el.render_fov_visible
-               if (el.render_fov_visible) 
-               {
-                  el.parent.visible = false;
-               } else {
-                  el.parent.visible = true;
+               let obj = scene.getObject(key);
+               if (obj) {
+                  obj.setParameter('visible', !el.render_fov_visible);
                }
             }
          }

@@ -434,7 +434,6 @@ module.exports = (payload) => {
             }
 
             if (media) {
-                media.src = "";
                 Module.videoids.delete(media);
                 if (media.destroy !== undefined) media.destroy();
             }
