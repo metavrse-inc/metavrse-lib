@@ -38,13 +38,15 @@ module.exports = () => {
       // payload = undefined;
       projectRunning = false;
 
-      Module['fps'] = {
-        maxFps: 30,
-        currentFps: 30,
-        startTime: null,
-        frame: -1,
-      };
+      // Module['fps'] = {
+      //   maxFps: 30,
+      //   currentFps: 30,
+      //   startTime: null,
+      //   frame: -1,
+      // };
 
+      Module['fps']['maxFps'] = 30;
+      
       Module.screen.hudscale = 1;
 
       let dpr =

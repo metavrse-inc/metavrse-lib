@@ -20,6 +20,9 @@ export const zoomFacade = (
     const selectedObject = pm.getObject(gizmoTargetKey);
     const selectedObjectType = selectedObject.item.type;
 
+    if (!selectedObject || !selectedObjectType) return;
+    if (selectedObject.parentOpts == undefined) return;
+
     const DISTANCE_MULTIPLIER = 1.25;
     const SCALE_VECTOR_VALUE = 1 / 50;
 

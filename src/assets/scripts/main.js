@@ -159,6 +159,10 @@ Module['fps'] = {
   delta: 0,
   startTime: null,
   frame: -1,
+
+  then: (performance != undefined) ? performance.now() : Date.now(),
+  interval : 1000 / 30,
+  tolerance: 0,
 };
 
 let touchQue = [];
@@ -169,24 +173,17 @@ Module.render = function () {
 
   if (Module.setFPS) {
     Module.setFPS(Module['fps']['maxFps']);
-  } else {
-    let timestamp = Date.now();
+  } else {    
+    const now = (performance != undefined) ? performance.now() : Date.now();
+    Module['fps']['delta'] = now - Module['fps']['then'];
+    const interval = 1000 / Module['fps']['maxFps'];
 
-    // throttle fps using start time and compare frames
-    let delay = 1000 / Module['fps']['maxFps'];
-    if (Module['fps']['startTime'] === null)
-      Module['fps']['startTime'] = timestamp;
-    let delta = timestamp - Module['fps']['startTime'];
-    var seg = Math.floor(delta / delay);
-    if (seg > Module['fps']['frame']) {
-      Module['fps']['frame'] = seg;
+    if (Module['fps']['delta'] >= interval - Module['fps']['tolerance']) {
+      Module['fps']['then'] = now - (Module['fps']['delta'] % interval);
+      Module['fps']['currentFps'] = Math.round(1000/Module['fps']['delta']);
     } else {
       return;
     }
-
-    // Module['fps']['currentFps'] = Module['fps']['maxFps'];
-    Module['fps']['delta'] = 1000 / (delta / seg);
-    Module['fps']['currentFps'] = 1000 / (delta / seg);
   }
 
   // console.log(JSON.stringify(Module.fps))

@@ -66,6 +66,7 @@
                     ready: false,
                     pending : new Map(),
                     archive: undefined,
+                    loaded: 0,
                 }
     
                 zips.set(url, zip_object);

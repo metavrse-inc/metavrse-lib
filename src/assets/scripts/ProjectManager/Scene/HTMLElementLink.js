@@ -50,6 +50,9 @@ module.exports = (payload) => {
 
         styles: child.key,
         styles_enabled: (d['styles_enabled'] != undefined) ? d['styles_enabled'] : true,
+
+        props: child.key,
+        props_enabled: (d['props_enabled'] != undefined) ? d['props_enabled'] : true,
     };
 
     let object = {
@@ -91,7 +94,13 @@ module.exports = (payload) => {
 
     const setProperty = (prop, value)=>{
         transformation[prop] = value;
-        addToUpdated(object.item.key, (isLoading) ? 'loaded' : 'changed', {prop,value})
+        if (prop == "styles"){
+            addToUpdated(object.item.key, (isLoading) ? 'loaded' : 'changed', {prop,value: generated})
+        }else if (prop == "props"){
+            addToUpdated(object.item.key, (isLoading) ? 'loaded' : 'changed', {prop,value: props})
+        } else {
+            addToUpdated(object.item.key, (isLoading) ? 'loaded' : 'changed', {prop,value})
+        }
 
         if (!isParentAvailable()) return;
         HTMLModel.setProperty(prop, value, object.item.key)

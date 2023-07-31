@@ -111,11 +111,11 @@
         }
     }
 
-    function toBase64(arr) {
-        //arr = new Uint8Array(arr) if it's an ArrayBuffer
-        return btoa(
-           arr.reduce((data, byte) => data + String.fromCharCode(byte), '')
-        );
+     function toImageUrl(buffer) {
+        let _img = buffer;
+        var arrayBufferView = new Uint8Array( _img );
+        var blob = new Blob( [ arrayBufferView ], { type: "image/png" } );
+        return URL.createObjectURL( blob );
      }
 
      // removing
@@ -417,14 +417,17 @@
                             try {
                                 let key = v.replace("[[", "").replace("]]","");
                                 let file = getFile(key, true);
-                                v = `data:image/png;base64,${toBase64(new Uint8Array(file))}`
-                                
+                                let img = toImageUrl(file);
+                                object.DOMElement.src = img;
                             } catch (error) {
                                 // console.log(error)
                             }
+                        } else {
+                            object.DOMElement.setAttribute(prop, v);
                         }
-                    }
-                    if (v.trim() != "") object.DOMElement.setAttribute(prop, v);
+                    } else {
+                        object.DOMElement.setAttribute(prop, v);
+                    }                    
                 })
 
                 // set updated props
@@ -543,7 +546,8 @@
                             try {
                                 let key = val.replace("[[", "").replace("]]","");
                                 let file = getFile(key, true);
-                                val = `url(data:image/png;base64,${toBase64(new Uint8Array(file))})`
+                                let img = toImageUrl(file);
+                                val = `url(${img})`
                                 
                             } catch (error) {
                                 // console.log(error)

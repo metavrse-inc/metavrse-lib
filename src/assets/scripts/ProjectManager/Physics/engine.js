@@ -16,6 +16,7 @@
    const FOVMesh = Module.require('assets/ProjectManager/Physics/FOVMesh.js');
    const FOVBox = Module.require('assets/ProjectManager/Physics/FOVBox.js');
    
+   // const ZIPBox = Module.require('assets/ProjectManager/Physics/ZIPBox.js');
 
    // engine
    var Ammo;
@@ -28,7 +29,7 @@
    var debugDrawer;
    var debugEnabled = false;
 
-   // engine
+   // engine fov
    var FOV_Ammo;
    var FOV_collisionConfiguration;
    var FOV_dispatcher;
@@ -37,7 +38,16 @@
    var FOV_physicsWorld;
    var FOV_ammoInitalised = false;
    var FOV_debugDrawer;
-   var FOV_debugEnabled = false;
+
+   // engine zip
+   // var ZIP_Ammo;
+   // var ZIP_collisionConfiguration;
+   // var ZIP_dispatcher;
+   // var ZIP_broadphase;
+   // var ZIP_solver;
+   // var ZIP_physicsWorld;
+   // var ZIP_ammoInitalised = false;
+   // var ZIP_debugDrawer;
 
    // numbers
    var gravity = -9.8;
@@ -123,27 +133,22 @@
    var TheColors = []; var TheColorsCount = 0;
 
    const init = async () => {
-      var options = {}
-      options['locateFile'] = (path)=> {
-         if (path.endsWith(".wasm")) {
-            let buf = getFile("assets/lib/ammo.wasm.wasm", true);
-            let blob = new Blob([buf], {type: "application/wasm"});
-            return URL.createObjectURL(blob)
+
+      const getOptions = ()=> {
+         var options = {}
+         options['locateFile'] = (path)=> {
+            if (path.endsWith(".wasm")) {
+               let buf = getFile("assets/lib/ammo.wasm.wasm", true);
+               let blob = new Blob([buf], {type: "application/wasm"});
+               return URL.createObjectURL(blob)
+            }
+            return path;
          }
-         return path;
+
+         return options;
       }
 
-      var options2 = {}
-      options2['locateFile'] = (path)=> {
-         if (path.endsWith(".wasm")) {
-            let buf = getFile("assets/lib/ammo.wasm.wasm", true);
-            let blob = new Blob([buf], {type: "application/wasm"});
-            return URL.createObjectURL(blob)
-         }
-         return path;
-      }
-
-      Ammo = await _Ammo(options);
+      Ammo = await _Ammo(getOptions());
       collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
       dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
       broadphase = new Ammo.btDbvtBroadphase();
@@ -153,7 +158,7 @@
       physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
 
       /// fov
-      FOV_Ammo = await _Ammo(options2);
+      FOV_Ammo = await _Ammo(getOptions());
       FOV_collisionConfiguration = new FOV_Ammo.btDefaultCollisionConfiguration();
       FOV_dispatcher = new FOV_Ammo.btCollisionDispatcher(FOV_collisionConfiguration);
       FOV_broadphase = new FOV_Ammo.btDbvtBroadphase();
@@ -170,6 +175,21 @@
       /// fov      
       // console.log('Physics initialized')
       // console.log('Gravity: ' + gravity + ' m/s');
+
+      /// ZIP
+      // ZIP_Ammo = await _Ammo(getOptions());
+      // ZIP_collisionConfiguration = new ZIP_Ammo.btDefaultCollisionConfiguration();
+      // ZIP_dispatcher = new ZIP_Ammo.btCollisionDispatcher(ZIP_collisionConfiguration);
+      // ZIP_broadphase = new ZIP_Ammo.btDbvtBroadphase();
+      // ZIP_solver = new ZIP_Ammo.btSequentialImpulseConstraintSolver();
+      // ZIP_physicsWorld = new ZIP_Ammo.btDiscreteDynamicsWorld(ZIP_dispatcher, ZIP_broadphase, ZIP_solver, ZIP_collisionConfiguration);
+      // ZIP_physicsWorld.setGravity(new ZIP_Ammo.btVector3(0, Number(gravity), 0));
+      // ZIP_physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new ZIP_Ammo.btGhostPairCallback());
+
+      // ZIP_physicsWorld.getSolverInfo().m_numIterations = 1;
+      // console.log('ZIP Physics initialized')
+      
+      /// ZIP      
 
       // resusable
       TRANSFORM_AUX = new Ammo.btTransform();
@@ -321,11 +341,61 @@
          FOV_physicsWorld.setDebugDrawer(FOV_debugDrawer);
          /// FOV
 
+         /// ZIP
+         // ZIP_debugDrawer = new ZIP_Ammo.DebugDrawer();
+         // ZIP_debugDrawer.DebugDrawMode = 1;
+         // ZIP_debugDrawer.drawLine = function (from, to, color) {
+         //    const heap = ZIP_Ammo.HEAPF32;
+         //    const r = heap[(color + 0) / 4];
+         //    const g = heap[(color + 4) / 4];
+         //    const b = heap[(color + 8) / 4];
+
+         //    const fromX = heap[(from + 0) / 4];
+         //    const fromY = heap[(from + 4) / 4];
+         //    const fromZ = heap[(from + 8) / 4];
+
+         //    const toX = heap[(to + 0) / 4];
+         //    const toY = heap[(to + 4) / 4];
+         //    const toZ = heap[(to + 8) / 4];
+
+         //    //   console.log("drawLine", from, to, color);
+         //    // draws a simple line of pixels between points but stores them for later draw
+         //    var lineFrom = [fromX, fromY, fromZ];
+         //    var lineTo = [toX, toY, toZ];
+         //    TheLines.push(...lineFrom, ...lineTo);
+         //    TheLinesCount += 2;
+
+         //    var colorFrom = [r, g, b];
+         //    var colorTo = [r, g, b];
+         //    TheColors.push(...colorFrom, ...colorTo);
+         //    TheColorsCount += 2;
+         // };
+         // ZIP_debugDrawer.drawContactPoint = function (pointOnB, normalOnB, distance, lifeTime, color) {
+         // //   console.log("drawContactPoint")
+         // };
+         // ZIP_debugDrawer.reportErrorWarning = function(warningString) {
+         // //   console.warn(warningString);
+         // };
+         // ZIP_debugDrawer.draw3dText = function(location, textString) {
+         // //   console.log("draw3dText", location, textString);
+         // };
+         // ZIP_debugDrawer.setDebugMode = function(debugMode) {
+         //   this.DebugDrawMode = debugMode;
+         // };
+         // ZIP_debugDrawer.getDebugMode = function() {
+         //   return this.DebugDrawMode;
+         // };
+   
+         // ZIP_physicsWorld.setDebugDrawer(ZIP_debugDrawer);
+         /// ZIP
+
       }
 
       addFOVBox();
+      // addZIPBox();
 
       FOV_ammoInitalised = true;
+      // ZIP_ammoInitalised = true;
       ammoInitalised = true;
    }
 
@@ -351,6 +421,26 @@
       // console.log('adding FOVBox')
    }
 
+   // let ZIPSize = [1000,1000,1000];
+   // let ZIPBox_r;
+   // const addZIPBox = ()=> {
+   //    let args = {
+   //       size: ZIPSize,
+   //       Physics : _physics,
+   //       fov_enabled,
+   //       lod_enabled,
+   //       data : {
+   //          fov_enabled,
+   //          lod_enabled,
+   //       }
+   //    }
+      
+   //    ZIPBox_r = ZIPBox(args);
+   //    renderList.set("ZIPBox", ZIPBox_r)
+   //    allList.set("ZIPBox", ZIPBox_r)
+   //    // console.log('adding ZIPBox_r')
+   // }
+
    const render = () => {
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
@@ -363,6 +453,7 @@
 
       physicsWorld.stepSimulation(currentFps, 10, fixedFps);
       FOV_physicsWorld.stepSimulation(currentFps, 1, 1/5);
+      // ZIP_physicsWorld.stepSimulation(currentFps, 1, 1/5);
 
       // deprecate
       for (var [key, _u] of syncList) {
@@ -401,6 +492,7 @@
     
       physicsWorld.debugDrawWorld();
       FOV_physicsWorld.debugDrawWorld();
+      // ZIP_physicsWorld.debugDrawWorld();
       
       if (TheLines.length == 0) {
          TheLines = [];
@@ -615,7 +707,7 @@
       }
 
       for (var [key, val] of allList){
-         if (key != "FOVBox"){
+         if (key != "FOVBox" && key != "ZIPBox" ){
             val.remove();
          }
       }
@@ -626,6 +718,11 @@
       if (FOVBox_r) {
          renderList.set("FOVBox", FOVBox_r)
          allList.set("FOVBox", FOVBox_r)
+      }
+
+      if (ZIPBox_r) {
+         renderList.set("ZIPBox", ZIPBox_r)
+         allList.set("ZIPBox", ZIPBox_r)
       }
 
       objectIndexes.clear();
@@ -682,6 +779,31 @@
 
       if (fovTimer) clearTimeout(fovTimer);
       fovTimer = setTimeout(re, 100);
+   }
+
+   let zipTimer;
+   const setZIPSize = (size)=> {
+
+      ZIPSize = size;
+
+      if (!ZIPBox_r) return;
+
+      let re = ()=> {
+         try {
+            renderList.delete("ZIPBox")
+            allList.delete("ZIPBox")
+            ZIPBox_r.remove();
+            ZIPBox_r = null;
+            addZIPBox();
+            
+         } catch (error) {
+            
+         }
+
+      }
+
+      if (zipTimer) clearTimeout(zipTimer);
+      zipTimer = setTimeout(re, 100);
    }
 
    const removeUpdate = (key)=> {
@@ -768,6 +890,8 @@
 
       FOV_Ammo: { get: () => { return FOV_Ammo; }, set: (v) => {} },
       FOV_PhysicsWorld: { get: () => { return FOV_physicsWorld; }, set: (v) => {} },
+      // ZIP_Ammo: { get: () => { return ZIP_Ammo; }, set: (v) => {} },
+      // ZIP_PhysicsWorld: { get: () => { return ZIP_physicsWorld; }, set: (v) => {} },
       isResetting: { get: () => { return isResetting; }, set: (v) => { isResetting = v} },
    })
 
