@@ -346,11 +346,11 @@
                     if (!collisionStatus.has(el.item.key)){
                         collisionStatus.set(el.item.key, {
                             inContact: true,
-                            el : {item: el.item},
+                            el,
                             idx,
                             meshid
                         })
-                        if (params.fov_enabled && el.render_fov_visible) {
+                        if (params.fov_enabled && (el.render_fov_visible || el.render_fov_visible == undefined)) {
                             let obj = scene.getObject(key);
                             if (obj) {
                                 obj.setParameter('visible', el.parent.parentOpts.visible);
@@ -382,7 +382,7 @@
                     let key = value.el.item.key.replace("_"+meshid, "");
 
                     let obj = scene.getObject(key);
-                    if (params.fov_enabled && value.el.render_fov_visible && obj) obj.setParameter('visible', false);
+                    if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined) && obj) obj.setParameter('visible', false);
                     if (params.lod_enabled && obj) {
                         let timeout = updateTimeout.get(value.el.item.key);
                         if (timeout) clearTimeout(timeout);
@@ -412,7 +412,7 @@
                     // if (el.object) el.object.setParameter('visible', el.parent.visible);
                 }
                 else {
-                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", false);
+                    if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined)) value.el.parent.mesh.set(value.meshid, "visible", false);
                 }
                 map.delete(key);
             } else {
@@ -420,11 +420,11 @@
                     let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
                     let key = value.el.item.key.replace("_"+meshid, "");
                     let obj = scene.getObject(key);
-                    if (params.fov_enabled && value.el.render_fov_visible && obj) {
-                        obj.setParameter('visible', value.el.parent.parentOpts.visible);
+                    if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined) && obj) {
+                        if (value.el.parent) obj.setParameter('visible', value.el.parent.parentOpts.visible);
                     }
                 }else {
-                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", true);
+                    if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined)) value.el.parent.mesh.set(value.meshid, "visible", true);
                 }
             }
             if (params.lod_enabled) checkDistance(value.el, value.meshid);
@@ -446,7 +446,7 @@
         collisionStatus.forEach((value,key,map)=>
         {
             if (params.fov_enabled && value.el.render_fov_visible) {
-                value.el.parent.mesh.set(value.meshid, "visible", false);
+                // value.el.parent.mesh.set(value.meshid, "visible", false);
                 checkDistance(value.el, value.meshid, 3);
             }
             map.delete(key);
