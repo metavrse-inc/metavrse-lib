@@ -116,12 +116,12 @@ module.exports = (payload) => {
     css: d['css'] || '',
 
     // physics
-    physics_debug_level:
-      d['physics_debug_level'] !== undefined ? d['physics_debug_level'] : 0,
-    fov_size:
-      d['fov_size'] !== undefined ? [...d['fov_size']] : [500, 500, 500],
+    physics_debug_level: d['physics_debug_level'] !== undefined ? d['physics_debug_level'] : 0,
+    fov_size: d['fov_size'] !== undefined ? [...d['fov_size']] : [500, 500, 500],
     fov_enabled: d['fov_enabled'] !== undefined ? d['fov_enabled'] : false,
     lod_enabled: d['lod_enabled'] !== undefined ? d['lod_enabled'] : false,
+    zip_size: d['zip_size'] !== undefined ? [...d['zip_size']] : [1000, 1000, 1000],
+    zip_enabled: d['zip_enabled'] !== undefined ? d['zip_enabled'] : false,
 
     //
     render_method: d['render_method'] !== undefined ? d['render_method'] : 0,
@@ -326,6 +326,15 @@ module.exports = (payload) => {
           Module.ProjectManager.Physics.toggleLOD(v);
           break;
 
+        case 'zip_size':
+          v = getLastValueInMap(getProperties(row.type));
+          Module.ProjectManager.Physics.setZIPSize(v);
+          break;  
+        case 'zip_enabled':
+          v = getLastValueInMap(getProperties(row.type));
+          Module.ProjectManager.Physics.toggleZIP(v);
+          break;
+
         case 'render_method':
           v = getLastValueInMap(getProperties(row.type));
           scene.setRenderPipelineType(v);
@@ -407,6 +416,9 @@ module.exports = (payload) => {
 
   setProperty('controller', world.controller);
   setProperty('orientation', world.orientation);
+
+  setProperty('zip_size', world.zip_size);
+  setProperty('zip_enabled', world.zip_enabled);
 
   addToRedraw('fxaa');
   addToRedraw('hudscale');
@@ -616,6 +628,24 @@ module.exports = (payload) => {
       },
       set: (v) => {
         setProperty('lod_enabled', v);
+      },
+    },
+
+    zip_enabled: {
+      get: () => {
+        return getProperty('zip_enabled')[1];
+      },
+      set: (v) => {
+        setProperty('zip_enabled', v);
+      },
+    },
+
+    zip_size: {
+      get: () => {
+        return getProperty('zip_size')[1];
+      },
+      set: (v) => {
+        setProperty('zip_size', v);
       },
     },
 

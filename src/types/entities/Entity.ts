@@ -38,6 +38,10 @@ export type Entity = {
   url?: string;
   async?: boolean;
 
+  // zip element
+  extent?: Vector3;
+  center?: Vector3;
+
   // Video≤
   src?: string;
   pixel?: Vector3;

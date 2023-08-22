@@ -7,5 +7,7 @@ export const ZIPElementDefaults: Omit<ZIPElementEntity, 'key'> = {
   rotate: [0, 0, 0],
   scale: [1, 1, 1],
   visible: true,
-  url: ''
+  url: '',
+  extent: [1, 1, 1],
+  center: [0.5, 0.5, 0.5],
 };

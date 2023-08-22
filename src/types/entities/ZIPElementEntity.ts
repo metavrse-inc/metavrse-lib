@@ -7,6 +7,8 @@ type RequiredProperties =
   | 'rotate'
   | 'scale'
   | 'url'
+  | 'extent'
+  | 'center'
   | 'visible';
 
 export type ZIPElementEntity = Pick<

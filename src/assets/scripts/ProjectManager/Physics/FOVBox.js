@@ -156,9 +156,10 @@
 
     var v1,v2,m1;
 
-    let checkDistance = (elobj, meshid, level)=> {
+    let checkDistance = (lod, elobj, meshid, level)=> {
+        let isVisible = -1;
         let el = Physics.get(elobj.idx);
-        if (!el) return;
+        if (!el) return isVisible;
 
         if (v1 == undefined){
             v1 = vec3.create();
@@ -259,8 +260,11 @@
                 if (percentageArea >= 35) level = 0;
                 else if (percentageArea < 35 && percentageArea >= 15 ) level = 1;
                 else if (percentageArea < 15 && percentageArea >= 5 ) level = 2;
-                else if (percentageArea < 5 ) level = 3;
-                if (el.lod_level != level){
+                else if (percentageArea < 5) level = 3;
+                
+                isVisible = (percentageArea > 0.0125 ) ? 1 : 0;
+
+                if (el.lod_level != level && lod){
 
                     // el.parent.mesh.set(meshid, "lod_level", level)
                     if (el.item.type == "FOVMeshObject"){
@@ -282,7 +286,7 @@
                                     } catch (e) {}
                                 }                            
 
-                                obj.setActiveGeometryLOD(level);
+                                // obj.setActiveGeometryLOD(level);
                             } catch (error) {
                                 
                             }
@@ -302,11 +306,11 @@
 
             }
            
-            return distance;
-
+            
         }
-
-
+        
+        
+        return isVisible;
     }
 
     const update = ()=> {
@@ -331,11 +335,11 @@
                             el,
                             meshid
                         })
-                        if (params.fov_enabled && el.render_fov_visible) el.parent.mesh.set(meshid, "visible", true);
-                        if (params.lod_enabled) checkDistance(el, meshid);
+                        let isVisible = Boolean(checkDistance(params.lod_enabled, el, meshid));
+                        if (params.fov_enabled && el.render_fov_visible) el.parent.mesh.set(meshid, "visible", true && isVisible);
 
                     } else {
-                        if (params.lod_enabled) checkDistance(el, meshid);
+                        checkDistance(params.lod_enabled, el, meshid);
                         collisionStatus.get(el.item.key).inContact = true;
                     }
                 } else if (el.item.type == "FOVMeshObject"){
@@ -350,19 +354,21 @@
                             idx,
                             meshid
                         })
+
+                        let isVisible = Boolean(checkDistance(params.lod_enabled, el, meshid));
+
                         if (params.fov_enabled && (el.render_fov_visible || el.render_fov_visible == undefined)) {
                             let obj = scene.getObject(key);
                             if (obj) {
-                                obj.setParameter('visible', el.parent.parentOpts.visible);
+                                obj.setParameter('visible', el.parent.parentOpts.visible && isVisible);
                             }
 
                             // el.parent.visible = true;
                         }
                         
-                        if (params.lod_enabled) checkDistance(el, meshid);
 
                     } else {
-                        if (params.lod_enabled) checkDistance(el, meshid);
+                        checkDistance(params.lod_enabled, el, meshid);
                         collisionStatus.get(el.item.key).inContact = true;
                     }
                 }
@@ -399,7 +405,7 @@
                                         parent.mesh.set(x, "lod_level", 3)
                                     } catch (e) {}
                                   }
-                                obj.setActiveGeometryLOD(3);
+                                // obj.setActiveGeometryLOD(3);
                                 
                             } catch (error) {
                                 
@@ -416,39 +422,31 @@
                 }
                 map.delete(key);
             } else {
+                let isVisible = Boolean(checkDistance(params.lod_enabled, value.el, value.meshid));
+
                 if (value.el.item.type == "FOVMeshObject"){
                     let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
                     let key = value.el.item.key.replace("_"+meshid, "");
                     let obj = scene.getObject(key);
                     if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined) && obj) {
-                        if (value.el.parent) obj.setParameter('visible', value.el.parent.parentOpts.visible);
+                        if (value.el.parent) obj.setParameter('visible', value.el.parent.parentOpts.visible && isVisible);
                     }
                 }else {
                     if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined)) value.el.parent.mesh.set(value.meshid, "visible", true);
                 }
             }
-            if (params.lod_enabled) checkDistance(value.el, value.meshid);
             
             value.inContact = false;
         });
     }
 
-    // add to physics world
-    // if (scene.getObject(payload.parent.item.key)){
-    //     render();
-    // }
-    // console.log(payload)
-
     reAdd();
-    // addObject(payload)
 
     let reset = ()=> {
         collisionStatus.forEach((value,key,map)=>
         {
-            if (params.fov_enabled && value.el.render_fov_visible) {
-                // value.el.parent.mesh.set(value.meshid, "visible", false);
-                checkDistance(value.el, value.meshid, 3);
-            }
+            let timeout = updateTimeout.get(value.el.item.key);
+            if (timeout) clearTimeout(timeout);
             map.delete(key);
         });
 

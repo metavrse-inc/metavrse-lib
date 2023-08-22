@@ -50,6 +50,9 @@ export type CherryProjectManager = {
   archive: any;
   published_url: string;
   published_postfix: string;
+  getHeaders: Function;
+  WorldController: any;
+  SDK: any;
   ZIPManager: any;
   worldController?: any;
   worldControllers?: any;

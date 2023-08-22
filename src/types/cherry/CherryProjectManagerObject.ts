@@ -72,6 +72,13 @@ export type GetterSetterPropertyType =
   | 'render_method'
   | 'fov_enabled'
   | 'lod_enabled'
+  | 'zip_size'
+  | 'zip_enabled'
+
+  // zip
+  | 'center'
+  | 'extent'
+
 
   // Physics
   | 'shape_type'
@@ -216,6 +223,9 @@ export type CherryProjectManagerObject = {
   text: string;
   type: string;
   class: string;
+
+  center: Vector3;
+  extent: Vector3;
 
   // Used to hold CSS declarations for HTML Hud
   data: Record<string, string>;

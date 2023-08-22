@@ -16,7 +16,8 @@
    const FOVMesh = Module.require('assets/ProjectManager/Physics/FOVMesh.js');
    const FOVBox = Module.require('assets/ProjectManager/Physics/FOVBox.js');
    
-   // const ZIPBox = Module.require('assets/ProjectManager/Physics/ZIPBox.js');
+   const ZIPBox = Module.require('assets/ProjectManager/Physics/ZIPBox.js');
+   const ZIPMesh = Module.require('assets/ProjectManager/Physics/ZIPMesh.js');
 
    // engine
    var Ammo;
@@ -40,14 +41,14 @@
    var FOV_debugDrawer;
 
    // engine zip
-   // var ZIP_Ammo;
-   // var ZIP_collisionConfiguration;
-   // var ZIP_dispatcher;
-   // var ZIP_broadphase;
-   // var ZIP_solver;
-   // var ZIP_physicsWorld;
-   // var ZIP_ammoInitalised = false;
-   // var ZIP_debugDrawer;
+   var ZIP_Ammo;
+   var ZIP_collisionConfiguration;
+   var ZIP_dispatcher;
+   var ZIP_broadphase;
+   var ZIP_solver;
+   var ZIP_physicsWorld;
+   var ZIP_ammoInitalised = false;
+   var ZIP_debugDrawer;
 
    // numbers
    var gravity = -9.8;
@@ -72,6 +73,7 @@
    // lod fov
    let lod_enabled = false;
    let fov_enabled = false;
+   let zip_enabled = false;
 
    // collision flags
    var CollisionFlags = {
@@ -177,16 +179,16 @@
       // console.log('Gravity: ' + gravity + ' m/s');
 
       /// ZIP
-      // ZIP_Ammo = await _Ammo(getOptions());
-      // ZIP_collisionConfiguration = new ZIP_Ammo.btDefaultCollisionConfiguration();
-      // ZIP_dispatcher = new ZIP_Ammo.btCollisionDispatcher(ZIP_collisionConfiguration);
-      // ZIP_broadphase = new ZIP_Ammo.btDbvtBroadphase();
-      // ZIP_solver = new ZIP_Ammo.btSequentialImpulseConstraintSolver();
-      // ZIP_physicsWorld = new ZIP_Ammo.btDiscreteDynamicsWorld(ZIP_dispatcher, ZIP_broadphase, ZIP_solver, ZIP_collisionConfiguration);
-      // ZIP_physicsWorld.setGravity(new ZIP_Ammo.btVector3(0, Number(gravity), 0));
-      // ZIP_physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new ZIP_Ammo.btGhostPairCallback());
+      ZIP_Ammo = await _Ammo(getOptions());
+      ZIP_collisionConfiguration = new ZIP_Ammo.btDefaultCollisionConfiguration();
+      ZIP_dispatcher = new ZIP_Ammo.btCollisionDispatcher(ZIP_collisionConfiguration);
+      ZIP_broadphase = new ZIP_Ammo.btDbvtBroadphase();
+      ZIP_solver = new ZIP_Ammo.btSequentialImpulseConstraintSolver();
+      ZIP_physicsWorld = new ZIP_Ammo.btDiscreteDynamicsWorld(ZIP_dispatcher, ZIP_broadphase, ZIP_solver, ZIP_collisionConfiguration);
+      ZIP_physicsWorld.setGravity(new ZIP_Ammo.btVector3(0, Number(gravity), 0));
+      ZIP_physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new ZIP_Ammo.btGhostPairCallback());
 
-      // ZIP_physicsWorld.getSolverInfo().m_numIterations = 1;
+      ZIP_physicsWorld.getSolverInfo().m_numIterations = 1;
       // console.log('ZIP Physics initialized')
       
       /// ZIP      
@@ -342,60 +344,64 @@
          /// FOV
 
          /// ZIP
-         // ZIP_debugDrawer = new ZIP_Ammo.DebugDrawer();
-         // ZIP_debugDrawer.DebugDrawMode = 1;
-         // ZIP_debugDrawer.drawLine = function (from, to, color) {
-         //    const heap = ZIP_Ammo.HEAPF32;
-         //    const r = heap[(color + 0) / 4];
-         //    const g = heap[(color + 4) / 4];
-         //    const b = heap[(color + 8) / 4];
+         ZIP_debugDrawer = new ZIP_Ammo.DebugDrawer();
+         ZIP_debugDrawer.DebugDrawMode = 1;
+         ZIP_debugDrawer.drawLine = function (from, to, color) {
+            const heap = ZIP_Ammo.HEAPF32;
+            // const r = heap[(color + 0) / 4];
+            // const g = heap[(color + 4) / 4];
+            // const b = heap[(color + 8) / 4];
 
-         //    const fromX = heap[(from + 0) / 4];
-         //    const fromY = heap[(from + 4) / 4];
-         //    const fromZ = heap[(from + 8) / 4];
+            const r = 0;
+            const g = 0;
+            const b = 255;
 
-         //    const toX = heap[(to + 0) / 4];
-         //    const toY = heap[(to + 4) / 4];
-         //    const toZ = heap[(to + 8) / 4];
+            const fromX = heap[(from + 0) / 4];
+            const fromY = heap[(from + 4) / 4];
+            const fromZ = heap[(from + 8) / 4];
 
-         //    //   console.log("drawLine", from, to, color);
-         //    // draws a simple line of pixels between points but stores them for later draw
-         //    var lineFrom = [fromX, fromY, fromZ];
-         //    var lineTo = [toX, toY, toZ];
-         //    TheLines.push(...lineFrom, ...lineTo);
-         //    TheLinesCount += 2;
+            const toX = heap[(to + 0) / 4];
+            const toY = heap[(to + 4) / 4];
+            const toZ = heap[(to + 8) / 4];
 
-         //    var colorFrom = [r, g, b];
-         //    var colorTo = [r, g, b];
-         //    TheColors.push(...colorFrom, ...colorTo);
-         //    TheColorsCount += 2;
-         // };
-         // ZIP_debugDrawer.drawContactPoint = function (pointOnB, normalOnB, distance, lifeTime, color) {
-         // //   console.log("drawContactPoint")
-         // };
-         // ZIP_debugDrawer.reportErrorWarning = function(warningString) {
-         // //   console.warn(warningString);
-         // };
-         // ZIP_debugDrawer.draw3dText = function(location, textString) {
-         // //   console.log("draw3dText", location, textString);
-         // };
-         // ZIP_debugDrawer.setDebugMode = function(debugMode) {
-         //   this.DebugDrawMode = debugMode;
-         // };
-         // ZIP_debugDrawer.getDebugMode = function() {
-         //   return this.DebugDrawMode;
-         // };
+            //   console.log("drawLine", from, to, color);
+            // draws a simple line of pixels between points but stores them for later draw
+            var lineFrom = [fromX, fromY, fromZ];
+            var lineTo = [toX, toY, toZ];
+            TheLines.push(...lineFrom, ...lineTo);
+            TheLinesCount += 2;
+
+            var colorFrom = [r, g, b];
+            var colorTo = [r, g, b];
+            TheColors.push(...colorFrom, ...colorTo);
+            TheColorsCount += 2;
+         };
+         ZIP_debugDrawer.drawContactPoint = function (pointOnB, normalOnB, distance, lifeTime, color) {
+         //   console.log("drawContactPoint")
+         };
+         ZIP_debugDrawer.reportErrorWarning = function(warningString) {
+         //   console.warn(warningString);
+         };
+         ZIP_debugDrawer.draw3dText = function(location, textString) {
+         //   console.log("draw3dText", location, textString);
+         };
+         ZIP_debugDrawer.setDebugMode = function(debugMode) {
+           this.DebugDrawMode = debugMode;
+         };
+         ZIP_debugDrawer.getDebugMode = function() {
+           return this.DebugDrawMode;
+         };
    
-         // ZIP_physicsWorld.setDebugDrawer(ZIP_debugDrawer);
+         ZIP_physicsWorld.setDebugDrawer(ZIP_debugDrawer);
          /// ZIP
 
       }
 
       addFOVBox();
-      // addZIPBox();
+      addZIPBox();
 
       FOV_ammoInitalised = true;
-      // ZIP_ammoInitalised = true;
+      ZIP_ammoInitalised = true;
       ammoInitalised = true;
    }
 
@@ -421,25 +427,25 @@
       // console.log('adding FOVBox')
    }
 
-   // let ZIPSize = [1000,1000,1000];
-   // let ZIPBox_r;
-   // const addZIPBox = ()=> {
-   //    let args = {
-   //       size: ZIPSize,
-   //       Physics : _physics,
-   //       fov_enabled,
-   //       lod_enabled,
-   //       data : {
-   //          fov_enabled,
-   //          lod_enabled,
-   //       }
-   //    }
+   let ZIPSize = [1000,1000,1000];
+   let ZIPBox_r;
+   const addZIPBox = ()=> {
+      let args = {
+         size: ZIPSize,
+         Physics : _physics,
+         fov_enabled,
+         lod_enabled,
+         data : {
+            fov_enabled,
+            lod_enabled,
+         }
+      }
       
-   //    ZIPBox_r = ZIPBox(args);
-   //    renderList.set("ZIPBox", ZIPBox_r)
-   //    allList.set("ZIPBox", ZIPBox_r)
-   //    // console.log('adding ZIPBox_r')
-   // }
+      ZIPBox_r = ZIPBox(args);
+      renderList.set("ZIPBox", ZIPBox_r)
+      allList.set("ZIPBox", ZIPBox_r)
+      // console.log('adding ZIPBox_r')
+   }
 
    const render = () => {
       // console.log('Rendering Physics')
@@ -453,7 +459,7 @@
 
       physicsWorld.stepSimulation(currentFps, 10, fixedFps);
       FOV_physicsWorld.stepSimulation(currentFps, 1, 1/5);
-      // ZIP_physicsWorld.stepSimulation(currentFps, 1, 1/5);
+      ZIP_physicsWorld.stepSimulation(currentFps, 1, 1/5);
 
       // deprecate
       for (var [key, _u] of syncList) {
@@ -492,7 +498,7 @@
     
       physicsWorld.debugDrawWorld();
       FOV_physicsWorld.debugDrawWorld();
-      // ZIP_physicsWorld.debugDrawWorld();
+      ZIP_physicsWorld.debugDrawWorld();
       
       if (TheLines.length == 0) {
          TheLines = [];
@@ -746,11 +752,12 @@
          case 'KinematicCharacterController':  obj = KinematicCharacterController(args); break;
          case 'FOVMesh':  obj = FOVMesh(args); break;
          case 'FOVMeshObject':  obj = FOVMesh(args); break;
+         case 'ZIPMesh':  obj = ZIPMesh(args); break;
             
       }
 
       if (obj){
-         if (type != "FOVMesh" && type != "FOVMeshObject") renderList.set(args.idx, obj)
+         if (type != "FOVMesh" && type != "FOVMeshObject" && type != "ZIPMesh") renderList.set(args.idx, obj)
          allList.set(args.idx, obj)
          return obj;
       }
@@ -880,6 +887,15 @@
       }
     }
 
+    let toggleZIP = (v)=> {
+      zip_enabled = v; 
+      try {
+         ZIPBox_r.toggleZIP(v)
+      } catch (error) {
+         
+      }
+    }
+
    let isResetting = false;
 
    Object.defineProperties(_physics, {
@@ -890,8 +906,8 @@
 
       FOV_Ammo: { get: () => { return FOV_Ammo; }, set: (v) => {} },
       FOV_PhysicsWorld: { get: () => { return FOV_physicsWorld; }, set: (v) => {} },
-      // ZIP_Ammo: { get: () => { return ZIP_Ammo; }, set: (v) => {} },
-      // ZIP_PhysicsWorld: { get: () => { return ZIP_physicsWorld; }, set: (v) => {} },
+      ZIP_Ammo: { get: () => { return ZIP_Ammo; }, set: (v) => {} },
+      ZIP_PhysicsWorld: { get: () => { return ZIP_physicsWorld; }, set: (v) => {} },
       isResetting: { get: () => { return isResetting; }, set: (v) => { isResetting = v} },
    })
 
@@ -911,9 +927,12 @@
       setFOVSize,
       resetFOV,
 
+      setZIPSize,
+
       toggleLOD,
       toggleFOV,
-
+      toggleZIP,
+      
       reset,
       debugDraw,
       isReady : ()=> {return (FOV_ammoInitalised && ammoInitalised)}

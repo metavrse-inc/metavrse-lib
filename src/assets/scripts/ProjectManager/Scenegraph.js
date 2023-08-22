@@ -138,6 +138,7 @@ module.exports = () => {
   let objectsLoaded = false;
   let texturesLoaded = false;
   let clearedWebworker = true;
+  let clearedWebworkerTS = 0;
 
   const render = (opts) => {
     if (Module.ProjectManager.projectRunning) Physics.render();
@@ -160,7 +161,9 @@ module.exports = () => {
         
         if (qsO != 0 || qsT != 0){
           clearedWebworker = false;
-        } else if (qsO == 0 && qsT == 0 && !clearedWebworker){
+          clearedWebworkerTS = Date.now();
+        } else if (qsO == 0 && qsT == 0 && !clearedWebworker && (Date.now() - clearedWebworkerTS >= 1000)){
+          // clear workers only when nothing is in the worker que's and 1second has elapsed to give other processes a moment to engage
           clearedWebworker = true;
           scene.clearWebworkers();
           return;
@@ -389,6 +392,80 @@ module.exports = () => {
 
   // add zip
   const addZip = (o, is_async)=> {
+    const World = sceneprops.sceneIndex.has("world") ? sceneprops.sceneIndex.get("world") : {};
+
+    if (!World.zip_enabled || !Module.ProjectManager.projectRunning) {
+      _addZip(o, is_async);
+      return;
+    }
+
+    let cb = ()=> {
+      const obj = (is_async) ? ZIPElementModel(o) : o;
+
+      let addFN = ()=> {
+        try {
+          let zip_node = ZIPManager.zips.get(obj.url);
+          let zip = zip_node.archive;
+          sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+          let d = getZIPData(zip);
+    
+          let addPrefix = (leaf)=> {
+            for (var node of leaf) {
+              if (node.key) node.key = obj.item.key + "_" + node.key;
+              if (node.skey) node.skey = obj.item.key + "_" + node.skey;
+              if (node.children) addPrefix(node.children);
+            }
+          }
+    
+          addPrefix(d.tree);
+    
+          let maxsize = 0;
+          let zip_loader = (list)=>{
+            if (list.size > maxsize) maxsize = list.size;
+            if (maxsize == 0) return;
+  
+            let perc = (maxsize - list.size) / maxsize;
+            perc = Math.round(perc*100);
+            if (perc >= 100){
+              requestAnimationFrame(()=>{ initControllersZip(obj.item.key); })                                
+              obj.removeLoadingListener(zip_loader);
+            }
+          }
+          
+          obj.addLoadingListener(zip_loader)
+    
+          // add world for zip
+          _addObject({
+            key: "world",
+            type: "world"
+          }, d.data, obj, obj.key, {
+            prefix: obj.item.key,
+            zip_id: obj.url,
+            ZIPElement: obj,
+          });
+    
+          for (var c of d.tree) {
+            _addObject(c, d.data, obj, obj.key, {
+              prefix: obj.item.key,
+              zip_id: obj.url,
+              ZIPElement: obj,
+            });
+          }
+          
+        } catch (error) {
+          
+        }
+      }
+
+      if (obj.fov) ZIPManager.callbacks.fov.set(obj.item.key, addFN)
+      else addFN();
+    }
+
+    if (is_async) ZIPManager.callbacks.add(o.data.url, cb)
+    else cb();
+  }
+
+  const _addZip = (o, is_async)=> {
     // is is_async, o is the payload
     const obj_ = o;
     let cb = ()=> {
@@ -411,10 +488,16 @@ module.exports = () => {
       addPrefix(d.tree);
 
       if (is_async){
-        let zip_loader = (list)=>{        
-          if (list.size == 0){
-            // launch controllers          
-            initControllersZip(obj.item.key);
+        let maxsize = 0;
+        let zip_loader = (list)=>{
+          if (list.size > maxsize) maxsize = list.size;
+          if (maxsize == 0) return;
+
+          let perc = (maxsize - list.size) / maxsize;
+          perc = Math.round(perc*100);
+          // console.log(obj.item.key, perc)
+          if (perc >= 100){
+            requestAnimationFrame(()=>{ initControllersZip(obj.item.key); })                                
             obj.removeLoadingListener(zip_loader);
           }
         }
@@ -699,8 +782,9 @@ module.exports = () => {
           const item_ = item;
           let cb = {
             onDownloadProgress: (response)=> {
-              if (URLLoader) {
-                URLLoader.percentage = response.loaded/response.total;
+              if (URLLoader && URLLoader.zips && !item_.async) {
+                URLLoader.zips.set(item_.key, response.loaded/response.total)
+                // URLLoader.percentage = response.loaded/response.total;
                 // URLLoader.close();
               }
             },
@@ -774,8 +858,9 @@ module.exports = () => {
           const item_ = item;
           let cb = {
             onDownloadProgress: (response)=> {
-              if (URLLoader) {
-                URLLoader.percentage = response.loaded/response.total;
+              if (URLLoader && URLLoader.zips) {
+                URLLoader.zips.set(item_.key, response.loaded/response.total)
+                // URLLoader.percentage = response.loaded/response.total;
                 // URLLoader.close();
               }
             },
@@ -1264,6 +1349,8 @@ module.exports = () => {
             sceneprops.worldControllers.set("world", Module.require(worldControllerkey)());
 
             // sceneprops.worldController = Module.require(worldControllerkey)();
+          } else if (Module.ProjectManager.WorldController){
+            sceneprops.worldControllers.set("world", Module.ProjectManager.WorldController);
           }
         } catch (e) {
           console.error(worldControllerkey + ':' + e.message);
@@ -1340,6 +1427,7 @@ module.exports = () => {
         PM.Physics = Physics;
         PM.objectControllers = Module.ProjectManager.objectControllers;
         PM.ZIPManager = ZIPManager;
+        PM.SDK = (Module.ProjectManager.SDK) ? Module.ProjectManager.SDK : {}
 
         ZIPModule.ProjectManager = PM;
 

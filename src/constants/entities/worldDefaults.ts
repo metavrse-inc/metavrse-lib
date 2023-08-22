@@ -28,5 +28,7 @@ export const worldDefaults: World = {
   fov_size: [500,500,500], 
   render_method: 0, 
   fov_enabled: false, 
-  lod_enabled: false
+  lod_enabled: false,
+  zip_size: [1000,1000,1000], 
+  zip_enabled: false,
 };

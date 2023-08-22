@@ -48,8 +48,7 @@
     var render = () => { }; // header declaration
 
     let params = {
-        "lod_enabled": (_d["lod_enabled"] !== undefined) ? _d['lod_enabled'] : false,
-        "fov_enabled": (_d["fov_enabled"] !== undefined) ? _d['fov_enabled'] : false,
+        "zip_enabled": (payload["zip_enabled"] !== undefined) ? payload['zip_enabled'] : false,
     };
 
     let object = {
@@ -166,20 +165,20 @@
             m1 = mat4.create();
         }
 
-        if (level != undefined && level >= 0){
-            if (el.item.type == "FOVMeshObject"){
+        if (level == -1) el.lod_level = level; //reset
 
-            }else{
-                el.parent.mesh.set(meshid, "lod_level", level)
-            }
-            el.lod_level = level;
+        if (level != undefined && level >= 0){
+            // if (el.item.type == "FOVMeshObject"){
+            // }else{
+            //     el.parent.mesh.set(meshid, "lod_level", level)
+            // }            
         } else {
             let v1 = el.scales
             mat4.getTranslation(v2, el.matrix);
 
-            let b1 = (el.extents.f1 * v1[0])
-            let b2 = (el.extents.f2 * v1[1])
-            let b3 = (el.extents.f3 * v1[2])
+            let b1 = (el.extent[0] * v1[0])
+            let b2 = (el.extent[0] * v1[1])
+            let b3 = (el.extent[0] * v1[2])
 
             let diameter = Math.max(b1,b2,b3);
             let r = diameter / 2;
@@ -245,25 +244,12 @@
                 percentageArea = perc * ( avgLength / distance);
                 // console.log(distance)
 
-                let red = [255,0,0];
-                let green = [0,255,0];
-                let blue = [0,0,255];
-                let purple = [255, 102, 255];
+                if (percentageArea >= 0.0125) level = 0;
+                else if (percentageArea < 0.0125 ) level = 1;
 
-                let greenA = [0,255,0];
-                let greenB = [0,128,0];
-                let greenC = [0,64,0];
-                let greenD = [0,32,0];
-
-
-                if (percentageArea >= 35) level = 0;
-                else if (percentageArea < 35 && percentageArea >= 15 ) level = 1;
-                else if (percentageArea < 15 && percentageArea >= 5 ) level = 2;
-                else if (percentageArea < 5 ) level = 3;
                 if (el.lod_level != level){
-
                     // el.parent.mesh.set(meshid, "lod_level", level)
-                    if (el.item.type == "FOVMeshObject"){
+                    if (el.item.type == "ZIPMesh"){
                         let timeout = updateTimeout.get(el.item.key);
                         if (timeout) clearTimeout(timeout);
 
@@ -272,17 +258,16 @@
 
                         timeout = setTimeout(()=>{
                             try {
-                                let obj = scene.getObject(key);
-                                let meshes_ = obj.getMeshes();
-                                for (var x=0; x < meshes_.size(); x++){                
-                                    try {
-                                        parent.mesh.set(x, "lod_level", level)
-                                        // el.parent.mesh.set(x, "albedo_ratio", (level == 0 ? greenC : level == 1 ? greenB : level == 2 ? greenA : greenD))
-                                        // el.parent.mesh.set(x, "albedo_ratio", (level == 0 ? greenA : level == 1 ? greenB : level == 2 ? greenC : greenD))
-                                    } catch (e) {}
-                                }                            
-
-                                obj.setActiveGeometryLOD(level);
+                                // console.log('zip level', level, el.item.key)
+                                if (level == 1){
+                                    for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                                }else{                                    
+                                    let zm = Module.ProjectManager.ZIPManager.callbacks;
+                                    if (zm.fov.has(parent.item.key) && parent.children.size <= 1){
+                                        let cb = zm.fov.get(parent.item.key);
+                                        requestAnimationFrame(cb)
+                                    }
+                                }
                             } catch (error) {
                                 
                             }
@@ -291,8 +276,6 @@
                         updateTimeout.set(el.item.key, timeout)
 
                         
-                    } else {
-                        el.parent.mesh.set(meshid, "albedo_ratio", (level == 0 ? red : level == 1 ? green : level == 2 ? blue : purple))
                     }
 
                     el.lod_level = level;
@@ -320,25 +303,7 @@
 
             let el = Physics.get(idx)
             try {
-                if (el.item.type == "FOVMesh"){
-                    let ks = el.item.key.split("_")
-                    // let key = ks[0];
-                    let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
-
-                    if (!collisionStatus.has(el.item.key)){
-                        collisionStatus.set(el.item.key, {
-                            inContact: true,
-                            el,
-                            meshid
-                        })
-                        if (params.fov_enabled && el.render_fov_visible) el.parent.mesh.set(meshid, "visible", true);
-                        if (params.lod_enabled) checkDistance(el, meshid);
-
-                    } else {
-                        if (params.lod_enabled) checkDistance(el, meshid);
-                        collisionStatus.get(el.item.key).inContact = true;
-                    }
-                } else if (el.item.type == "FOVMeshObject"){
+                if (el.item.type == "ZIPMesh"){
                     // let ks = el.item.key.split("_")
                     let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
                     let key = el.item.key.replace("_"+meshid, "");
@@ -346,23 +311,18 @@
                     if (!collisionStatus.has(el.item.key)){
                         collisionStatus.set(el.item.key, {
                             inContact: true,
-                            el : {item: el.item},
+                            el : {item: el.item, parent: el.parent},
                             idx,
                             meshid
                         })
-                        if (params.fov_enabled && el.render_fov_visible) {
-                            let obj = scene.getObject(key);
-                            if (obj) {
-                                obj.setParameter('visible', el.parent.parentOpts.visible);
-                            }
 
-                            // el.parent.visible = true;
+                        if (el.render_zip) {
+                            // console.log('add zip', params, el)
+                            checkDistance(el, meshid, -1); // -1 forced
                         }
                         
-                        if (params.lod_enabled) checkDistance(el, meshid);
-
                     } else {
-                        if (params.lod_enabled) checkDistance(el, meshid);
+                        if (el.render_zip) checkDistance(el, meshid);
                         collisionStatus.get(el.item.key).inContact = true;
                     }
                 }
@@ -377,90 +337,43 @@
         collisionStatus.forEach((value,key,map)=>
         {
             if (!value.inContact){
-                if (value.el.item.type == "FOVMeshObject"){
-                    let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
-                    let key = value.el.item.key.replace("_"+meshid, "");
-
-                    let obj = scene.getObject(key);
-                    if (params.fov_enabled && value.el.render_fov_visible && obj) obj.setParameter('visible', false);
-                    if (params.lod_enabled && obj) {
+                if (value.el.item.type == "ZIPMesh"){
+                    // console.log('remove zip', value)
+                    if(value.el.parent) {
                         let timeout = updateTimeout.get(value.el.item.key);
                         if (timeout) clearTimeout(timeout);
-
-                        const key = value.el.item.key.replace("_"+meshid, "");
-                        const parent = value.el.parent;
-
-                        timeout = setTimeout(()=>{
-                            try {
-                                let obj = scene.getObject(key);
-                                let meshes_ = obj.getMeshes();
-                                for (var x=0; x < meshes_.size(); x++){                
-                                    try {
-                                        parent.mesh.set(x, "lod_level", 3)
-                                    } catch (e) {}
-                                  }
-                                obj.setActiveGeometryLOD(3);
-                                
-                            } catch (error) {
-                                
-                            }
-                        }, 1000)
-
-                        updateTimeout.set(value.el.item.key, timeout)
-
+                        for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
                     }
-                    // if (el.object) el.object.setParameter('visible', el.parent.visible);
-                }
-                else {
-                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", false);
                 }
                 map.delete(key);
-            } else {
-                if (value.el.item.type == "FOVMeshObject"){
-                    let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
-                    let key = value.el.item.key.replace("_"+meshid, "");
-                    let obj = scene.getObject(key);
-                    if (params.fov_enabled && value.el.render_fov_visible && obj) {
-                        obj.setParameter('visible', value.el.parent.parentOpts.visible);
-                    }
-                }else {
-                    if (params.fov_enabled && value.el.render_fov_visible) value.el.parent.mesh.set(value.meshid, "visible", true);
-                }
             }
-            if (params.lod_enabled) checkDistance(value.el, value.meshid);
+
+            if (value.el.render_zip) checkDistance(value.el, value.meshid);
             
             value.inContact = false;
         });
     }
 
-    // add to physics world
-    // if (scene.getObject(payload.parent.item.key)){
-    //     render();
-    // }
-    // console.log(payload)
-
     reAdd();
-    // addObject(payload)
 
     let reset = ()=> {
-        collisionStatus.forEach((value,key,map)=>
-        {
-            if (params.fov_enabled && value.el.render_fov_visible) {
-                value.el.parent.mesh.set(value.meshid, "visible", false);
-                checkDistance(value.el, value.meshid, 3);
-            }
-            map.delete(key);
-        });
+        // collisionStatus.forEach((value,key,map)=>
+        // {
+        //     // if (params.fov_enabled && value.el.render_fov_visible) {
+        //     //     value.el.parent.mesh.set(value.meshid, "visible", false);
+        //     //     checkDistance(value.el, value.meshid, 3);
+        //     // }
+        //     map.delete(key);
+        // });
 
-        collisionStatus.clear();
+        // collisionStatus.clear();
     }
 
     let removeMesh = (key)=> {
         collisionStatus.delete(key);
     }
     
-    let toggleFOV = (v)=> { params.fov_enabled = v; reset();}
-    let toggleLOD = (v)=> { params.lod_enabled = v; }
+    let toggleZIP = (v)=> { params.zip_enabled = v; reset();}
 
     // add to parent
     if (parent) parent.children.set(child.key, object);
@@ -477,8 +390,7 @@
         move,
         reset,
         removeMesh,
-        toggleFOV,
-        toggleLOD,
+        toggleZIP,
     })
 
     return object;

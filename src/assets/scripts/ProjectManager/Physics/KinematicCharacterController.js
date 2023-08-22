@@ -453,7 +453,10 @@ module.exports = (payload) => {
         m4 : mat4.create(),
     }
 
+    let initCounter=0;
     const update = (forced)=> {
+        if (initCounter < 1){ initCounter++; return;}  // skip first update
+
         forced = forced || false;
         if (!isLoaded || !body) return;
 

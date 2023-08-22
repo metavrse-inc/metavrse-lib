@@ -53,6 +53,7 @@ import AmmoWASM from './scripts/lib/ammo.wasm.wasm';
 // Physics
 import PhysicsEngine from './scripts/ProjectManager/Physics/engine';
 import ZIPBox from './scripts/ProjectManager/Physics/ZIPBox';
+import ZIPMesh from './scripts/ProjectManager/Physics/ZIPMesh';
 import FOVBox from './scripts/ProjectManager/Physics/FOVBox';
 import FOVMesh from './scripts/ProjectManager/Physics/FOVMesh';
 import PhysicsHelpers from './scripts/ProjectManager/Physics/helpers';
@@ -135,6 +136,7 @@ export const scripts = {
   [`${PHYSICS}/KinematicCharacterController.js`]: KinematicCharacterController,
   [`${PHYSICS}/RigidBody.js`]: RigidBody,
   [`${PHYSICS}/ZIPBox.js`]: ZIPBox,
+  [`${PHYSICS}/ZIPMesh.js`]: ZIPMesh,
 
 
   [`CherryGL.wasm`]: CherryGLWasm,

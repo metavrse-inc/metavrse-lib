@@ -36,4 +36,6 @@ export type World = {
   render_method: number;
   fov_enabled: boolean;
   lod_enabled: boolean;
+  zip_size: Vector3;
+  zip_enabled: boolean;
 };

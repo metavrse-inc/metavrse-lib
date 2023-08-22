@@ -9,6 +9,8 @@
     const redrawAddMethod = payload.addToRedraw;
     let sceneprops = payload.sceneprops;
 
+    const Physics = Module.ProjectManager.Physics;
+
     var p = parent;
     var d = data || {};
 
@@ -28,6 +30,9 @@
     const insert = (array, value) => {}
     const remove = (array, value) => {}
 
+    const World = Module.ProjectManager.getObject("world") || {};
+    if (World.zip_enabled == undefined) World.zip_enabled = false;
+
     const getLastItemInMap = map => Array.from(map)[map.size-1]
     const getLastKeyInMap = map => Array.from(map)[map.size-1][0]
     const getLastValueInMap = map => Array.from(map)[map.size-1][1];
@@ -39,6 +44,9 @@
         groupMat: (d['groupMat'] !== undefined) ? [...d['groupMat']] : mat4.create(),
         visible: (d['visible'] !== undefined) ? d['visible'] : true,
         url: (d['url'] !== undefined) ? d['url'] : '',
+        extent: (d['extent'] !== undefined) ? [...d['extent']] : [1, 1, 1],
+        center: (d['center'] !== undefined) ? [...d['center']] : [0.5, 0.5, 0.5],
+        fov: (d['fov'] !== undefined) ? d['fov'] : true,
     };
 
     let zip_node = Module.ProjectManager.ZIPManager.zips.get(transformation.url);
@@ -195,6 +203,36 @@
         return false;
     }
 
+    let fov_meshes = [];
+
+    const toggleFOV = (isVisible)=> {
+        if (!World.zip_enabled || !transformation.fov) return;
+
+        // add fov meshes
+        if (fov_meshes.length == 0){
+                let pl = {
+                    child: {type:'ZIPMesh', key: child.key + "_ZIP" },
+                    parent: object,
+                    render_zip: true,                            
+                    data: {
+                        mesh: 0,
+                        ...transformation
+                    }
+                }
+    
+                fov_meshes.push(Physics.add(pl));                  
+
+        } else if (fov_meshes.length > 0) {
+            for (var m of fov_meshes){
+                m.object.object.center = transformation.center;
+                m.object.object.extent = transformation.extent;
+                m.render(parentOpts.transform)
+            }
+            // removeFOV();
+        }
+  
+    }
+
     const render = (opts) => {
         opts = opts || {};
         // loop renderlist and draw out
@@ -215,6 +253,12 @@
                         calculateTransformation();
                         renderTransformation = true;
                     }
+                    break;
+                case "center":
+                    renderTransformation = true;
+                    break;
+                case "extent":
+                    renderTransformation = true;
                     break;
                 case "visible":
                     finalVisibility = getLastValueInMap(getProperties(row.type));
@@ -267,6 +311,10 @@
 
         // render children
         if (renderTransformation || renderVisibility) {
+            setTimeout(() => {
+                toggleFOV(true);        
+            });
+
             Module.ProjectManager.isDirty = true;
             for (let [key, value] of object.children) {
                 value.render(parentOpts);
@@ -301,6 +349,8 @@
     setProperty("scale", transformation.scale);
     setProperty("groupMat", transformation.groupMat);
     setProperty("visible", transformation.visible);
+    setProperty("extent", transformation.extent);
+    setProperty("center", transformation.center);
 
     if (object.parent) object.parent.children.set(child.key, object);
 
@@ -344,6 +394,9 @@
 
         visible: { get: () => { return getProperty('visible')[1]; }, set: (v) => { setProperty('visible', v); } },
         url: { get: () => { return transformation.url; }, set: (v) => { } },
+        extent: { get: () => { return getProperty('extent')[1]; }, set: (v) => { setProperty('extent', v); } },
+        center: { get: () => { return getProperty('center')[1]; }, set: (v) => { setProperty('center', v); } },
+        fov: { get: () => { return transformation.fov; }, set: (v) => { } },
     })
 
     Object.assign(object, {

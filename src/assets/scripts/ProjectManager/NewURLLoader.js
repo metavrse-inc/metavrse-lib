@@ -93,9 +93,13 @@ module.exports = (opt) => {
       headers.Authorization = `Basic ${btoa(`user:${password}`)}`;
     }
 
+    try {
+      Object.assign(headers, Module.ProjectManager.getHeaders())
+    } catch (error) {}
+
     let isIOS = getMobileOS() == "iOS";
 
-    if (lastTimeDownloaded && !isIOS) {
+    if (lastTimeDownloaded && !isIOS && lastTimeDownloaded != "undefined") {
       headers['If-Modified-Since'] = lastTimeDownloaded;
     }
 
@@ -127,7 +131,7 @@ module.exports = (opt) => {
               return;
             }
 
-            if (!isIOS) localStorage.setItem(lsKey, res.headers['last-modified']);
+            if (!isIOS && res.headers['last-modified'] != undefined) localStorage.setItem(lsKey, res.headers['last-modified']);
 
             const data = new Uint8Array(res.data);
             Module.FS.writeFile(

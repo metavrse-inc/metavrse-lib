@@ -23,6 +23,10 @@ module.exports = () => {
 
   let published_url =  location.protocol + '//' + location.host;
   let published_postfix =  "";
+  let getHeaders = ()=> {return {}};
+
+  let WorldController = null;
+  let SDK = null;
 
   const surface = Module.getSurface();
   const scene = surface.getScene();
@@ -364,6 +368,33 @@ module.exports = () => {
       },
       set: (v) => {
         published_postfix = v;
+      },
+    },
+
+    getHeaders: {
+      get: () => {
+        return getHeaders;
+      },
+      set: (v) => {
+        getHeaders = v;
+      },
+    },
+
+    WorldController: {
+      get: () => {
+        return WorldController;
+      },
+      set: (v) => {
+        WorldController = v;
+      },
+    },
+
+    SDK: {
+      get: () => {
+        return SDK;
+      },
+      set: (v) => {
+        SDK = v;
       },
     },
 

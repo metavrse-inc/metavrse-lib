@@ -30,6 +30,7 @@
     }
 
     const callback_list = new Map();
+    // const fov_list = new Map();
 
     const addCallback = (url, cb)=> {
         if (!callback_list.has(url)){
@@ -53,7 +54,8 @@
 
     const callbacks = {
         add: addCallback,
-        run: executeCallbacks
+        run: executeCallbacks,
+        fov: new Map()
     }
 
     const addZip = (url, options)=> {
