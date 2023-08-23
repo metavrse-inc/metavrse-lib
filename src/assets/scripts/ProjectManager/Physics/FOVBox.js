@@ -286,7 +286,7 @@
                                     } catch (e) {}
                                 }                            
 
-                                // obj.setActiveGeometryLOD(level);
+                                obj.setActiveGeometryLOD(level);
                             } catch (error) {
                                 
                             }
@@ -405,7 +405,7 @@
                                         parent.mesh.set(x, "lod_level", 3)
                                     } catch (e) {}
                                   }
-                                // obj.setActiveGeometryLOD(3);
+                                obj.setActiveGeometryLOD(3);
                                 
                             } catch (error) {
                                 

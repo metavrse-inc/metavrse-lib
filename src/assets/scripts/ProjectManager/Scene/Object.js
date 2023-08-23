@@ -1066,39 +1066,39 @@ module.exports = (payload) => {
           ? Module.ProjectManager.objPaths[String(child.id)]
           : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
 
-        // if (World.lod_enabled) {
-        //   let paths = [];
-        //   paths.push(path);
-        //   try {            
-        //     let id = (zip_id != "default") ? zip_id + "_" + String(child.id) : String(child.id);
-        //     let asset = Module.ProjectManager.getAsset(id);
-        //     if (Module.ProjectManager.projectRunning && asset.children){
-        //       let x=0;
-        //       for (var a of asset.children){
-        //         x++;
-        //         const pathLOD = !isNaN(a.key) && zip_id == "default"
-        //         ? Module.ProjectManager.objPaths[String(a.key)]
-        //         : (!isNaN(a.key) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(a.key)]: String(a.key);
+        if (World.lod_enabled) {
+          let paths = [];
+          paths.push(path);
+          try {            
+            let id = (zip_id != "default") ? zip_id + "_" + String(child.id) : String(child.id);
+            let asset = Module.ProjectManager.getAsset(id);
+            if (Module.ProjectManager.projectRunning && asset.children){
+              let x=0;
+              for (var a of asset.children){
+                x++;
+                const pathLOD = !isNaN(a.key) && zip_id == "default"
+                ? Module.ProjectManager.objPaths[String(a.key)]
+                : (!isNaN(a.key) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(a.key)]: String(a.key);
     
-        //         paths.push(pathLOD);
-        //       }
-        //     }
+                paths.push(pathLOD);
+              }
+            }
 
-        //   } catch (error) {
-        //     console.log(error)
-        //   }
+          } catch (error) {
+            console.log(error)
+          }
   
-        //   for (var lx = paths.length - 1; lx >= 0; lx--){
-        //     if (lx == paths.length - 1){
-        //       obj = scene.addObject(String(child.key), paths[lx] + "@" + zip_id, lx);
-        //     } else {
-        //       obj.addGeometryLOD(paths[lx] + "@" + zip_id, lx)
-        //     }
-        //   }
+          for (var lx = paths.length - 1; lx >= 0; lx--){
+            if (lx == paths.length - 1){
+              obj = scene.addObject(String(child.key), paths[lx] + "@" + zip_id, lx);
+            } else {
+              obj.addGeometryLOD(paths[lx] + "@" + zip_id, lx)
+            }
+          }
 
-        // } else{
+        } else{
           obj = scene.addObject(String(child.key), path + "@" + zip_id);
-        // }
+        }
 
         isLoading = 1;
       } catch (error) {
