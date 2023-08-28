@@ -125,6 +125,12 @@ module.exports = (payload) => {
     let center = {f1:0,f2:0,f3:0}
     let _object = null;
     const addObject = (args) => {
+        try {
+            _addObject(args)
+        } catch (error) {
+        }
+    }
+    const _addObject = (args) => {
         let o = args.parent;
         let key = o.item.key;
 
@@ -454,7 +460,15 @@ module.exports = (payload) => {
     }
 
     let initCounter=0;
+
     const update = (forced)=> {
+        try {
+            _update(forced);
+        } catch (error) {
+            
+        }
+    }
+    const _update = (forced)=> {
         if (initCounter < 1){ initCounter++; return;}  // skip first update
 
         forced = forced || false;

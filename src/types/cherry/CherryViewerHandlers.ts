@@ -1,3 +1,5 @@
+export type KeyEvent = { type: string, key: string, code: string, shiftKey: boolean, ctrlKey: boolean, altKey: boolean, metaKey:boolean, repeat:boolean };
+
 export type Handlers = {
   onTap?: (button: number, x: number, y: number) => void;
   onMouseEvent?: (
@@ -9,4 +11,5 @@ export type Handlers = {
   onScroll?: () => boolean;
   onRender?: () => boolean;
   resetCamera?: () => boolean;
+  onKeyEvent?: (event: KeyEvent)=> boolean;
 };

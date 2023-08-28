@@ -20,7 +20,7 @@ module.exports = (payload) => {
     opt.ZIPElement.setQueItem(child.key, true);
     loadingTimeout = setTimeout(() => {
       opt.ZIPElement.setQueItem(child.key, false)
-    }, 10000);
+    }, 150);
   }
 
   var d = data || {};
@@ -502,6 +502,8 @@ module.exports = (payload) => {
   let autoscaleObject = false;
   let autospivotObject = false;
 
+  let object_lod_paths = []
+
   const getTransformationValues = () => {
     const transformArray = [
       'position',
@@ -941,20 +943,6 @@ module.exports = (payload) => {
 
   let pendingRenderList = []; // needed only when object has not been loaded
 
-  let loadingCheck = (counter)=> {
-    if (counter-1 < 0) return;
-
-      let obj = scene.getObject(child.key);
-
-      if (!obj || obj.getStatus() == 0){
-          // not loaded
-          setTimeout(loadingCheck, 10, counter-1);
-      } else {
-          // loaded
-          render();
-      }
-  }
-
   // meshes
   const getPathByVersion = () => {
     if (zip_id != "default") return "files/";
@@ -1054,6 +1042,14 @@ module.exports = (payload) => {
   }
 
   const render = (opts) => {
+    try {
+      _render(opts)
+    } catch (error) {
+      
+    }
+  }
+
+  const _render = (opts) => {
     opts = opts || {};
     // loop renderlist and draw out
     let obj = scene.getObject(child.key);
@@ -1066,9 +1062,10 @@ module.exports = (payload) => {
           ? Module.ProjectManager.objPaths[String(child.id)]
           : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
 
+        object_lod_paths = [];
+        object_lod_paths.push(path);
+
         if (World.lod_enabled) {
-          let paths = [];
-          paths.push(path);
           try {            
             let id = (zip_id != "default") ? zip_id + "_" + String(child.id) : String(child.id);
             let asset = Module.ProjectManager.getAsset(id);
@@ -1080,7 +1077,7 @@ module.exports = (payload) => {
                 ? Module.ProjectManager.objPaths[String(a.key)]
                 : (!isNaN(a.key) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(a.key)]: String(a.key);
     
-                paths.push(pathLOD);
+                object_lod_paths.push(pathLOD);
               }
             }
 
@@ -1088,11 +1085,11 @@ module.exports = (payload) => {
             console.log(error)
           }
   
-          for (var lx = paths.length - 1; lx >= 0; lx--){
-            if (lx == paths.length - 1){
-              obj = scene.addObject(String(child.key), paths[lx] + "@" + zip_id, lx);
+          for (var lx = object_lod_paths.length - 1; lx >= 0; lx--){
+            if (lx == object_lod_paths.length - 1){
+              obj = scene.addObject(String(child.key), object_lod_paths[lx] + "@" + zip_id, lx);
             } else {
-              obj.addGeometryLOD(paths[lx] + "@" + zip_id, lx)
+              obj.addGeometryLOD(object_lod_paths[lx] + "@" + zip_id, lx)
             }
           }
 
@@ -1821,6 +1818,10 @@ module.exports = (payload) => {
 
     clearChangeHandlers: () => {
       updateHandlers.clear();
+    },
+
+    getGeometryLOD : ()=>{
+      return object_lod_paths;
     },
 
     remove: () => {

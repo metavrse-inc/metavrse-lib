@@ -457,9 +457,9 @@
       let currentFps = 1 / Module.fps.currentFps;
       if (isNaN(currentFps)) currentFps = 1 / 60;
 
-      physicsWorld.stepSimulation(currentFps, 10, fixedFps);
-      FOV_physicsWorld.stepSimulation(currentFps, 1, 1/5);
-      ZIP_physicsWorld.stepSimulation(currentFps, 1, 1/5);
+      physicsWorld.stepSimulation(fixedFps, 10, 1/60);
+      FOV_physicsWorld.stepSimulation(fixedFps, 1, 1/5);
+      ZIP_physicsWorld.stepSimulation(fixedFps, 1, 1/5);
 
       // deprecate
       for (var [key, _u] of syncList) {

@@ -147,13 +147,13 @@ module.exports = () => {
       if (ZIPAddCallbacks.length > 0){
         while (ZIPAddCallbacks.length > 0){
           let k = ZIPAddCallbacks.pop();
-          k();
+          try { k(); } catch (error) {}
         }
 
       }else if (ZIPLaunchKeys.length > 0){
         while (ZIPLaunchKeys.length > 0){
           let k = ZIPLaunchKeys.pop();
-          initControllersZip(k);
+          try { initControllersZip(k);  } catch (error) { }            
         }
       } else {
         let qsO = scene.getWorkerObjectQueueSize();
@@ -162,10 +162,10 @@ module.exports = () => {
         if (qsO != 0 || qsT != 0){
           clearedWebworker = false;
           clearedWebworkerTS = Date.now();
-        } else if (qsO == 0 && qsT == 0 && !clearedWebworker && (Date.now() - clearedWebworkerTS >= 1000)){
-          // clear workers only when nothing is in the worker que's and 1second has elapsed to give other processes a moment to engage
+        } else if (qsO == 0 && qsT == 0 && !clearedWebworker && (Date.now() - clearedWebworkerTS >= 2500)){
+          // clear workers only when nothing is in the worker que's and 2.5second has elapsed to give other processes a moment to engage
           clearedWebworker = true;
-          scene.clearWebworkers();
+          // scene.clearWebworkers();
           return;
         }    
       }
@@ -401,16 +401,24 @@ module.exports = () => {
 
     let cb = ()=> {
       const obj = (is_async) ? ZIPElementModel(o) : o;
+      sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+      let ds = null;
 
-      let addFN = ()=> {
+      let addFN = (opt)=> {
+        opt = opt || {};
         try {
-          let zip_node = ZIPManager.zips.get(obj.url);
-          let zip = zip_node.archive;
-          sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
-          let d = getZIPData(zip);
+          if (ds == null) {
+            let zip_node = ZIPManager.zips.get(obj.url);
+            let zip = zip_node.archive;
+            ds = JSON.stringify(getZIPData(zip));
+          }
+
+          let d = JSON.parse(ds);
     
+          let objects = 0;
           let addPrefix = (leaf)=> {
             for (var node of leaf) {
+              if (node.type == "object" || node.type == "object-hud") objects++;
               if (node.key) node.key = obj.item.key + "_" + node.key;
               if (node.skey) node.skey = obj.item.key + "_" + node.skey;
               if (node.children) addPrefix(node.children);
@@ -418,16 +426,54 @@ module.exports = () => {
           }
     
           addPrefix(d.tree);
+
+          let que = new Map();
+          let markReady = false;
+
+          let setQue = (key, fn)=> {
+            que.set(key, fn);
+          }
+
+          let setReady = ()=> {
+            markReady = true;
+          }
+
+          let getReady = ()=> { return markReady }
     
-          let maxsize = 0;
+          let maxsize = objects;
+          let amt = 1;
           let zip_loader = (list)=>{
             if (list.size > maxsize) maxsize = list.size;
-            if (maxsize == 0) return;
+            if (maxsize == 0) {
+              obj.removeLoadingListener(zip_loader);
+              return;
+            }
+
+            if (que.size > 0 && list.size == 0){
+              let cnt = 0;
+              
+              // while (que.length > 0 && cnt < amt){
+              //   let fn = que.shift();
+              //   try { fn() } catch (error) {}
+              //   cnt++;
+              // }
+
+              que.forEach((fn,key,map)=>
+              {
+                map.delete(key);
+                try { fn() } catch (error) {}
+                cnt++;
+                if (cnt > amt) return;
+              });
+            }
   
             let perc = (maxsize - list.size) / maxsize;
             perc = Math.round(perc*100);
             if (perc >= 100){
-              requestAnimationFrame(()=>{ initControllersZip(obj.item.key); })                                
+              if (opt.onLoaded) opt.onLoaded();
+              setTimeout(()=>{ 
+                try { initControllersZip(obj.item.key);  } catch (error) { }
+              })                                
               obj.removeLoadingListener(zip_loader);
             }
           }
@@ -449,6 +495,9 @@ module.exports = () => {
               prefix: obj.item.key,
               zip_id: obj.url,
               ZIPElement: obj,
+              setQue,
+              setReady,
+              getReady
             });
           }
           
@@ -497,7 +546,9 @@ module.exports = () => {
           perc = Math.round(perc*100);
           // console.log(obj.item.key, perc)
           if (perc >= 100){
-            requestAnimationFrame(()=>{ initControllersZip(obj.item.key); })                                
+            setTimeout(()=>{ 
+              try { initControllersZip(obj.item.key);  } catch (error) { }            
+            })                                
             obj.removeLoadingListener(zip_loader);
           }
         }
@@ -1046,8 +1097,45 @@ module.exports = () => {
         break;
       case 'object-hud':
       case 'object':
-        obj = ObjectModel(payload);
-        addToZIPRow();
+        if (opt.setQue && opt.getReady()){
+          const pload = payload;
+          let fn = ()=>{
+            // test if zip is being
+            let zipobj = sceneprops.sceneIndex.get(opt.prefix);
+            if (!zipobj || zipobj.children.length < 2) return;
+
+            obj = ObjectModel(pload);
+            const _opt = opt;
+            const _data = data;
+            // addToZIPRow();
+            if ( pload && pload.data && pload.data['controller'] != undefined && pload.data['controller'] != '' && opt.zip_id && Module.ProjectManager.projectRunning)
+            {
+                if (!objectControllerkeysZIP.has(_opt.prefix)) objectControllerkeysZIP.set(_opt.prefix, new Map());
+                let ziprow = objectControllerkeysZIP.get(_opt.prefix);
+                ziprow.set(child.key, {controller: pload.data['controller'], _data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
+            }
+
+            if (obj) {
+              sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+        
+              if (child.children) {
+                for (let x = 0; x < child.children.length; x++) {
+                  _addObject(child.children[x], _data, obj, pload.key, _opt);
+                }
+              }
+        
+              if (obj.isLoading != undefined) {
+                obj.isLoading = false;
+              }
+        
+            }
+          }
+          opt.setQue(pload.child.key, fn)
+        } else {
+          if (opt.setReady) opt.setReady();
+          obj = ObjectModel(payload);
+          addToZIPRow();
+        }
         break;
       case 'light':
         if (opt.zip_id) {          
@@ -1479,7 +1567,7 @@ module.exports = () => {
 
 
       } catch (e) {
-        console.error(item, key + ':' + value + ' : ' + e.message);
+        // console.error(item, key + ':' + value + ' : ' + e.message);
       }
     }
 
@@ -1517,7 +1605,7 @@ module.exports = () => {
           );
         }
       } catch (e) {
-        console.error(item, key + ':' + value + ' : ' + e.message);
+        // console.error(item, key + ':' + value + ' : ' + e.message);
       }
     }
   };

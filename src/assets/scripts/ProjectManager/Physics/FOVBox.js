@@ -71,6 +71,12 @@
     let _object = null;
     let size = [500,500,500];
     const addObject = (args) => {
+        try {
+            _addObject(args)
+        } catch (error) {
+        }
+    }
+    const _addObject = (args) => {
         size = args.size;
 
         var geometry;
@@ -184,6 +190,21 @@
 
             let diameter = Math.max(b1,b2,b3);
             let r = diameter / 2;
+
+//
+            // let posWorld = vec3.create();
+            // mat4.getTranslation(posWorld, el.matrix)
+            // let distance = vec3.distance(Module.controls.position, posWorld);
+
+            // let tan = r/distance;
+            // // console.log(tan*100)
+
+            // let percentageArea = 10;
+            // let avgLength = (b1 + b2 + b3) / 3;
+
+///
+
+
             let avgLength = (b1 + b2 + b3) / 3;
 
             let pos = vec4.fromValues(...v2, 1);
@@ -286,7 +307,7 @@
                                     } catch (e) {}
                                 }                            
 
-                                obj.setActiveGeometryLOD(level);
+                                if (parent.getGeometryLOD && parent.getGeometryLOD().length > 1) obj.setActiveGeometryLOD(level);
                             } catch (error) {
                                 
                             }
@@ -314,6 +335,13 @@
     }
 
     const update = ()=> {
+        try {
+            _update();
+        } catch (error) {
+            
+        }
+    }
+    const _update = ()=> {
         move();
         var overlapping = body.getNumOverlappingObjects();
         for (var x=0; x < overlapping; x++){
@@ -405,7 +433,7 @@
                                         parent.mesh.set(x, "lod_level", 3)
                                     } catch (e) {}
                                   }
-                                obj.setActiveGeometryLOD(3);
+                                  if (parent.getGeometryLOD && parent.getGeometryLOD().length > 1) obj.setActiveGeometryLOD(3);
                                 
                             } catch (error) {
                                 

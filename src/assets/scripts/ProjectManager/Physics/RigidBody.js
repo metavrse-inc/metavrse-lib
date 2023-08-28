@@ -118,6 +118,12 @@
     let extents = {f1:0,f2:0,f3:0}
     let center = {f1:0,f2:0,f3:0}
     const addObject = (args) => {
+        try {
+            _addObject(args)
+        } catch (error) {
+        }
+    }
+    const _addObject = (args) => {
         let o = args.parent;
         let key = o.item.key;
         let so = scene.getObject(key);
@@ -440,6 +446,13 @@
     }
 
     const update = (forced)=> {
+        try {
+            _update(forced);
+        } catch (error) {
+            
+        }
+    }
+    const _update = (forced)=> {
         forced = forced || false;
         if (!isLoaded || !body) return;
 

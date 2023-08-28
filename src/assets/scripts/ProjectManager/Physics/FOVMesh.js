@@ -103,6 +103,12 @@
     var geometry;
     var so = null;
     const addObject = (args) => {
+        try {
+            _addObject(args)
+        } catch (error) {
+        }
+    }
+    const _addObject = (args) => {
         let o = args.parent;
         let key = o.item.key;
         so = scene.getObject(key);

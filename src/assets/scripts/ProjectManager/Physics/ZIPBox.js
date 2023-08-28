@@ -70,6 +70,12 @@
     let _object = null;
     let size = [500,500,500];
     const addObject = (args) => {
+        try {
+            _addObject(args)
+        } catch (error) {
+        }
+    }
+    const _addObject = (args) => {
         size = args.size;
 
         var geometry;
@@ -155,6 +161,41 @@
 
     var v1,v2,m1;
 
+    let zipAddQue = new Map();
+    let zipRunning = false;
+    let zipLaunched = false;
+    let zipCB = ()=>{
+        zipRunning = false;
+
+        let c=0;
+        zipAddQue.forEach((value,key,map)=>
+        {
+            zipRunning = true;
+            try {
+                value({onLoaded: zipCB});
+            } catch (error) {                
+            }
+            map.delete(key);
+            if (zipLaunched && c < 2) {
+                return;
+            }
+
+            c++;
+        });
+
+        setTimeout(()=>{
+            zipLaunched = true;
+        }, 1000)
+
+    }
+
+    let runZipAdd = ()=> {
+        if (zipRunning) return;
+
+        zipRunning = true;
+        zipCB();
+    }
+
     let checkDistance = (elobj, meshid, level)=> {
         let el = Physics.get(elobj.idx);
         if (!el) return;
@@ -182,6 +223,19 @@
 
             let diameter = Math.max(b1,b2,b3);
             let r = diameter / 2;
+
+///
+            // let posWorld = vec3.create();
+            // mat4.getTranslation(posWorld, el.matrix)
+            // let distance = vec3.distance(Module.controls.position, posWorld);
+
+            // let tan = r/distance;
+            // console.log(tan*100)
+
+            // let percentageArea = 10;
+            // let avgLength = (b1 + b2 + b3) / 3;
+///
+            
             let avgLength = (b1 + b2 + b3) / 3;
 
             let pos = vec4.fromValues(...v2, 1);
@@ -258,14 +312,16 @@
 
                         timeout = setTimeout(()=>{
                             try {
-                                // console.log('zip level', level, el.item.key)
                                 if (level == 1){
+                                    zipAddQue.delete(parent.item.key)
                                     for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
                                 }else{                                    
                                     let zm = Module.ProjectManager.ZIPManager.callbacks;
                                     if (zm.fov.has(parent.item.key) && parent.children.size <= 1){
                                         let cb = zm.fov.get(parent.item.key);
-                                        requestAnimationFrame(cb)
+                                        zipAddQue.set(parent.item.key, cb);
+                                        runZipAdd();
+                                        // setTimeout(cb)
                                     }
                                 }
                             } catch (error) {
@@ -293,6 +349,13 @@
     }
 
     const update = ()=> {
+        try {
+            _update();
+        } catch (error) {
+            
+        }
+    }
+    const _update = ()=> {
         move();
         var overlapping = body.getNumOverlappingObjects();
         for (var x=0; x < overlapping; x++){
@@ -342,6 +405,8 @@
                     if(value.el.parent) {
                         let timeout = updateTimeout.get(value.el.item.key);
                         if (timeout) clearTimeout(timeout);
+                        zipAddQue.delete(value.el.item.key)
+
                         for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
                     }
                 }

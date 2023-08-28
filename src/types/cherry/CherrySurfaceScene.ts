@@ -23,4 +23,5 @@ export type CherrySurfaceScene = {
   clearWebworkers: () => void;
   getWorkerObjectQueueSize: () => number;
   getTextureQueue: () => number;  
+  setFSZip: (name: string, zip: any)=> void;
 };
