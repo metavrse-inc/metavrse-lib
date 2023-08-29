@@ -452,12 +452,6 @@ module.exports = () => {
             if (que.size > 0 && list.size == 0){
               let cnt = 0;
               
-              // while (que.length > 0 && cnt < amt){
-              //   let fn = que.shift();
-              //   try { fn() } catch (error) {}
-              //   cnt++;
-              // }
-
               que.forEach((fn,key,map)=>
               {
                 map.delete(key);
@@ -1099,28 +1093,29 @@ module.exports = () => {
       case 'object':
         if (opt.setQue && opt.getReady()){
           const pload = payload;
+          const _opt = opt;
+          const _data = data;
+          const _child = child;
           let fn = ()=>{
             // test if zip is being
-            let zipobj = sceneprops.sceneIndex.get(opt.prefix);
+            let zipobj = sceneprops.sceneIndex.get(_opt.prefix);
             if (!zipobj || zipobj.children.length < 2) return;
 
-            obj = ObjectModel(pload);
-            const _opt = opt;
-            const _data = data;
+            let obj = ObjectModel(pload);
             // addToZIPRow();
-            if ( pload && pload.data && pload.data['controller'] != undefined && pload.data['controller'] != '' && opt.zip_id && Module.ProjectManager.projectRunning)
+            if ( pload && pload.data && pload.data['controller'] != undefined && pload.data['controller'] != '' && _opt.zip_id && Module.ProjectManager.projectRunning)
             {
                 if (!objectControllerkeysZIP.has(_opt.prefix)) objectControllerkeysZIP.set(_opt.prefix, new Map());
                 let ziprow = objectControllerkeysZIP.get(_opt.prefix);
-                ziprow.set(child.key, {controller: pload.data['controller'], _data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
+                ziprow.set(_child.key, {controller: pload.data['controller'], _data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
             }
 
             if (obj) {
               sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
         
-              if (child.children) {
-                for (let x = 0; x < child.children.length; x++) {
-                  _addObject(child.children[x], _data, obj, pload.key, _opt);
+              if (_child.children) {
+                for (let x = 0; x < _child.children.length; x++) {
+                  _addObject(_child.children[x], _data, obj, pload.key, _opt);
                 }
               }
         
@@ -1483,14 +1478,14 @@ module.exports = () => {
         {...Module.ProjectManager,...scenegraph};
 
         PM.getObject = (key)=> {
-          let sub = key.includes(prefix + "_");
+          let sub = key.includes(prefix);
           if (sub) return Module.ProjectManager.getObject(key);
 
           return Module.ProjectManager.getObject(prefix + "_" + key);
         }
 
         PM.getAsset = (key)=> {
-          let sub = key.includes(zip_id + "_");
+          let sub = key.includes(zip_id);
           if (sub) return Module.ProjectManager.getAsset(key);
 
           return Module.ProjectManager.getAsset(zip_id + "_" + key);

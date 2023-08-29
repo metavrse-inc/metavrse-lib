@@ -229,4 +229,6 @@ export type CherryProjectManagerObject = {
 
   // Used to hold CSS declarations for HTML Hud
   data: Record<string, string>;
+
+  state: any;
 };

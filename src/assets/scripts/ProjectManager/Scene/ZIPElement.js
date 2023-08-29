@@ -47,6 +47,7 @@
         extent: (d['extent'] !== undefined) ? [...d['extent']] : [1, 1, 1],
         center: (d['center'] !== undefined) ? [...d['center']] : [0.5, 0.5, 0.5],
         fov: (d['fov'] !== undefined) ? d['fov'] : true,
+        state: (d['state'] !== undefined) ? d['state'] : {},
     };
 
     let zip_node = Module.ProjectManager.ZIPManager.zips.get(transformation.url);
@@ -397,6 +398,7 @@
         extent: { get: () => { return getProperty('extent')[1]; }, set: (v) => { setProperty('extent', v); } },
         center: { get: () => { return getProperty('center')[1]; }, set: (v) => { setProperty('center', v); } },
         fov: { get: () => { return transformation.fov; }, set: (v) => { } },
+        state: { get: () => { return transformation.state; }, set: (v) => {transformation.state = v } },
     })
 
     Object.assign(object, {

@@ -192,19 +192,18 @@
             let r = diameter / 2;
 
 //
-            // let posWorld = vec3.create();
-            // mat4.getTranslation(posWorld, el.matrix)
-            // let distance = vec3.distance(Module.controls.position, posWorld);
+            let posWorld = vec3.create();
+            mat4.getTranslation(posWorld, el.matrix)
+            let distance = vec3.distance(Module.controls.position, posWorld);
 
-            // let tan = r/distance;
-            // // console.log(tan*100)
+            let tan = r/distance;
+            // console.log(tan*100)
 
-            // let percentageArea = 10;
-            // let avgLength = (b1 + b2 + b3) / 3;
+            let percentageArea = tan*100;
 
 ///
 
-
+/*
             let avgLength = (b1 + b2 + b3) / 3;
 
             let pos = vec4.fromValues(...v2, 1);
@@ -259,12 +258,12 @@
             // p3 = p3 / p3.w
             // 2:35
             // width = abs (p1.x - p3.x) * 0.5
-
+*/
             if (!isNaN(percentageArea)){
                 // console.log({fovy, computedRadius, computedArea})
                 // level = 3;
-                let perc = ((percentageArea > 100 ? 100 : percentageArea));
-                percentageArea = perc * ( avgLength / distance);
+                // let perc = ((percentageArea > 100 ? 100 : percentageArea));
+                // percentageArea = perc * ( avgLength / distance);
                 // console.log(distance)
 
                 let red = [255,0,0];
@@ -278,12 +277,17 @@
                 let greenD = [0,32,0];
 
 
-                if (percentageArea >= 35) level = 0;
-                else if (percentageArea < 35 && percentageArea >= 15 ) level = 1;
-                else if (percentageArea < 15 && percentageArea >= 5 ) level = 2;
-                else if (percentageArea < 5) level = 3;
+                // if (percentageArea >= 35) level = 0;
+                // else if (percentageArea < 35 && percentageArea >= 15 ) level = 1;
+                // else if (percentageArea < 15 && percentageArea >= 5 ) level = 2;
+                // else if (percentageArea < 5) level = 3;
+
+                if (percentageArea >= 50) level = 0;
+                else if (percentageArea < 50 && percentageArea >= 25 ) level = 1;
+                else if (percentageArea < 25 && percentageArea >= 10 ) level = 2;
+                else if (percentageArea < 10) level = 3;
                 
-                isVisible = (percentageArea > 0.0125 ) ? 1 : 0;
+                isVisible = (percentageArea > 2 ) ? 1 : 0;
 
                 if (el.lod_level != level && lod){
 
@@ -311,7 +315,7 @@
                             } catch (error) {
                                 
                             }
-                        }, 1000)
+                        }, 500)
 
                         updateTimeout.set(el.item.key, timeout)
 

@@ -183,13 +183,26 @@
             c++;
         });
 
-        setTimeout(()=>{
+        if (!zipLaunched){
             zipLaunched = true;
-        }, 1000)
-
+        }
     }
 
+    let addTimeout = null;
     let runZipAdd = ()=> {
+        if (!zipRunning) {
+            _runZipAdd();
+            return;
+        }
+        
+        if (addTimeout) clearTimeout(addTimeout);
+
+        addTimeout = setTimeout(() => {
+            _runZipAdd();            
+        }, 1000);
+    }
+
+    let _runZipAdd = ()=> {
         if (zipRunning) return;
 
         zipRunning = true;
@@ -225,17 +238,17 @@
             let r = diameter / 2;
 
 ///
-            // let posWorld = vec3.create();
-            // mat4.getTranslation(posWorld, el.matrix)
-            // let distance = vec3.distance(Module.controls.position, posWorld);
+            let posWorld = vec3.create();
+            mat4.getTranslation(posWorld, el.matrix)
+            let distance = vec3.distance(Module.controls.position, posWorld);
 
-            // let tan = r/distance;
+            let tan = r/distance;
             // console.log(tan*100)
 
-            // let percentageArea = 10;
+            let percentageArea = tan*100;
             // let avgLength = (b1 + b2 + b3) / 3;
 ///
-            
+            /*
             let avgLength = (b1 + b2 + b3) / 3;
 
             let pos = vec4.fromValues(...v2, 1);
@@ -290,16 +303,16 @@
             // p3 = p3 / p3.w
             // 2:35
             // width = abs (p1.x - p3.x) * 0.5
-
+*/
             if (!isNaN(percentageArea)){
                 // console.log({fovy, computedRadius, computedArea})
                 // level = 3;
-                let perc = ((percentageArea > 100 ? 100 : percentageArea));
-                percentageArea = perc * ( avgLength / distance);
+                    // let perc = ((percentageArea > 100 ? 100 : percentageArea));
+                    // percentageArea = perc * ( avgLength / distance);
                 // console.log(distance)
 
-                if (percentageArea >= 0.0125) level = 0;
-                else if (percentageArea < 0.0125 ) level = 1;
+                if (percentageArea >= 2) level = 0;
+                else if (percentageArea < 2 ) level = 1;
 
                 if (el.lod_level != level){
                     // el.parent.mesh.set(meshid, "lod_level", level)
