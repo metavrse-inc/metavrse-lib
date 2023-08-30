@@ -620,7 +620,7 @@ module.exports = () => {
           obj = ObjectGroupModel(payload);
           break;
         case 'video':
-          obj = VideoModel(payload);
+          if (!Module.ProjectManager.disableVideos) obj = VideoModel(payload);
           break;
 
         case 'camera':
@@ -1145,7 +1145,7 @@ module.exports = () => {
         obj = ObjectGroupModel(payload);
         break;
       case 'video':
-        obj = VideoModel(payload);
+        if (!Module.ProjectManager.disableVideos) obj = VideoModel(payload);
         break;
 
       case 'camera':
@@ -1524,10 +1524,10 @@ module.exports = () => {
         }
 
         if (key == "world"){
-          const _world = Module.require(value, options)();
-          zipWorld.set(pkg.prefix, _world);
-          sceneprops.worldControllers.set(pkg.prefix + "_world", _world);
           try {
+            const _world = Module.require(value, options)();
+            zipWorld.set(pkg.prefix, _world);
+            sceneprops.worldControllers.set(pkg.prefix + "_world", _world);
             _world.onInit();            
           } catch (error) {
             
@@ -1539,23 +1539,28 @@ module.exports = () => {
   
           
   
-          sceneprops.objectControllers[String(key)] = Module.require(value, options)(
-            (zipWorld.has(pkg.prefix)) ? zipWorld.get(pkg.prefix) : null
-          );
-  
-          if (sceneprops.objectControllers[String(key)].key != undefined) {
-            sceneprops.objectControllers[String(key)].key = String(key);
-          }
-          // special method pull custom data for code snippet
-          if (
-            sceneData[String(originalKey)] &&
-            sceneData[String(originalKey)]['code'] &&
-            sceneData[String(originalKey)]['code'][String(value)] &&
-            sceneprops.objectControllers[String(key)]._setInspectorData
-          ) {
-            sceneprops.objectControllers[String(key)]._setInspectorData(
-              sceneData[String(originalKey)]['code'][String(value)]
+          try {
+            sceneprops.objectControllers[String(key)] = Module.require(value, options)(
+              (zipWorld.has(pkg.prefix)) ? zipWorld.get(pkg.prefix) : null
             );
+    
+            if (sceneprops.objectControllers[String(key)].key != undefined) {
+              sceneprops.objectControllers[String(key)].key = String(key);
+            }
+            // special method pull custom data for code snippet
+            if (
+              sceneData[String(originalKey)] &&
+              sceneData[String(originalKey)]['code'] &&
+              sceneData[String(originalKey)]['code'][String(value)] &&
+              sceneprops.objectControllers[String(key)]._setInspectorData
+            ) {
+              sceneprops.objectControllers[String(key)]._setInspectorData(
+                sceneData[String(originalKey)]['code'][String(value)]
+              );
+            }
+            
+          } catch (error) {
+            
           }
           
         }

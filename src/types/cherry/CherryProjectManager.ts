@@ -63,4 +63,5 @@ export type CherryProjectManager = {
   objectControllers: any;
   textureIgnores: any;
   URLLoader: any;
+  disableVideos: boolean;
 };

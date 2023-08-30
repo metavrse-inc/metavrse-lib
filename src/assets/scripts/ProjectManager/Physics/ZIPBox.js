@@ -167,20 +167,17 @@
     let zipCB = ()=>{
         zipRunning = false;
 
-        let c=0;
         zipAddQue.forEach((value,key,map)=>
         {
             zipRunning = true;
             try {
-                value({onLoaded: zipCB});
+                setTimeout(() => {
+                    value({onLoaded: zipCB});                    
+                }, 1000);
             } catch (error) {                
             }
             map.delete(key);
-            if (zipLaunched && c < 2) {
-                return;
-            }
-
-            c++;
+            return;
         });
 
         if (!zipLaunched){
@@ -188,18 +185,11 @@
         }
     }
 
-    let addTimeout = null;
     let runZipAdd = ()=> {
         if (!zipRunning) {
             _runZipAdd();
             return;
         }
-        
-        if (addTimeout) clearTimeout(addTimeout);
-
-        addTimeout = setTimeout(() => {
-            _runZipAdd();            
-        }, 1000);
     }
 
     let _runZipAdd = ()=> {

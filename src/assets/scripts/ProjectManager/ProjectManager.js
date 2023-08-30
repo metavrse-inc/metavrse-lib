@@ -21,6 +21,8 @@ module.exports = () => {
   let payload = undefined;
   let projectRunning = false;
 
+  let disableVideos = false;
+
   let published_url =  location.protocol + '//' + location.host;
   let published_postfix =  "";
   let getHeaders = ()=> {return {}};
@@ -412,6 +414,15 @@ module.exports = () => {
       },
       set: (v) => {
         Scenegraph.URLLoader = v;
+      },
+    },
+
+    disableVideos: {
+      get: () => {
+        return disableVideos;
+      },
+      set: (v) => {
+        disableVideos = v;
       },
     },
   });
