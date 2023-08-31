@@ -48,6 +48,7 @@
         center: (d['center'] !== undefined) ? [...d['center']] : [0.5, 0.5, 0.5],
         fov: (d['fov'] !== undefined) ? d['fov'] : true,
         state: (d['state'] !== undefined) ? d['state'] : {},
+        isDeleted: false,
     };
 
     let zip_node = Module.ProjectManager.ZIPManager.zips.get(transformation.url);
@@ -399,6 +400,7 @@
         center: { get: () => { return getProperty('center')[1]; }, set: (v) => { setProperty('center', v); } },
         fov: { get: () => { return transformation.fov; }, set: (v) => { } },
         state: { get: () => { return transformation.state; }, set: (v) => {transformation.state = v } },
+        isDeleted: { get: () => { return transformation.isDeleted; }, set: (v) => {transformation.isDeleted = v } },
     })
 
     Object.assign(object, {

@@ -317,6 +317,7 @@
                             try {
                                 if (level == 1){
                                     zipAddQue.delete(parent.item.key)
+                                    // parent.isDeleted = true;
                                     for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
                                 }else{                                    
                                     let zm = Module.ProjectManager.ZIPManager.callbacks;
@@ -325,6 +326,7 @@
                                         zipAddQue.set(parent.item.key, cb);
                                         runZipAdd();
                                         // setTimeout(cb)
+                                        // parent.isDeleted = false;
                                     }
                                 }
                             } catch (error) {

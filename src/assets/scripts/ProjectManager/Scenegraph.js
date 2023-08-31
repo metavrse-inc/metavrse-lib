@@ -407,6 +407,13 @@ module.exports = () => {
       let addFN = (opt)=> {
         opt = opt || {};
         try {
+          if (obj.isDeleted) {
+            for (var [k, o] of obj.children) if (o.item.type != "ZIPMesh") o.remove();
+            console.log('caught 1')
+
+            return;
+          }
+
           if (ds == null) {
             let zip_node = ZIPManager.zips.get(obj.url);
             let zip = zip_node.archive;
@@ -428,10 +435,15 @@ module.exports = () => {
           addPrefix(d.tree);
 
           let que = new Map();
+          let configs = new Map();
           let markReady = false;
 
           let setQue = (key, fn)=> {
             que.set(key, fn);
+          }
+
+          let setConfig = (key, fn)=> {
+            configs.set(key, fn);
           }
 
           let setReady = ()=> {
@@ -443,31 +455,53 @@ module.exports = () => {
           let maxsize = objects;
           let amt = 1;
           let zip_loader = (list)=>{
+            // if (obj.isDeleted) {
+            //   for (var [k, o] of obj.children) if (o.item.type != "ZIPMesh") o.remove();
+            //   console.log('caught 2')
+            //   que.clear();
+            //   obj.removeLoadingListener(zip_loader);
+            //   if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
+            //   return;
+            // }
+
             if (list.size > maxsize) maxsize = list.size;
             if (maxsize == 0) {
               obj.removeLoadingListener(zip_loader);
+              if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
               return;
             }
 
-            if (que.size > 0 && list.size == 0){
-              let cnt = 0;
-              
-              que.forEach((fn,key,map)=>
-              {
-                map.delete(key);
-                try { fn() } catch (error) {}
-                cnt++;
-                if (cnt > amt) return;
-              });
+            let shouldReturn =false;
+            que.forEach((fn,key,map)=>
+            {
+              shouldReturn = true;
+              map.delete(key);
+              try { setTimeout(fn, 500) } catch (error) {}
+              return;
+            });
+
+            if (shouldReturn){
+              return;
             }
   
             let perc = (maxsize - list.size) / maxsize;
             perc = Math.round(perc*100);
             if (perc >= 100){
-              if (opt.onLoaded) opt.onLoaded();
+              for (var [k, cfn] of configs){
+                try { cfn(); } catch (error) {}
+              }
+
+              configs.clear();
               setTimeout(()=>{ 
-                try { initControllersZip(obj.item.key);  } catch (error) { }
-              })                                
+                // if (obj.isDeleted) {
+                //   for (var [k, o] of obj.children) if (o.item.type != "ZIPMesh") o.remove();
+                //   console.log('caught 4')
+                // } else {
+                  try { initControllersZip(obj.item.key);  } catch (error) { }
+                // }
+
+                if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
+              },250)                                
               obj.removeLoadingListener(zip_loader);
             }
           }
@@ -491,7 +525,8 @@ module.exports = () => {
               ZIPElement: obj,
               setQue,
               setReady,
-              getReady
+              getReady,
+              setConfig
             });
           }
           
@@ -1107,7 +1142,7 @@ module.exports = () => {
             {
                 if (!objectControllerkeysZIP.has(_opt.prefix)) objectControllerkeysZIP.set(_opt.prefix, new Map());
                 let ziprow = objectControllerkeysZIP.get(_opt.prefix);
-                ziprow.set(_child.key, {controller: pload.data['controller'], _data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
+                ziprow.set(_child.key, {controller: pload.data['controller'], data:_data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
             }
 
             if (obj) {
@@ -1158,12 +1193,39 @@ module.exports = () => {
         break;
 
       case 'configuration':
-        obj = ConfigurationModel(payload);
-        payload.key = child.key;
-        sceneprops.configurations.set(child.key, {
-          obj,
-          index: ++sceneprops.config_idx,
-        });
+        if (opt.setConfig){
+          const pload = payload;
+          const _opt = opt;
+          const _data = data;
+          const _child = child;
+          let fn = ()=>{
+            let obj = ConfigurationModel(pload);
+            pload.key = _child.key;
+            sceneprops.configurations.set(_child.key, {
+              obj,
+              index: ++sceneprops.config_idx,
+            });
+
+            if (obj) {
+              sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+        
+              if (_child.children) {
+                for (let x = 0; x < _child.children.length; x++) {
+                  _addObject(_child.children[x], _data, obj, pload.key, _opt);
+                }
+              }
+        
+            }
+          }
+          opt.setConfig(pload.child.key, fn)
+        } else {
+          obj = ConfigurationModel(payload);
+          payload.key = child.key;
+          sceneprops.configurations.set(child.key, {
+            obj,
+            index: ++sceneprops.config_idx,
+          });
+        }
         break;
 
       case 'object-group-link':
@@ -1536,9 +1598,7 @@ module.exports = () => {
           let o = Module.ProjectManager.getObject(key);
           item = o.item;
           // console.log(item)
-  
-          
-  
+
           try {
             sceneprops.objectControllers[String(key)] = Module.require(value, options)(
               (zipWorld.has(pkg.prefix)) ? zipWorld.get(pkg.prefix) : null

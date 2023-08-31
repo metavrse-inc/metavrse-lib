@@ -53,11 +53,11 @@ function createOrbitControls(opt) {
     update: update,
     copyInto: copyInto,
 
-    position: [0, 1, 2],
+    // position: [0, 1, 2],
     direction: [0, 0, -1],
     up: opt.up ? opt.up.slice() : [0, 1, 0],
 
-    target: opt.target ? opt.target.slice() : [0, 0, 0],
+    // target: opt.target ? opt.target.slice() : [0, 0, 0],
     distance: opt.distance || 5,
     // for no damp
     // damping: opt.damping || 0.225,
@@ -95,6 +95,28 @@ function createOrbitControls(opt) {
     isDirty: false,
     clickEnabled: true,
   }
+
+  let _target = opt.target ? opt.target.slice() : [0, 0, 0]
+  let _position = [0, 1, 2]
+  Object.defineProperties(controls, {
+    target : { get: function () { return _target }, set: function (v) { 
+      try {
+        if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
+        _target = v 
+      } catch (error) {
+        console.log(error)
+      }
+    } },
+
+    position : { get: function () { return _position }, set: function (v) { 
+      try {
+        if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
+        _position = v 
+      } catch (error) {
+        console.log(error)
+      }
+    } },
+  })
 
   // camera animation
   const animateCamera = (animation)=> {
