@@ -484,7 +484,7 @@
         if (renderTransformation || opts.transform) {
             // do hudscale transformation or not css already cascades?
             let globalHudScale = Module.screen.hudscale;
-            if (object.DOMElement && object.parent == undefined){                
+            if (object.DOMElement && (object.parent == undefined || object.parent.item.type == "ZIPElement")){                
                 object.DOMElement.style.zoom = globalHudScale;
             }
 

@@ -278,7 +278,9 @@ module.exports = (payload) => {
           v = getLastValueInMap(getProperties(row.type));
           Module.screen.hudscale = v;
           for (var [k, o] of Module.ProjectManager.getObjects()) {
-            if (o.addToRedraw) o.addToRedraw('hudscale');
+            if (
+              (o.item.type=="HTMLElement" || 
+              o.item.type=="object-hud") && o.addToRedraw) o.addToRedraw('hudscale');
           }
           break;
         // case "color":

@@ -181,7 +181,7 @@ export type CherryProjectManagerObject = {
   parentOpts: { visible: boolean; transforms: Vector3; transform: any };
   animation: CherryAnimation;
   animations: any;
-  hudscale: Vector3;
+  hudscale: number;
 
   /** @description Additional parameters */
   buckets: any;

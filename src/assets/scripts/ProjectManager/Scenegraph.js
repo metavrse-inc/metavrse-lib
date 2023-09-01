@@ -490,6 +490,7 @@ module.exports = () => {
               for (var [k, cfn] of configs){
                 try { cfn(); } catch (error) {}
               }
+              try { initControllersZip(obj.item.key);  } catch (error) { }
 
               configs.clear();
               setTimeout(()=>{ 
@@ -497,7 +498,6 @@ module.exports = () => {
                 //   for (var [k, o] of obj.children) if (o.item.type != "ZIPMesh") o.remove();
                 //   console.log('caught 4')
                 // } else {
-                  try { initControllersZip(obj.item.key);  } catch (error) { }
                 // }
 
                 if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
