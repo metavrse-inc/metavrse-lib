@@ -407,13 +407,6 @@ module.exports = () => {
       let addFN = (opt)=> {
         opt = opt || {};
         try {
-          if (obj.isDeleted) {
-            for (var [k, o] of obj.children) if (o.item.type != "ZIPMesh") o.remove();
-            console.log('caught 1')
-
-            return;
-          }
-
           if (ds == null) {
             let zip_node = ZIPManager.zips.get(obj.url);
             let zip = zip_node.archive;
@@ -455,15 +448,6 @@ module.exports = () => {
           let maxsize = objects;
           let amt = 1;
           let zip_loader = (list)=>{
-            // if (obj.isDeleted) {
-            //   for (var [k, o] of obj.children) if (o.item.type != "ZIPMesh") o.remove();
-            //   console.log('caught 2')
-            //   que.clear();
-            //   obj.removeLoadingListener(zip_loader);
-            //   if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
-            //   return;
-            // }
-
             if (list.size > maxsize) maxsize = list.size;
             if (maxsize == 0) {
               obj.removeLoadingListener(zip_loader);
@@ -476,7 +460,7 @@ module.exports = () => {
             {
               shouldReturn = true;
               map.delete(key);
-              try { setTimeout(fn, 500) } catch (error) {}
+              try { setTimeout(fn, 100) } catch (error) {}
               return;
             });
 
@@ -493,15 +477,7 @@ module.exports = () => {
               try { initControllersZip(obj.item.key);  } catch (error) { }
 
               configs.clear();
-              setTimeout(()=>{ 
-                // if (obj.isDeleted) {
-                //   for (var [k, o] of obj.children) if (o.item.type != "ZIPMesh") o.remove();
-                //   console.log('caught 4')
-                // } else {
-                // }
-
-                if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
-              },250)                                
+              if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
               obj.removeLoadingListener(zip_loader);
             }
           }
@@ -938,10 +914,8 @@ module.exports = () => {
           const item_ = item;
           let cb = {
             onDownloadProgress: (response)=> {
-              if (URLLoader && URLLoader.zips) {
+              if (URLLoader && URLLoader.zips && !item_.async) {
                 URLLoader.zips.set(item_.key, response.loaded/response.total)
-                // URLLoader.percentage = response.loaded/response.total;
-                // URLLoader.close();
               }
             },
 
