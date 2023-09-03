@@ -460,7 +460,7 @@ module.exports = () => {
             {
               shouldReturn = true;
               map.delete(key);
-              try { setTimeout(fn, 100) } catch (error) {}
+              try { setTimeout(fn, 500) } catch (error) {}
               return;
             });
 
@@ -916,6 +916,8 @@ module.exports = () => {
             onDownloadProgress: (response)=> {
               if (URLLoader && URLLoader.zips && !item_.async) {
                 URLLoader.zips.set(item_.key, response.loaded/response.total)
+                // URLLoader.percentage = response.loaded/response.total;
+                // URLLoader.close();
               }
             },
 
