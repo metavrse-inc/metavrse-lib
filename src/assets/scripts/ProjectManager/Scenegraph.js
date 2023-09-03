@@ -460,7 +460,7 @@ module.exports = () => {
             {
               shouldReturn = true;
               map.delete(key);
-              try { setTimeout(fn, 500) } catch (error) {}
+              try { setTimeout(fn, 100) } catch (error) {}
               return;
             });
 
