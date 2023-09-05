@@ -259,11 +259,9 @@
                         const key = el.item.key.replace("_"+meshid, "");
                         const parent = el.parent;
 
-                        const _level = level;
-
-                        timeout = setTimeout(()=>{
+                        // timeout = setTimeout(()=>{
                             try {
-                                if (_level == 1){
+                                if (level == 1){
                                     let del = (opts)=>{
                                         for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
                                         opts.onLoaded();
@@ -280,7 +278,7 @@
                             } catch (error) {
                                 
                             }
-                        }, 1000)
+                        // }, 1000)
 
                         updateTimeout.set(el.item.key, timeout)
 
@@ -356,14 +354,14 @@
                 if (value.el.item.type == "ZIPMesh"){
                     // console.log('remove zip', value)
                     if(value.el.parent) {
-                        let timeout = updateTimeout.get(value.el.item.key);
-                        if (timeout) clearTimeout(timeout);
+                        // let timeout = updateTimeout.get(value.el.item.key);
+                        // if (timeout) clearTimeout(timeout);
 
-                        let del = (opts)=>{
-                            for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
-                            opts.onLoaded();
-                        }
-                        zipAddQue.push(del)
+                        // let del = (opts)=>{
+                        //     for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                        //     opts.onLoaded();
+                        // }
+                        // zipAddQue.push(del)
                     }
                 }
                 map.delete(key);
