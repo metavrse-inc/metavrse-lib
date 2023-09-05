@@ -18,9 +18,6 @@ module.exports = (payload) => {
 
   if (opt && opt.ZIPElement){
     opt.ZIPElement.setQueItem(child.key, true);
-    loadingTimeout = setTimeout(() => {
-      opt.ZIPElement.setQueItem(child.key, false)
-    }, 150);
   }
 
   var d = data || {};

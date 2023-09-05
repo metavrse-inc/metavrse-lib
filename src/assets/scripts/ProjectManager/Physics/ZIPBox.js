@@ -68,20 +68,24 @@
     }
     
     let _object = null;
-    let size = [500,500,500];
+    let size = [1,1,1];
     const addObject = (args) => {
         try {
             _addObject(args)
         } catch (error) {
         }
     }
+
+    var geometry;
+
     const _addObject = (args) => {
         size = args.size;
 
-        var geometry;
-        geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
+        geometry = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
         // geometry = new Ammo.btSphereShape( size[1] * 0.5);
-        geometry.setLocalScaling(new Ammo.btVector3(scaleT, scaleT, scaleT));
+        let v = [...size];
+        vec3.scale(v, v, scaleT)
+        geometry.setLocalScaling(new Ammo.btVector3(...v));
   
         var transform = new Ammo.btTransform();
         transform.setIdentity();
@@ -98,6 +102,15 @@
   
         PhysicsWorld.addCollisionObject(body, 16);
   
+     }
+
+     var setSize = (s)=> {
+        if (!geometry) return;
+
+        size = s;
+        let v = [...size];
+        vec3.scale(v, v, scaleT)
+        geometry.setLocalScaling(new Ammo.btVector3(...v));
      }
 
     var isLoaded = false;
@@ -161,24 +174,23 @@
 
     var v1,v2,m1;
 
-    let zipAddQue = new Map();
+    let zipAddQue = [];
     let zipRunning = false;
     let zipLaunched = false;
     let zipCB = ()=>{
         zipRunning = false;
 
-        zipAddQue.forEach((value,key,map)=>
+        if (zipAddQue.length > 0)
         {
+            let value = zipAddQue.shift();
             zipRunning = true;
             try {
-                setTimeout(() => {
-                    value({onLoaded: zipCB});                    
-                }, 1000);
-            } catch (error) {                
+                if (!zipLaunched) setTimeout(()=>{requestAnimationFrame(()=>{value({onLoaded: zipCB})})}, 1000)
+                else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
+            } catch (error) {    
+                console.log(error)            
             }
-            map.delete(key);
-            return;
-        });
+        }
 
         if (!zipLaunched){
             zipLaunched = true;
@@ -227,85 +239,19 @@
             let diameter = Math.max(b1,b2,b3);
             let r = diameter / 2;
 
-///
             let posWorld = vec3.create();
             mat4.getTranslation(posWorld, el.matrix)
             let distance = vec3.distance(Module.controls.position, posWorld);
 
             let tan = r/distance;
-            // console.log(tan*100)
-
             let percentageArea = tan*100;
-            // let avgLength = (b1 + b2 + b3) / 3;
-///
-            /*
-            let avgLength = (b1 + b2 + b3) / 3;
-
-            let pos = vec4.fromValues(...v2, 1);
-            let center = vec4.create();
-            vec4.transformMat4(center, pos, Module.camera.view);
-
-            let p1 = vec4.create();
-            vec4.transformMat4(p1, center, Module.camera.projection);
-
-            let cp = vec4.create();
-            vec4.add(cp, center, [0,r,0,0]);
-
-            let p2 = vec4.create();
-            vec4.transformMat4(p2, cp, Module.camera.projection);
-
-            let cp3 = vec4.create();
-            vec4.add(cp3, center, [r,0,0,0]);
-
-            let p3 = vec4.create();
-            vec4.transformMat4(p3, cp3, Module.camera.projection);
-
-            vec4.divide(p1, p1, [p1[3],p1[3],p1[3],p1[3]])
-            vec4.divide(p2, p2, [p2[3],p2[3],p2[3],p2[3]])
-            vec4.divide(p3, p3, [p3[3],p3[3],p3[3],p3[3]])
-            vec4.normalize(p1,p1);
-            vec4.normalize(p2,p2);
-            vec4.normalize(p3,p3);
-
-            let height = (Math.abs(p1[1] - p2[1]) * 0.5) * Module.screen.height;
-            let width = (Math.abs(p1[0] - p3[0]) * 0.5) * Module.screen.width;
-            let computedArea = height * width * 16;
-            let screenArea = Module.canvas.width * Module.canvas.height;
-
-            let percentageArea = (computedArea / screenArea) * 100;
-            let posWorld = vec3.create();
-            mat4.getTranslation(posWorld, el.matrix)
-            let distance = vec3.distance(Module.controls.position, posWorld);
-
-            // vec4 center = camera_matrix * vec4(x, y, z, 1)
-            // 2:31
-            // vec4 p1 = projection_matrix * center
-            // 2:32
-            // vec4 p2 = projection_matrix * (center + vec4(0, R, 0, 0))
-            // 2:32
-            // p1 = p1 / p1.w
-            // 2:32
-            // p2 = p2 / p2.w
-            // 2:32
-            // height = abs(p1.y - p2.y) * 0.5 (edited) 
-            // vec4 p3 = projection_matrix * (center + vec4(R, 0, 0, 0))
-            // 2:35
-            // p3 = p3 / p3.w
-            // 2:35
-            // width = abs (p1.x - p3.x) * 0.5
-*/
+            
             if (!isNaN(percentageArea)){
-                // console.log({fovy, computedRadius, computedArea})
-                // level = 3;
-                    // let perc = ((percentageArea > 100 ? 100 : percentageArea));
-                    // percentageArea = perc * ( avgLength / distance);
-                // console.log(distance)
 
                 if (percentageArea >= 2) level = 0;
                 else if (percentageArea < 2 ) level = 1;
 
                 if (el.lod_level != level){
-                    // el.parent.mesh.set(meshid, "lod_level", level)
                     if (el.item.type == "ZIPMesh"){
                         let timeout = updateTimeout.get(el.item.key);
                         if (timeout) clearTimeout(timeout);
@@ -313,20 +259,22 @@
                         const key = el.item.key.replace("_"+meshid, "");
                         const parent = el.parent;
 
+                        const _level = level;
+
                         timeout = setTimeout(()=>{
                             try {
-                                if (level == 1){
-                                    zipAddQue.delete(parent.item.key)
-                                    // parent.isDeleted = true;
-                                    for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                                if (_level == 1){
+                                    let del = (opts)=>{
+                                        for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                                        opts.onLoaded();
+                                    }
+
+                                    zipAddQue.push(del)
                                 }else{                                    
                                     let zm = Module.ProjectManager.ZIPManager.callbacks;
                                     if (zm.fov.has(parent.item.key) && parent.children.size <= 1){
                                         let cb = zm.fov.get(parent.item.key);
-                                        zipAddQue.set(parent.item.key, cb);
-                                        runZipAdd();
-                                        // setTimeout(cb)
-                                        // parent.isDeleted = false;
+                                        zipAddQue.push(cb);
                                     }
                                 }
                             } catch (error) {
@@ -343,7 +291,6 @@
                 }
             } else {
                     // console.log({sy, fovy, distance, computedRadius})
-
             }
            
             return distance;
@@ -362,6 +309,7 @@
     }
     const _update = ()=> {
         move();
+        runZipAdd();
         var overlapping = body.getNumOverlappingObjects();
         for (var x=0; x < overlapping; x++){
             if (body.getNumOverlappingObjects() != overlapping) return;
@@ -410,9 +358,12 @@
                     if(value.el.parent) {
                         let timeout = updateTimeout.get(value.el.item.key);
                         if (timeout) clearTimeout(timeout);
-                        zipAddQue.delete(value.el.item.key)
 
-                        for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                        let del = (opts)=>{
+                            for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                            opts.onLoaded();
+                        }
+                        zipAddQue.push(del)
                     }
                 }
                 map.delete(key);
@@ -450,7 +401,7 @@
 
     // Props and Methods
     Object.defineProperties(object, {
-        // orientation: { get: () => { return (Module.ProjectManager.projectRunning) ? world.orientation : 0; }, set: (v) => { world.orientation = v; } },
+        que: { get: () => { return zipAddQue; }, set: (v) => {} },
     })
     
     Object.assign(object, {
@@ -461,6 +412,7 @@
         reset,
         removeMesh,
         toggleZIP,
+        setSize
     })
 
     return object;

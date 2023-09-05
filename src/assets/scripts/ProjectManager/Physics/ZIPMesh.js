@@ -147,8 +147,9 @@
         q = args.q || q;
         key = args.key || key;
   
-        geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
-        geometry.setLocalScaling(new Ammo.btVector3(...scales));
+        geometry = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
+        vec3.multiply(size, size, scales)
+        geometry.setLocalScaling(new Ammo.btVector3(...size));
   
         var transform = new Ammo.btTransform();
         transform.setFromOpenGLMatrix(m);
@@ -218,7 +219,7 @@
                 });
             }
         } else if (isLoaded && body) {
-            if (opts.transform && Module.ProjectManager.projectRunning) {
+            if (opts.transform ) {
                 let scales = updateMath.scales;
                 mat4.getScaling(scales, opts.transform)
 
@@ -237,16 +238,20 @@
                 mat4.fromRotationTranslation(m4, q, position);
                 mat4.translate(m4, m4, positionMesh);
 
+                let extent = object.extent;
+                let size = [extent[0], extent[1], extent[2]]
+                vec3.multiply(size, size, scales)
+
 
                 let sc = updateMath.btScales;
-                sc.setValue(...scales)
+                sc.setValue(...size)
                 geometry.setLocalScaling(sc);
 
                 let moveTransform = body.getWorldTransform();
                 moveTransform.setFromOpenGLMatrix(m4);
                 body.setWorldTransform(moveTransform);
-            } else if (opts.transform){
-                reAdd();
+            // } else if (opts.transform){
+                // reAdd();
             }
         }
     }

@@ -166,7 +166,7 @@ module.exports = () => {
           // clear workers only when nothing is in the worker que's and 2.5second has elapsed to give other processes a moment to engage
           clearedWebworker = true;
           // scene.clearWebworkers();
-          return;
+          // return;
         }    
       }
 
@@ -451,7 +451,7 @@ module.exports = () => {
             if (list.size > maxsize) maxsize = list.size;
             if (maxsize == 0) {
               obj.removeLoadingListener(zip_loader);
-              if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
+              if (opt.onLoaded) requestAnimationFrame(()=>{opt.onLoaded(obj)});
               return;
             }
 
@@ -460,7 +460,7 @@ module.exports = () => {
             {
               shouldReturn = true;
               map.delete(key);
-              try { setTimeout(fn, 100) } catch (error) {}
+              try { setTimeout(()=>{requestAnimationFrame(fn)},150) } catch (error) {}
               return;
             });
 
@@ -477,7 +477,7 @@ module.exports = () => {
               try { initControllersZip(obj.item.key);  } catch (error) { }
 
               configs.clear();
-              if (opt.onLoaded) requestAnimationFrame(opt.onLoaded);
+              if (opt.onLoaded) requestAnimationFrame(()=>{opt.onLoaded(obj)});
               obj.removeLoadingListener(zip_loader);
             }
           }

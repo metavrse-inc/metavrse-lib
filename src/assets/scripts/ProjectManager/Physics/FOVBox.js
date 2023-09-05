@@ -76,13 +76,15 @@
         } catch (error) {
         }
     }
+    var geometry;
     const _addObject = (args) => {
         size = args.size;
 
-        var geometry;
-        geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
+        geometry = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
         // geometry = new Ammo.btSphereShape( size[1] * 0.5);
-        geometry.setLocalScaling(new Ammo.btVector3(scaleT, scaleT, scaleT));
+        let v = [...size];
+        vec3.scale(v, v, scaleT)
+        geometry.setLocalScaling(new Ammo.btVector3(...v));
   
         var transform = new Ammo.btTransform();
         transform.setIdentity();
@@ -99,6 +101,15 @@
   
         PhysicsWorld.addCollisionObject(body, 16);
   
+     }
+
+     var setSize = (s)=> {
+        if (!geometry) return;
+
+        size = s;
+        let v = [...size];
+        vec3.scale(v, v, scaleT)
+        geometry.setLocalScaling(new Ammo.btVector3(...v));
      }
 
     var isLoaded = false;
@@ -122,6 +133,8 @@
             addObject(payload)
             // console.log('adding from FOVBox')
         }
+
+        // TODO: add on parent transformation update
     }
 
     // var moveTransform = null;
@@ -509,6 +522,7 @@
         removeMesh,
         toggleFOV,
         toggleLOD,
+        setSize
     })
 
     return object;

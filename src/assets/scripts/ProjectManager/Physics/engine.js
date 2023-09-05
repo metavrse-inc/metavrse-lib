@@ -763,54 +763,22 @@
       }
    }
 
-   let fovTimer;
    const setFOVSize = (size)=> {
 
       FOVSize = size;
 
       if (!FOVBox_r) return;
 
-      let re = ()=> {
-         try {
-            renderList.delete("FOVBox")
-            allList.delete("FOVBox")
-            FOVBox_r.remove();
-            FOVBox_r = null;
-            addFOVBox();
-            
-         } catch (error) {
-            
-         }
-
-      }
-
-      if (fovTimer) clearTimeout(fovTimer);
-      fovTimer = setTimeout(re, 100);
+      FOVBox_r.setSize(FOVSize)
+      
    }
 
-   let zipTimer;
    const setZIPSize = (size)=> {
-
       ZIPSize = size;
 
       if (!ZIPBox_r) return;
 
-      let re = ()=> {
-         try {
-            renderList.delete("ZIPBox")
-            allList.delete("ZIPBox")
-            ZIPBox_r.remove();
-            ZIPBox_r = null;
-            addZIPBox();
-            
-         } catch (error) {
-            
-         }
-
-      }
-
-      if (zipTimer) clearTimeout(zipTimer);
-      zipTimer = setTimeout(re, 100);
+      ZIPBox_r.setSize(ZIPSize)
    }
 
    const removeUpdate = (key)=> {
