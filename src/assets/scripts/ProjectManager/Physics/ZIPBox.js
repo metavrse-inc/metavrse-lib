@@ -188,13 +188,14 @@
             let value = zipAddQue.shift();
             zipRunning = true;
             try {
-                if (!zipLaunched) setTimeout(()=>{requestAnimationFrame(()=>{value({onLoaded: zipCB})})}, 1000)
-                else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
+                // if (!zipLaunched) 
+                setTimeout(()=>{value({onLoaded: zipCB})}, 150)
+                // else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
             } catch (error) {    
                 console.log(error)            
             }
             
-            skipNext = setTimeout(zipCB, 5000);
+            skipNext = setTimeout(zipCB, 2500);
         }
 
         if (!zipLaunched){

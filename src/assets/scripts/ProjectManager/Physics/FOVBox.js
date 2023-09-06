@@ -189,13 +189,14 @@
             let value = zipAddQue.shift();
             zipRunning = true;
             try {
-                if (!zipLaunched) setTimeout(()=>{requestAnimationFrame(()=>{value({onLoaded: zipCB})})}, 100)
-                else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
+                // if (!zipLaunched) 
+                setTimeout(()=>{value({onLoaded: zipCB})}, 5)
+                // else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
             } catch (error) {    
                 console.log(error)            
             }
             
-            skipNext = setTimeout(zipCB, 300);
+            skipNext = setTimeout(zipCB, 20);
         }
 
         if (!zipLaunched){
@@ -287,11 +288,12 @@
                                     
                                 }
 
-                                opts.onLoaded();
+                                // opts.onLoaded();
 
                             }
 
-                            zipAddQue.push(fn)
+                            // zipAddQue.push(fn)
+                            fn();
 
                         }, 500)
 
@@ -423,13 +425,14 @@
                                     
                                 }
 
-                                opts.onLoaded();
+                                // opts.onLoaded();
 
 
 
                             }
 
-                            zipAddQue.push(fn)
+                            // zipAddQue.push(fn)
+                            fn();
 
                         }, 500)
 

@@ -460,7 +460,7 @@ module.exports = () => {
             {
               shouldReturn = true;
               map.delete(key);
-              try { setTimeout(()=>{requestAnimationFrame(fn)},150) } catch (error) {}
+              try { setTimeout(fn,500) } catch (error) {}
               return;
             });
 
