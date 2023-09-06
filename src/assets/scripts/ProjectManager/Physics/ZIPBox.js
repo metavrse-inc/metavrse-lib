@@ -177,11 +177,14 @@
     let zipAddQue = [];
     let zipRunning = false;
     let zipLaunched = false;
+    let skipNext;
     let zipCB = ()=>{
         zipRunning = false;
 
         if (zipAddQue.length > 0)
         {
+            if (skipNext) clearTimeout(skipNext);
+            
             let value = zipAddQue.shift();
             zipRunning = true;
             try {
@@ -190,6 +193,10 @@
             } catch (error) {    
                 console.log(error)            
             }
+            
+            setTimeout(() => {
+                zipCB();
+            }, 20000);
         }
 
         if (!zipLaunched){
@@ -263,7 +270,7 @@
                             try {
                                 if (level == 1){
                                     let del = (opts)=>{
-                                        for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                                        if (parent.children.size > 1) for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
                                         opts.onLoaded();
                                     }
 
@@ -354,14 +361,23 @@
                 if (value.el.item.type == "ZIPMesh"){
                     // console.log('remove zip', value)
                     if(value.el.parent) {
-                        // let timeout = updateTimeout.get(value.el.item.key);
-                        // if (timeout) clearTimeout(timeout);
+                        let timeout = updateTimeout.get(value.el.item.key);
+                        if (timeout) clearTimeout(timeout);
 
-                        // let del = (opts)=>{
-                        //     for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
-                        //     opts.onLoaded();
-                        // }
-                        // zipAddQue.push(del)
+                        timeout = setTimeout(() => {
+                            let del = (opts)=>{
+                                let el = Physics.get(value.idx)
+                                el.lod_level = 1;
+
+                                if (value.el.parent.children.size > 1) for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                                opts.onLoaded();
+                            }
+                            zipAddQue.push(del)                            
+                        }, 1000);
+
+                        updateTimeout.set(value.el.item.key, timeout)
+
+
                     }
                 }
                 map.delete(key);
