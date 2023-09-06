@@ -460,11 +460,16 @@ module.exports = () => {
             {
               shouldReturn = true;
               map.delete(key);
-              try { setTimeout(fn,500) } catch (error) {}
+              try { setTimeout(()=>{requestAnimationFrame(fn)}) } catch (error) {}
+
               return;
+              // fn();
             });
 
             if (shouldReturn){
+              // for (var [k, cfn] of configs){
+              //   try { cfn(); } catch (error) {}
+              // }
               return;
             }
   

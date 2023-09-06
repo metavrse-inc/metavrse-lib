@@ -189,13 +189,14 @@
             zipRunning = true;
             try {
                 // if (!zipLaunched) 
-                setTimeout(()=>{value({onLoaded: zipCB})}, 150)
+                value({onLoaded: ()=>{}})
+                // setTimeout(()=>{value({onLoaded: zipCB})}, 150)
                 // else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
             } catch (error) {    
                 console.log(error)            
             }
             
-            skipNext = setTimeout(zipCB, 2500);
+            skipNext = setTimeout(zipCB, 100);
         }
 
         if (!zipLaunched){
