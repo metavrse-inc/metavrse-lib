@@ -194,7 +194,7 @@
                 console.log(error)            
             }
             
-            skipNext = setTimeout(zipCB, 20000);
+            skipNext = setTimeout(zipCB, 5000);
         }
 
         if (!zipLaunched){
@@ -268,7 +268,11 @@
                             try {
                                 if (level == 1){
                                     let del = (opts)=>{
-                                        if (parent.children.size > 1) for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                                        try {
+                                            if (parent.children.size > 1) for (var [k, o] of parent.children) if (o.item.type != "ZIPMesh") o.remove();                                            
+                                        } catch (error) {
+                                            
+                                        }
                                         opts.onLoaded();
                                     }
 
@@ -283,7 +287,7 @@
                             } catch (error) {
                                 
                             }
-                        }, 1000)
+                        }, 250)
 
                         updateTimeout.set(el.item.key, timeout)
 
@@ -367,11 +371,15 @@
                                 let el = Physics.get(value.idx)
                                 el.lod_level = 1;
 
-                                if (value.el.parent.children.size > 1) for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();
+                                try {
+                                    if (value.el.parent.children.size > 1) for (var [k, o] of value.el.parent.children) if (o.item.type != "ZIPMesh") o.remove();                                    
+                                } catch (error) {
+                                    
+                                }
                                 opts.onLoaded();
                             }
                             zipAddQue.push(del)                            
-                        }, 1000);
+                        }, 250);
 
                         updateTimeout.set(value.el.item.key, timeout)
 

@@ -175,6 +175,48 @@
 
     var v1,v2,m1;
 
+    let zipAddQue = [];
+    let zipRunning = false;
+    let zipLaunched = false;
+    let skipNext;
+    let zipCB = ()=>{
+        zipRunning = false;
+
+        if (zipAddQue.length > 0)
+        {
+            if (skipNext) clearTimeout(skipNext);
+            
+            let value = zipAddQue.shift();
+            zipRunning = true;
+            try {
+                if (!zipLaunched) setTimeout(()=>{requestAnimationFrame(()=>{value({onLoaded: zipCB})})}, 100)
+                else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
+            } catch (error) {    
+                console.log(error)            
+            }
+            
+            skipNext = setTimeout(zipCB, 300);
+        }
+
+        if (!zipLaunched){
+            zipLaunched = true;
+        }
+    }
+
+    let runZipAdd = ()=> {
+        if (!zipRunning) {
+            _runZipAdd();
+            return;
+        }
+    }
+
+    let _runZipAdd = ()=> {
+        if (zipRunning) return;
+
+        zipRunning = true;
+        zipCB();
+    }
+
     let checkDistance = (lod, elobj, meshid, level)=> {
         let isVisible = -1;
         let el = Physics.get(elobj.idx);
@@ -204,96 +246,14 @@
             let diameter = Math.max(b1,b2,b3);
             let r = diameter / 2;
 
-//
             let posWorld = vec3.create();
             mat4.getTranslation(posWorld, el.matrix)
             let distance = vec3.distance(Module.controls.position, posWorld);
 
             let tan = r/distance;
-            // console.log(tan*100)
-
             let percentageArea = tan*100;
 
-///
-
-/*
-            let avgLength = (b1 + b2 + b3) / 3;
-
-            let pos = vec4.fromValues(...v2, 1);
-            let center = vec4.create();
-            vec4.transformMat4(center, pos, Module.camera.view);
-
-            let p1 = vec4.create();
-            vec4.transformMat4(p1, center, Module.camera.projection);
-
-            let cp = vec4.create();
-            vec4.add(cp, center, [0,r,0,0]);
-
-            let p2 = vec4.create();
-            vec4.transformMat4(p2, cp, Module.camera.projection);
-
-            let cp3 = vec4.create();
-            vec4.add(cp3, center, [r,0,0,0]);
-
-            let p3 = vec4.create();
-            vec4.transformMat4(p3, cp3, Module.camera.projection);
-
-            vec4.divide(p1, p1, [p1[3],p1[3],p1[3],p1[3]])
-            vec4.divide(p2, p2, [p2[3],p2[3],p2[3],p2[3]])
-            vec4.divide(p3, p3, [p3[3],p3[3],p3[3],p3[3]])
-            vec4.normalize(p1,p1);
-            vec4.normalize(p2,p2);
-            vec4.normalize(p3,p3);
-
-            let height = (Math.abs(p1[1] - p2[1]) * 0.5) * Module.screen.height;
-            let width = (Math.abs(p1[0] - p3[0]) * 0.5) * Module.screen.width;
-            let computedArea = height * width * 16;
-            let screenArea = Module.canvas.width * Module.canvas.height;
-
-            let percentageArea = (computedArea / screenArea) * 100;
-            let posWorld = vec3.create();
-            mat4.getTranslation(posWorld, el.matrix)
-            let distance = vec3.distance(Module.controls.position, posWorld);
-
-            // vec4 center = camera_matrix * vec4(x, y, z, 1)
-            // 2:31
-            // vec4 p1 = projection_matrix * center
-            // 2:32
-            // vec4 p2 = projection_matrix * (center + vec4(0, R, 0, 0))
-            // 2:32
-            // p1 = p1 / p1.w
-            // 2:32
-            // p2 = p2 / p2.w
-            // 2:32
-            // height = abs(p1.y - p2.y) * 0.5 (edited) 
-            // vec4 p3 = projection_matrix * (center + vec4(R, 0, 0, 0))
-            // 2:35
-            // p3 = p3 / p3.w
-            // 2:35
-            // width = abs (p1.x - p3.x) * 0.5
-*/
-            if (!isNaN(percentageArea)){
-                // console.log({fovy, computedRadius, computedArea})
-                // level = 3;
-                // let perc = ((percentageArea > 100 ? 100 : percentageArea));
-                // percentageArea = perc * ( avgLength / distance);
-                // console.log(distance)
-
-                let red = [255,0,0];
-                let green = [0,255,0];
-                let blue = [0,0,255];
-                let purple = [255, 102, 255];
-
-                let greenA = [0,255,0];
-                let greenB = [0,128,0];
-                let greenC = [0,64,0];
-                let greenD = [0,32,0];
-
-
-                // if (percentageArea >= 35) level = 0;
-                // else if (percentageArea < 35 && percentageArea >= 15 ) level = 1;
-                // else if (percentageArea < 15 && percentageArea >= 5 ) level = 2;
-                // else if (percentageArea < 5) level = 3;
+            if (!isNaN(percentageArea)){                
 
                 if (percentageArea >= 50) level = 0;
                 else if (percentageArea < 50 && percentageArea >= 25 ) level = 1;
@@ -304,7 +264,6 @@
 
                 if (el.lod_level != level && lod){
 
-                    // el.parent.mesh.set(meshid, "lod_level", level)
                     if (el.item.type == "FOVMeshObject"){
                         let timeout = updateTimeout.get(el.item.key);
                         if (timeout) clearTimeout(timeout);
@@ -313,28 +272,34 @@
                         const parent = el.parent;
 
                         timeout = setTimeout(()=>{
-                            try {
-                                let obj = scene.getObject(key);
-                                let meshes_ = obj.getMeshes();
-                                for (var x=0; x < meshes_.size(); x++){                
-                                    try {
-                                        parent.mesh.set(x, "lod_level", level)
-                                        // el.parent.mesh.set(x, "albedo_ratio", (level == 0 ? greenC : level == 1 ? greenB : level == 2 ? greenA : greenD))
-                                        // el.parent.mesh.set(x, "albedo_ratio", (level == 0 ? greenA : level == 1 ? greenB : level == 2 ? greenC : greenD))
-                                    } catch (e) {}
-                                }                            
+                            let fn = (opts)=> {
+                                try {
+                                    let obj = scene.getObject(key);
+                                    let meshes_ = obj.getMeshes();
+                                    for (var x=0; x < meshes_.size(); x++){                
+                                        try {
+                                            parent.mesh.set(x, "lod_level", level)                                        
+                                        } catch (e) {}
+                                    }                            
+    
+                                    if (parent.getGeometryLOD && parent.getGeometryLOD().length > 1) obj.setActiveGeometryLOD(level);
+                                } catch (error) {
+                                    
+                                }
 
-                                if (parent.getGeometryLOD && parent.getGeometryLOD().length > 1) obj.setActiveGeometryLOD(level);
-                            } catch (error) {
-                                
+                                opts.onLoaded();
+
                             }
+
+                            zipAddQue.push(fn)
+
                         }, 500)
 
                         updateTimeout.set(el.item.key, timeout)
 
                         
                     } else {
-                        el.parent.mesh.set(meshid, "albedo_ratio", (level == 0 ? red : level == 1 ? green : level == 2 ? blue : purple))
+                        // el.parent.mesh.set(meshid, "albedo_ratio", (level == 0 ? red : level == 1 ? green : level == 2 ? blue : purple))
                     }
 
                     el.lod_level = level;
@@ -360,6 +325,7 @@
     }
     const _update = ()=> {
         move();
+        runZipAdd();
         var overlapping = body.getNumOverlappingObjects();
         for (var x=0; x < overlapping; x++){
             if (body.getNumOverlappingObjects() != overlapping) return;
@@ -442,20 +408,30 @@
                         const parent = value.el.parent;
 
                         timeout = setTimeout(()=>{
-                            try {
-                                let obj = scene.getObject(key);
-                                let meshes_ = obj.getMeshes();
-                                for (var x=0; x < meshes_.size(); x++){                
-                                    try {
-                                        parent.mesh.set(x, "lod_level", 3)
-                                    } catch (e) {}
-                                  }
-                                  if (parent.getGeometryLOD && parent.getGeometryLOD().length > 1) obj.setActiveGeometryLOD(3);
-                                
-                            } catch (error) {
-                                
+                            let fn=(opts)=>{
+                                try {
+                                    let obj = scene.getObject(key);
+                                    let meshes_ = obj.getMeshes();
+                                    for (var x=0; x < meshes_.size(); x++){                
+                                        try {
+                                            parent.mesh.set(x, "lod_level", 3)
+                                        } catch (e) {}
+                                      }
+                                      if (parent.getGeometryLOD && parent.getGeometryLOD().length > 1) obj.setActiveGeometryLOD(3);
+                                    
+                                } catch (error) {
+                                    
+                                }
+
+                                opts.onLoaded();
+
+
+
                             }
-                        }, 1000)
+
+                            zipAddQue.push(fn)
+
+                        }, 500)
 
                         updateTimeout.set(value.el.item.key, timeout)
 
