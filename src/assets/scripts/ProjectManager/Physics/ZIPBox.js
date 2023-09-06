@@ -259,7 +259,7 @@
                         const key = el.item.key.replace("_"+meshid, "");
                         const parent = el.parent;
 
-                        // timeout = setTimeout(()=>{
+                        timeout = setTimeout(()=>{
                             try {
                                 if (level == 1){
                                     let del = (opts)=>{
@@ -278,7 +278,7 @@
                             } catch (error) {
                                 
                             }
-                        // }, 1000)
+                        }, 1000)
 
                         updateTimeout.set(el.item.key, timeout)
 
