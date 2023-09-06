@@ -194,9 +194,7 @@
                 console.log(error)            
             }
             
-            setTimeout(() => {
-                zipCB();
-            }, 20000);
+            skipNext = setTimeout(zipCB, 20000);
         }
 
         if (!zipLaunched){
