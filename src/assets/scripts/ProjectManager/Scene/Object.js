@@ -986,14 +986,16 @@ module.exports = (payload) => {
       
                 // if (mesh_enable_fov) obj.setParameter('visible', false);
 
-                fov_meshes.push(Physics.add(pl));                  
+                fov_meshes.push(Physics.add(pl));   
+                
+                if (transformation.render_fov_lod){
+                  let meshes_ = obj.getMeshes();
 
-                let meshes_ = obj.getMeshes();
-
-                for (var x=0; x < meshes_.size(); x++){                
-                  try {
-                    object.mesh.set(x, "lod_level", 3.0);
-                  } catch (e) {}
+                  for (var x=0; x < meshes_.size(); x++){                
+                    try {
+                      object.mesh.set(x, "lod_level", 3.0);
+                    } catch (e) {}
+                  }
                 }
 
                   // let meshes_ = obj.getMeshes();
@@ -1136,7 +1138,7 @@ module.exports = (payload) => {
       }
       getAnimationList();
 
-      if (World.lod_enabled){
+      if (World.lod_enabled && transformation.render_fov_lod){
         let meshes_ = obj.getMeshes();
   
         for (var x=0; x < meshes_.size(); x++){                
