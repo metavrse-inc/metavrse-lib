@@ -280,7 +280,7 @@ function createOrbitControls(opt) {
 
       if (tapStart == undefined) return;
       
-      if (controls.clickEnabled && !multiTouch && /*!dragging &&*/ Date.now() - tapStart < 200) {
+      if (controls.clickEnabled && !multiTouch && /*!dragging &&*/ Date.now() - tapStart < 300) {
         if (vec2.distance(mouseEnd, mouseStart) < 5){
           if (controls.onTap != null) controls.onTap(button, x, y);
         }

@@ -179,6 +179,7 @@
     let zipRunning = false;
     let zipLaunched = false;
     let skipNext;
+    let counter = 0;
     let zipCB = ()=>{
         zipRunning = false;
 
@@ -190,13 +191,29 @@
             zipRunning = true;
             try {
                 // if (!zipLaunched) 
-                setTimeout(()=>{value({onLoaded: zipCB})}, 5)
+                // requestAnimationFrame(()=>{value({onLoaded: ()=>{}})})
+                ++counter;
+                value({onLoaded: ()=>{--counter;}})
                 // else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
             } catch (error) {    
                 console.log(error)            
             }
             
-            skipNext = setTimeout(zipCB, 20);
+            // skipNext = setTimeout(zipCB, 20);
+            let rec = (amt, _fn)=> {
+                if (amt > 0){
+                  requestAnimationFrame(()=>{rec(amt-1, _fn)})
+                } else {
+                  _fn();
+                }
+              }
+
+
+              if (Module.fps.maxFps > 30){
+                try { rec(((counter)*8), zipCB) } catch (error) {}
+              } else {
+                try { rec(((counter)*4), zipCB) } catch (error) {}
+              }
         }
 
         if (!zipLaunched){
@@ -217,6 +234,10 @@
         zipRunning = true;
         zipCB();
     }
+
+    let last_camera_position = Module.controls.target;
+    let last_camera_time = performance.now();
+    let camera_velocity = 0;
 
     let checkDistance = (lod, elobj, meshid, level)=> {
         let isVisible = -1;
@@ -249,17 +270,21 @@
 
             let posWorld = vec3.create();
             mat4.getTranslation(posWorld, el.matrix)
-            let distance = vec3.distance(Module.controls.position, posWorld);
+            let distance = vec3.distance(Module.controls.target, posWorld);
 
             let tan = r/distance;
             let percentageArea = tan*100;
 
             if (!isNaN(percentageArea)){                
 
+                // if (percentageArea >= 50) level = 0;
+                // else if (percentageArea < 50 && percentageArea >= 25 ) level = 1;
+                // else if (percentageArea < 25 && percentageArea >= 10 ) level = 2;
+                // else if (percentageArea < 10) level = 3;
+
                 if (percentageArea >= 50) level = 0;
                 else if (percentageArea < 50 && percentageArea >= 25 ) level = 1;
-                else if (percentageArea < 25 && percentageArea >= 10 ) level = 2;
-                else if (percentageArea < 10) level = 3;
+                else if (percentageArea < 25) level = 3;
                 
                 isVisible = (percentageArea > 2 ) ? 1 : 0;
 
@@ -271,31 +296,23 @@
 
                         const key = el.item.key.replace("_"+meshid, "");
                         const parent = el.parent;
+                        const _curLevel = el.lod_level;
+                        const _newLevel = level;
+                        let theta = (Module.fps.maxFps > 30) ? 2 : 4;
+
+                        theta *= (1 + camera_velocity)*(1 + camera_velocity)
 
                         timeout = setTimeout(()=>{
                             let fn = (opts)=> {
-                                try {
-                                    let obj = scene.getObject(key);
-                                    let meshes_ = obj.getMeshes();
-                                    for (var x=0; x < meshes_.size(); x++){                
-                                        try {
-                                            parent.mesh.set(x, "lod_level", level)                                        
-                                        } catch (e) {}
-                                    }                            
-    
-                                    if (parent.getGeometryLOD && parent.getGeometryLOD().length > 1) obj.setActiveGeometryLOD(level);
-                                } catch (error) {
-                                    
-                                }
-
-                                // opts.onLoaded();
+                                parent.setLOD(level);
+                                opts.onLoaded();
 
                             }
 
-                            // zipAddQue.push(fn)
-                            fn();
+                            zipAddQue.push(fn)
+                            // requestAnimationFrame(fn);
 
-                        }, 500)
+                        }, theta)
 
                         updateTimeout.set(el.item.key, timeout)
 
@@ -326,6 +343,14 @@
         }
     }
     const _update = ()=> {
+        let current_time = performance.now();
+        let timeDelta = current_time - last_camera_time;
+        let camera_distance = vec3.distance(Module.controls.target, last_camera_position);
+        camera_velocity = (camera_distance/timeDelta) * 1000;
+
+        last_camera_position = [...Module.controls.target];
+        last_camera_time = current_time;
+
         move();
         runZipAdd();
         var overlapping = body.getNumOverlappingObjects();
@@ -403,40 +428,25 @@
                     let obj = scene.getObject(key);
                     if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined) && obj) obj.setParameter('visible', false);
                     if (params.lod_enabled && obj) {
-                        let timeout = updateTimeout.get(value.el.item.key);
-                        if (timeout) clearTimeout(timeout);
+                        // let timeout = updateTimeout.get(value.el.item.key);
+                        // if (timeout) clearTimeout(timeout);
 
-                        const key = value.el.item.key.replace("_"+meshid, "");
-                        const parent = value.el.parent;
+                        // // const key = value.el.item.key.replace("_"+meshid, "");
+                        // // const parent = value.el.parent;
+                        // let theta = (Module.fps.maxFps > 30) ? 2000 : 500;
 
-                        timeout = setTimeout(()=>{
-                            let fn=(opts)=>{
-                                try {
-                                    let obj = scene.getObject(key);
-                                    let meshes_ = obj.getMeshes();
-                                    for (var x=0; x < meshes_.size(); x++){                
-                                        try {
-                                            parent.mesh.set(x, "lod_level", 3)
-                                        } catch (e) {}
-                                      }
-                                      if (parent.getGeometryLOD && parent.getGeometryLOD().length > 1) obj.setActiveGeometryLOD(3);
-                                    
-                                } catch (error) {
-                                    
-                                }
+                        // timeout = setTimeout(()=>{
+                        //     let fn=(opts)=>{
+                        //         parent.setLOD(3)
+                        //         // opts.onLoaded();
+                        //     }
 
-                                // opts.onLoaded();
+                        //     zipAddQue.push(fn)
+                        //     // fn();
 
+                        // }, theta)
 
-
-                            }
-
-                            // zipAddQue.push(fn)
-                            fn();
-
-                        }, 500)
-
-                        updateTimeout.set(value.el.item.key, timeout)
+                        // updateTimeout.set(value.el.item.key, timeout)
 
                     }
                     // if (el.object) el.object.setParameter('visible', el.parent.visible);

@@ -262,9 +262,12 @@ module.exports = (payload) => {
 
         // render children
         if (renderTransformation || renderVisibility) {
+            let opts = {}
+            if (renderTransformation) opts.transform = parentOpts.transform;
+            if (renderVisibility) opts.visible = parentOpts.visible;
             Module.ProjectManager.isDirty = true;
             for (let [key, value] of object.children) {
-                value.render(parentOpts);
+                value.render(opts);
             }
         }
 

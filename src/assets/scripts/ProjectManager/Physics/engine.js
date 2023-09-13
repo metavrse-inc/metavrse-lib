@@ -158,6 +158,11 @@
       physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
       physicsWorld.setGravity(new Ammo.btVector3(0, Number(gravity), 0));
       physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
+      let s = physicsWorld.getSolverInfo()
+      s.m_numIterations = 100;
+      // s.m_splitImpulse = false;
+      s.m_splitImpulsePenetrationThreshold = -5;
+      // s.m_splitImpulsePenetrationThreshold = -0.04;
 
       /// fov
       FOV_Ammo = await _Ammo(getOptions());
@@ -447,6 +452,10 @@
       // console.log('adding ZIPBox_r')
    }
 
+   let onGround = true;
+
+   let modA = 0; let modAT = performance.now();
+   let modB = 0; let modBT = performance.now();
    const render = () => {
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
@@ -454,38 +463,28 @@
       let fixedFps = 1 / Module.fps.maxFps;
       if (isNaN(fixedFps)) fixedFps = 1 / 60;
 
-      let currentFps = 1 / Module.fps.currentFps;
-      if (isNaN(currentFps)) currentFps = 1 / 60;
+      let currentFps = 1000 / Module.fps.currentFps;
+      if (isNaN(currentFps)) currentFps = 1000 / 60;
+    
+      physicsWorld.stepSimulation(currentFps, 1, 1/30);
 
-      physicsWorld.stepSimulation(fixedFps, 10, 1/60);
-      FOV_physicsWorld.stepSimulation(fixedFps, 1, 1/5);
-      ZIP_physicsWorld.stepSimulation(fixedFps, 1, 1/5);
+      let tn = performance.now();
 
-      // deprecate
-      for (var [key, _u] of syncList) {
-         let oi = objectIndexes.get(key); // object index
-         let o = oi.object;   // scenegraph object
-
-         var ms = oi.physicsBody.getMotionState();
-         if (ms) {
-            ms.getWorldTransform(TRANSFORM_AUX);
-            var p = TRANSFORM_AUX.getOrigin();
-            var q = TRANSFORM_AUX.getRotation();
-
-            if (Number(o.position[0]).toFixed(6) != (p.x()).toFixed(6) ||
-               Number(o.position[1]).toFixed(6) != (p.y()).toFixed(6) ||
-               Number(o.position[2]).toFixed(6) != (p.z()).toFixed(6)) {
-               // console.log('moving object', o.position, [p.x(), p.y(), p.z()])
-               o.position = [Number(p.x().toFixed(6)), Number(p.y().toFixed(6)), Number(p.z().toFixed(6))];
-
-            }
-
-            let euler = quaternionToEuler([q.x(), q.y(), q.z(), q.w()], o.rotate)
-            if (euler[0] != o.rotate[0] || euler[1] != o.rotate[1] || euler[2] != o.rotate[2]) {
-               o.rotate = euler;
-            }
-         }
+      // ZIP Physics
+      if (modA % (Module.fps.maxFps / 4) == 0){
+         ZIP_physicsWorld.stepSimulation(tn - modAT, 1, 1/30);
+         modAT = tn;
       }
+      modA++;
+      if (modA == (Module.fps.maxFps / 4)) modA = 0;
+
+      // LOD+FOV Physics
+      if (modB % (Module.fps.maxFps / 2) == 0){
+         FOV_physicsWorld.stepSimulation(tn - modBT, 1, 1/30);
+         modBT = tn;
+      }
+      modB++;
+      if (modB == (Module.fps.maxFps / 2)) modB = 0;
 
       for (var [key, _u] of renderList) {
          _u.update();
@@ -877,6 +876,7 @@
       ZIP_Ammo: { get: () => { return ZIP_Ammo; }, set: (v) => {} },
       ZIP_PhysicsWorld: { get: () => { return ZIP_physicsWorld; }, set: (v) => {} },
       isResetting: { get: () => { return isResetting; }, set: (v) => { isResetting = v} },
+      onGround: { get: () => { return onGround; }, set: (v) => { onGround = v} },
    })
 
    return Object.assign(_physics, {

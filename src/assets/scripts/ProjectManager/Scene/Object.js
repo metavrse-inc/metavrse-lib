@@ -367,6 +367,8 @@ module.exports = (payload) => {
     render_back_faces: d['render_back_faces'] !== undefined ? d['render_back_faces'] : true,
     render_fov_visible: d['render_fov_visible'] !== undefined ? d['render_fov_visible'] : true,
     render_fov_lod: d['render_fov_lod'] !== undefined ? d['render_fov_lod'] : true,
+
+    lod: 3,
   };
 
   customAnimations = d['animations'] !== undefined ? [...d['animations']] : [];
@@ -1821,6 +1823,23 @@ module.exports = (payload) => {
 
     getGeometryLOD : ()=>{
       return object_lod_paths;
+    },
+
+    setLOD: (level)=> {
+      if (transformation.lod == level) return;
+
+      transformation.lod = level;
+      try {
+        let obj = scene.getObject(child.key);
+        if (!obj) return;
+        try {
+            obj.setParameter("lod_level", level)                                        
+            if (object_lod_paths.length > 1) obj.setActiveGeometryLOD(level);
+        } catch (e) {}
+
+      } catch (error) {
+          
+      }
     },
 
     remove: () => {

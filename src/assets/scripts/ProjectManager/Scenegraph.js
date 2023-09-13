@@ -456,11 +456,25 @@ module.exports = () => {
             }
 
             let shouldReturn =false;
+            let theta = (Module.fps.maxFps > 30) ? true: false;
+            
             que.forEach((fn,key,map)=>
             {
               shouldReturn = true;
               map.delete(key);
-              try { setTimeout(()=>{requestAnimationFrame(fn)}) } catch (error) {}
+              let rec = (amt, _fn)=> {
+                if (amt > 0){
+                  requestAnimationFrame(()=>{rec(amt-1, _fn)})
+                } else {
+                  _fn();
+                }
+              }
+              if (theta){
+                try { rec(0, fn) } catch (error) {}
+              } else {
+                try { rec(0, fn) } catch (error) {}
+              }
+              // try { setTimeout(fn,theta) } catch (error) {}
 
               return;
               // fn();

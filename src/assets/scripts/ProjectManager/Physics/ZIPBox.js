@@ -178,6 +178,7 @@
     let zipRunning = false;
     let zipLaunched = false;
     let skipNext;
+    let counter = 0;
     let zipCB = ()=>{
         zipRunning = false;
 
@@ -189,14 +190,29 @@
             zipRunning = true;
             try {
                 // if (!zipLaunched) 
-                value({onLoaded: ()=>{}})
+                ++counter;                
+                value({onLoaded: ()=>{--counter;}})
                 // setTimeout(()=>{value({onLoaded: zipCB})}, 150)
                 // else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
             } catch (error) {    
                 console.log(error)            
             }
-            
-            skipNext = setTimeout(zipCB, 100);
+            let rec = (amt, _fn)=> {
+                if (amt > 0){
+                  requestAnimationFrame(()=>{rec(amt-1, _fn)})
+                } else {
+                  _fn();
+                }
+              }
+
+
+              if (Module.fps.maxFps > 30){
+                try { rec(((counter)*8), zipCB) } catch (error) {}
+              } else {
+                try { rec(((counter)*4), zipCB) } catch (error) {}
+              }
+            // let theta = (Module.fps.maxFps > 30) ? 1500 : 250;
+            // skipNext = setTimeout(zipCB, theta);
         }
 
         if (!zipLaunched){
@@ -248,7 +264,7 @@
 
             let posWorld = vec3.create();
             mat4.getTranslation(posWorld, el.matrix)
-            let distance = vec3.distance(Module.controls.position, posWorld);
+            let distance = vec3.distance(Module.controls.target, posWorld);
 
             let tan = r/distance;
             let percentageArea = tan*100;

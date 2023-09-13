@@ -289,7 +289,7 @@ module.exports = (payload) => {
         })
 
         if (mass == 0) PhysicsWorld.addCollisionObject(ghostObject, 2, -1);
-        else PhysicsWorld.addCollisionObject(ghostObject, 32, -1);
+        else PhysicsWorld.addCollisionObject(ghostObject, 1, 2);
         PhysicsWorld.addAction(characterController);
   
      }
