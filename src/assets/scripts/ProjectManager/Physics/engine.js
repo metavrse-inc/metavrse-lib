@@ -454,17 +454,17 @@
 
    let onGround = true;
 
-   let curT = performance.now();
    let modA = 0; let modAT = performance.now();
    let modB = 0; let modBT = performance.now();
    const render = () => {
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
-
+      
+      let currentFps = 1000 / Module.fps.currentFps;
+      if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1000 / Module.fps.maxFps;
+      physicsWorld.stepSimulation(currentFps, 1, 1/30);
+      
       let tn = performance.now();
-
-      physicsWorld.stepSimulation(tn - curT, 1, 1/30);
-      curT = tn;
 
       // ZIP Physics
       if (modA % (Module.fps.maxFps / 4) == 0){
