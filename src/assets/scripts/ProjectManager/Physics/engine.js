@@ -460,15 +460,15 @@
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
       
-      let currentFps = 1000 / Module.fps.currentFps;
-      if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1000 / Module.fps.maxFps;
-      physicsWorld.stepSimulation(currentFps, 1, 1/30);
+      let currentFps = 1 / Module.fps.maxFps;
+      if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1 / Module.fps.maxFps;
+      physicsWorld.stepSimulation(currentFps, 0);
       
       let tn = performance.now();
 
       // ZIP Physics
       if (modA % (Module.fps.maxFps / 4) == 0){
-         ZIP_physicsWorld.stepSimulation(tn - modAT, 1, 1/30);
+         ZIP_physicsWorld.stepSimulation((tn - modAT) / 1000, 0);
          modAT = tn;
       }
       modA++;
@@ -476,7 +476,7 @@
 
       // LOD+FOV Physics
       if (modB % (Module.fps.maxFps / 2) == 0){
-         FOV_physicsWorld.stepSimulation(tn - modBT, 1, 1/30);
+         FOV_physicsWorld.stepSimulation((tn - modBT) / 1000, 0);
          modBT = tn;
       }
       modB++;

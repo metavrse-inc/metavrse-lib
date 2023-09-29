@@ -176,11 +176,15 @@ Module.render = function () {
   } else {    
     const now = (performance != undefined) ? performance.now() : Date.now();
     Module['fps']['delta'] = now - Module['fps']['then'];
-    const interval = 1000 / Module['fps']['maxFps'];
+    Module['fps']['tolerance'] = 0.05 * Module['fps']['maxFps'];
+    let interval = 1000/Module['fps']['maxFps'];
 
     if (Module['fps']['delta'] >= interval - Module['fps']['tolerance']) {
-      Module['fps']['then'] = now - (Module['fps']['delta'] % interval);
-      Module['fps']['currentFps'] = Math.round(1000/Module['fps']['delta']);
+      Module['fps']['then'] = now;
+      let currentFps = Math.round(1000/Module['fps']['delta']);
+      let lastFps = Module['fps']['currentFps'];
+      
+      Module['fps']['currentFps'] = Math.round(currentFps + (lastFps - currentFps) * 0.95);
     } else {
       return;
     }

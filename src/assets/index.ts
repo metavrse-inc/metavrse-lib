@@ -47,7 +47,6 @@ import ZIPElement from './scripts/ProjectManager/Scene/ZIPElement';
 import AmmoJS from './scripts/lib/ammo';
 import CherryWW from './scripts/lib/CherryWW';
 
-import AmmoWasmJS from './scripts/lib/ammo.wasm';
 import AmmoWASM from './scripts/lib/ammo.wasm.wasm';
 
 // Physics
@@ -124,7 +123,6 @@ export const scripts = {
   [`${LIBS}/ammo.js`]: AmmoJS,
   [`${LIBS}/CherryWW.js`]: CherryWW,
 
-  [`${LIBS}/ammo.wasm.js`]: AmmoWasmJS,
   [`${LIBS}/ammo.wasm.wasm`]: AmmoWASM,
 
 

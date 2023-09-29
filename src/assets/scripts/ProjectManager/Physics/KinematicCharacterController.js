@@ -25,6 +25,7 @@ module.exports = (payload) => {
     let renderList = [];
     let body = null;
     let characterController = null;
+    let characterGravity = -20;
 
     let onUpdate = null;
     let updateHandlers = new Map();
@@ -276,7 +277,8 @@ module.exports = (payload) => {
         // characterController.setJumpSpeed(Number(data.jumpspeed))
         // characterController.setMaxJumpHeight(0.25)
         characterController.setMaxSlope(Math.PI / 3)
-        // characterGravity = characterController.getGravity();
+        characterGravity = characterController.getGravity();
+        characterController.setGravity(0);
 
         // btBroadphaseProxy.CollisionFilterGroups.CharacterFilter - 32
         // btBroadphaseProxy.CollisionFilterGroups.DefaultFilter  - 1
@@ -289,7 +291,7 @@ module.exports = (payload) => {
         })
 
         if (mass == 0) PhysicsWorld.addCollisionObject(ghostObject, 2, -1);
-        else PhysicsWorld.addCollisionObject(ghostObject, 1, 2);
+        else PhysicsWorld.addCollisionObject(ghostObject, 1, -1);
         PhysicsWorld.addAction(characterController);
   
      }
@@ -468,6 +470,8 @@ module.exports = (payload) => {
             
         }
     }
+
+    let rayTo = new Ammo.btVector3(0,-1,0);
     const _update = (forced)=> {
         if (initCounter < 1){ initCounter++; return;}  // skip first update
 
@@ -479,10 +483,41 @@ module.exports = (payload) => {
         }
         else if (params.mass <= 0) return;
 
-        let o = payload.parent;
         TRANSFORM_AUX = body.getWorldTransform()
         var p = TRANSFORM_AUX.getOrigin();
         var q = TRANSFORM_AUX.getRotation();
+
+        rayTo.setValue(p.x(), p.y()-1.1, p.z())
+        
+        let rayResult = new Ammo.ClosestRayResultCallback(p, rayTo);
+        rayResult.m_collisionFilterMask = 2; // only static objects
+        
+        PhysicsWorld.rayTest(p, rayTo, rayResult);
+        let hasHit = rayResult.hasHit();
+        let isGhost = false;
+
+        let onGround = false;
+        if (hasHit) {
+            let c_obj = rayResult.m_collisionObject;
+            let normal = rayResult.m_hitNormalWorld;
+            let uid = c_obj.getUserIndex();
+            let uob = Physics.get(uid);
+            isGhost = uob.ghost;
+
+            var angle = Math.acos(normal.y())
+            
+            onGround = !isGhost && angle == 0;
+        }
+
+
+        if (!onGround) {
+            characterController.setGravity(characterGravity);
+        } else {
+            characterController.setGravity(0);
+        }
+
+        let o = payload.parent;
+        
 
         var _p = updateMath._p;
         vec3.set(_p, p.x(), p.y(), p.z())
