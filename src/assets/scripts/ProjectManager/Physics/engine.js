@@ -460,7 +460,7 @@
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
       
-      let currentFps = 1 / Module.fps.maxFps;
+      let currentFps = 1 / Module.fps.currentFps;
       if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1 / Module.fps.maxFps;
       physicsWorld.stepSimulation(currentFps, 0);
       

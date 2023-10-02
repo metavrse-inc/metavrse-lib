@@ -298,7 +298,7 @@
                         const parent = el.parent;
                         const _curLevel = el.lod_level;
                         const _newLevel = level;
-                        let theta = (Module.fps.maxFps > 30) ? 2 : 4;
+                        let theta = (Module.fps.maxFps > 30) ? 12 : 6;
 
                         theta *= (1 + camera_velocity)*(1 + camera_velocity)
 
@@ -346,7 +346,8 @@
         let current_time = performance.now();
         let timeDelta = current_time - last_camera_time;
         let camera_distance = vec3.distance(Module.controls.target, last_camera_position);
-        camera_velocity = (camera_distance/timeDelta) * 1000;
+        let current_velocity = (camera_distance/timeDelta) * 1000;
+        camera_velocity = +(current_velocity + (camera_velocity - current_velocity) * 0.5).toFixed(6);
 
         last_camera_position = [...Module.controls.target];
         last_camera_time = current_time;

@@ -2,6 +2,8 @@
  * Scenegraph Module
  */
 module.exports = () => {
+  const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent));
+
   const { mat4, vec3 } = Module.require('assets/gl-matrix.js');
   let scenegraph = {}; // holds scenegraph props and methods
 
@@ -141,8 +143,9 @@ module.exports = () => {
   let clearedWebworkerTS = 0;
 
   const render = (opts) => {
-    if (Module.ProjectManager.projectRunning) Physics.render();
+    if (Module.ProjectManager.projectRunning) Physics.render();        
 
+    let clearnow = false;
     if (Module.ProjectManager.projectRunning && launched){
       if (ZIPAddCallbacks.length > 0){
         while (ZIPAddCallbacks.length > 0){
@@ -165,8 +168,7 @@ module.exports = () => {
         } else if (qsO == 0 && qsT == 0 && !clearedWebworker && (Date.now() - clearedWebworkerTS >= 2500)){
           // clear workers only when nothing is in the worker que's and 2.5second has elapsed to give other processes a moment to engage
           clearedWebworker = true;
-          // scene.clearWebworkers();
-          // return;
+          if (isIOS) clearnow = true;
         }    
       }
 
@@ -385,6 +387,8 @@ module.exports = () => {
     }
 
     updatedList.clear();
+
+    if (clearnow) scene.clearWebworkers();
   };
 
   // Deprecating

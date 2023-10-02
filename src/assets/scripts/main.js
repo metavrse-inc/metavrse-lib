@@ -184,7 +184,7 @@ Module.render = function () {
       let currentFps = Math.round(1000/Module['fps']['delta']);
       let lastFps = Module['fps']['currentFps'];
       
-      Module['fps']['currentFps'] = Math.round(currentFps + (lastFps - currentFps) * 0.95);
+      Module['fps']['currentFps'] = Math.round(currentFps + (lastFps - currentFps) * 0.5);
     } else {
       return;
     }
