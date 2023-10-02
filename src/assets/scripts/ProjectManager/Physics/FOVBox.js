@@ -298,9 +298,12 @@
                         const parent = el.parent;
                         const _curLevel = el.lod_level;
                         const _newLevel = level;
-                        let theta = (Module.fps.maxFps > 30) ? 12 : 6;
+                        let thetaMin = (Module.fps.maxFps > 30) ? 120 : 60;
+                        let theta = thetaMin;
 
-                        theta *= (1 + camera_velocity)*(1 + camera_velocity)
+                        theta *= (1 + camera_velocity)
+                        if (isNaN(theta) || theta == Infinity || theta <= 0 ) theta = thetaMin;
+                        if (theta > 1000) theta = 1000;
 
                         timeout = setTimeout(()=>{
                             let fn = (opts)=> {

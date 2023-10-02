@@ -176,7 +176,7 @@ Module.render = function () {
   } else {    
     const now = (performance != undefined) ? performance.now() : Date.now();
     Module['fps']['delta'] = now - Module['fps']['then'];
-    Module['fps']['tolerance'] = 0.05 * Module['fps']['maxFps'];
+    Module['fps']['tolerance'] = 0.10 * Module['fps']['maxFps'];
     let interval = 1000/Module['fps']['maxFps'];
 
     if (Module['fps']['delta'] >= interval - Module['fps']['tolerance']) {

@@ -234,10 +234,6 @@
         zipCB();
     }
 
-    let last_camera_position = Module.controls.target;
-    let last_camera_time = performance.now();
-    let camera_velocity = 0;
-
     let checkDistance = (elobj, meshid, level)=> {
         let el = Physics.get(elobj.idx);
         if (!el) return;
@@ -286,9 +282,7 @@
                         const key = el.item.key.replace("_"+meshid, "");
                         const parent = el.parent;
 
-                        let theta = (Module.fps.maxFps > 30) ? 16 : 9;
-
-                        theta *= (1 + camera_velocity)*(1 + camera_velocity)
+                        let theta = (Module.fps.maxFps > 30) ? 1000 : 500;
 
                         timeout = setTimeout(()=>{
                             try {
@@ -341,15 +335,6 @@
         }
     }
     const _update = ()=> {
-        let current_time = performance.now();
-        let timeDelta = current_time - last_camera_time;
-        let camera_distance = vec3.distance(Module.controls.target, last_camera_position);
-        let current_velocity = (camera_distance/timeDelta) * 1000;
-        camera_velocity = +(current_velocity + (camera_velocity - current_velocity) * 0.5).toFixed(6);
-
-        last_camera_position = [...Module.controls.target];
-        last_camera_time = current_time;
-
         move();
         runZipAdd();
         var overlapping = body.getNumOverlappingObjects();
