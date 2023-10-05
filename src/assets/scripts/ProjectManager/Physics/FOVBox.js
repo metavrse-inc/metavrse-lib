@@ -284,7 +284,7 @@
 
                 if (percentageArea >= 50) level = 0;
                 else if (percentageArea < 50 && percentageArea >= 25 ) level = 1;
-                else if (percentageArea < 25) level = 3;
+                else if (percentageArea < 25) level = 2;
                 
                 isVisible = (percentageArea > 2 ) ? 1 : 0;
 

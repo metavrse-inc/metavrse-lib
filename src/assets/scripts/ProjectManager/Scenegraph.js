@@ -837,10 +837,28 @@ module.exports = () => {
     ZIPManager.addZip(leaf.url, cb_local);
   }
 
+  let assets_texture = new Map();
+
   const loadPathsZip = async (tree, parent, prefix) => {
     await tree.forEach(async (item) => {
       if (item.type != 'folder') {
         sceneprops.objPaths[prefix + "_" + item.key] = "files/" + item.key;
+
+        if (item.type == 'image'){
+          let path = sceneprops.objPaths[prefix + "_" + item.key];
+
+          if (parent == undefined || parent.type !='image'){
+            let texture = scene.addTexture(path + "@" + prefix);
+            assets_texture.set(prefix + "_" + item.key, {
+              texture,
+              paths: [path + "@" + prefix]
+            });
+          } else if (parent && parent.type == 'image') {
+            let asset = assets_texture.get(prefix + "_" + parent.key);
+            asset.texture.addLOD(path + "@" + prefix, asset.paths.length)
+            asset.paths.push(path + "@" + prefix)
+          }
+        }
       }
 
       let leaf = {
@@ -888,8 +906,6 @@ module.exports = () => {
   };
 
   const regenerateMeshes = () => {};
-
-  let assets_texture = new Map();
 
   const loadPaths = async (tree, parent) => {
     // tree.forEach(async (item) => {

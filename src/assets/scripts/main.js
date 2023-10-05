@@ -181,10 +181,10 @@ Module.render = function () {
 
     if (Module['fps']['delta'] >= interval - Module['fps']['tolerance']) {
       Module['fps']['then'] = now;
-      let currentFps = Math.round(1000/Module['fps']['delta']);
+      let currentFps = 1000/Module['fps']['delta'];
       let lastFps = Module['fps']['currentFps'];
       
-      Module['fps']['currentFps'] = Math.round(currentFps + (lastFps - currentFps) * 0.5);
+      Module['fps']['currentFps'] = currentFps + (lastFps - currentFps) * 0.5;
     } else {
       return;
     }
