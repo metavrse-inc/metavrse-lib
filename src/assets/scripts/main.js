@@ -3,7 +3,8 @@
  */
 const surface = Module.getSurface();
 const scene = surface.getScene();
-
+const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent))
+|| (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 var { mat4 } = Module.require('assets/gl-matrix.js'); // deprecating
 
 Module.animationids = {};
@@ -168,6 +169,7 @@ Module['fps'] = {
   frame: -1,
 
   then: (performance != undefined) ? performance.now() : Date.now(),
+  then_actual: (performance != undefined) ? performance.now() : Date.now(),
   interval : 1000 / 30,
   tolerance: 0,
 };
@@ -184,6 +186,7 @@ Module.render = function () {
 }
 
 let xx =0;
+let accum = 0;
 let _render = function () {
   // 'use strict';
 
@@ -193,21 +196,37 @@ let _render = function () {
 
   const now = (performance != undefined) ? performance.now() : Date.now();
   Module['fps']['delta'] = now - Module['fps']['then'];
+  var delta = now - Module['fps']['then_actual'];
+  let interval = 1000/(Module['fps']['maxFps']);
 
-  let frames = (Module['fps']['maxFps'] > 30) ? 1 : 2;
-  xx++;
-  if (xx >= frames) xx = 0;
-  if (xx != 0){
-    requestAnimationFrame(_render);
-    return;
+  if (!isIOS){
+    if (Module['fps']['delta'] >= interval - 0.1){
+      Module['fps']['then'] = now - (Module['fps']['delta'] % interval);
+      // accum += Module['fps']['delta'] - interval;
+  
+    } else {
+      setTimeout(_render);
+      return;
+    }
+  } else {
+    let frames = (Module['fps']['maxFps'] > 30) ? 1 : 2;
+    xx++;
+    if (xx >= frames) xx = 0;
+    if (xx != 0){
+      requestAnimationFrame(_render);
+      return;
+    }
+
   }
 
-  let currentFps = 1000/Module['fps']['delta'];
+
+  let currentFps = (1000/delta);
   let lastFps = Module['fps']['currentFps'];
 
-  Module['fps']['currentFps'] = +(currentFps.toFixed(1));
+  Module['fps']['currentFps'] = +currentFps.toFixed(1);
+  // console.log(Module['fps']['currentFps'])
   // Module['fps']['currentFps'] = lastFps + (currentFps - lastFps) * 0.98;
-  Module['fps']['then'] = now;
+  Module['fps']['then_actual'] = now;
 
   if (Module['canvas']) {
     // means we are in a web browser;
@@ -322,7 +341,10 @@ let _render = function () {
     res = Module.Handlers.onRender();
 
   if (!res) {
-    requestAnimationFrame(_render);
+    // requestAnimationFrame(_render);
+    if (isIOS) requestAnimationFrame(_render)
+    else setTimeout(_render);
+
     return;
   }
 
@@ -350,21 +372,44 @@ let _render = function () {
       if (!World.transparent || !Module['canvas']) {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-        surface.render_clear(
-          World.color[0] / 255,
-          World.color[1] / 255,
-          World.color[2] / 255,
-          1
-        );
+          if (isIOS){
+            surface.render_clear(
+              World.color[0] / 255,
+              World.color[1] / 255,
+              World.color[2] / 255,
+              1
+            );
+          }else {
+            requestAnimationFrame(()=>{
+              surface.render_clear(
+                World.color[0] / 255,
+                World.color[1] / 255,
+                World.color[2] / 255,
+                1
+              );
+            })
+          }
       } else {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
-        surface.render();
+          if (isIOS) {
+            surface.render();
+          } else{
+            requestAnimationFrame(()=>{ 
+              surface.render();
+            })
+          }
       }
     } else {
       if (Module['canvas'])
         Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-      surface.render_clear(0, 0, 0, 1);
+        if (isIOS) {
+          surface.render_clear(0, 0, 0, 1);
+        }else {
+          requestAnimationFrame(()=>{
+            surface.render_clear(0, 0, 0, 1);
+          })
+        }
     }
 
     Module.ProjectManager.Physics.debugDraw();
@@ -378,21 +423,44 @@ let _render = function () {
         if (!World.transparent || !Module['canvas']) {
           if (Module['canvas'])
             Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-          surface.render_clear(
-            World.color[0] / 255,
-            World.color[1] / 255,
-            World.color[2] / 255,
-            1
-          );
+            if (isIOS){
+              surface.render_clear(
+                World.color[0] / 255,
+                World.color[1] / 255,
+                World.color[2] / 255,
+                1
+              );
+            }else {
+              requestAnimationFrame(()=>{
+                surface.render_clear(
+                  World.color[0] / 255,
+                  World.color[1] / 255,
+                  World.color[2] / 255,
+                  1
+                );
+              })
+            }
         } else {
           if (Module['canvas'])
             Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
-          surface.render();
+            if (isIOS) {
+              surface.render();
+            } else{
+              requestAnimationFrame(()=>{ 
+                surface.render();
+              })
+            }
         }
       } else {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-        surface.render_clear(0, 0, 0, 1);
+          if (isIOS) {
+            surface.render_clear(0, 0, 0, 1);
+          }else {
+            requestAnimationFrame(()=>{
+              surface.render_clear(0, 0, 0, 1);
+            })
+          }
       }
       renderCount++;
 
@@ -402,7 +470,10 @@ let _render = function () {
 
   Module.ProjectManager.isDirty = false;
 
-  requestAnimationFrame(_render);
+  // requestAnimationFrame(_render);
+  if (isIOS) requestAnimationFrame(_render)
+  else setTimeout(_render);
+
 };
 
 Module.onDestroy = function () {
