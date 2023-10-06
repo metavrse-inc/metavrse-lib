@@ -40,7 +40,7 @@ Module.clearEventListeners = () => {
   eventListeners.clear();
 };
 
-Module.resetCamera = function () {
+Module.resetCamera = function (trackball) {
   let camera_opts = {
     fov: Math.PI / 4,
     near: 0.1,
@@ -48,7 +48,11 @@ Module.resetCamera = function () {
     viewport: [0, 0, Module.screen.width, Module.screen.height],
   };
 
-  Module.camera = Module.require('assets/CameraPerspective.js')(camera_opts);
+  // trackball = true;
+
+  let perspective = (trackball) ? "assets/TrackballCamera.js" : "assets/CameraPerspective.js"
+
+  Module.camera = Module.require(perspective)(camera_opts);
 
   let getLastItemInMap = (map) => Array.from(map)[map.size - 1];
   let getLastKeyInMap = (map) => Array.from(map)[map.size - 1][0];
@@ -133,8 +137,11 @@ Module.resetCamera = function () {
         Module.Handlers.onTap(button, x, y);
     },
   };
+
   // set up our input controls
-  Module.controls = Module.require('assets/OrbitalController.js')(control_opts);
+  let controller = (trackball) ? "assets/TrackballController.js" : "assets/OrbitalController.js"
+
+  Module.controls = Module.require(controller)(control_opts);
 };
 
 Module.init = function () {
@@ -168,29 +175,39 @@ Module['fps'] = {
 let touchQue = [];
 let mouseQue = [];
 
+let renderLaunch = false;
 Module.render = function () {
+  if (!renderLaunch){
+    renderLaunch = true;
+    _render();
+  }
+}
+
+let xx =0;
+let _render = function () {
   // 'use strict';
 
   if (Module.setFPS) {
     Module.setFPS(Module['fps']['maxFps']);
-  } else {    
-    const now = (performance != undefined) ? performance.now() : Date.now();
-    Module['fps']['delta'] = now - Module['fps']['then'];
-    Module['fps']['tolerance'] = 0.10 * Module['fps']['maxFps'];
-    let interval = 1000/Module['fps']['maxFps'];
-
-    if (Module['fps']['delta'] >= interval - Module['fps']['tolerance']) {
-      Module['fps']['then'] = now;
-      let currentFps = 1000/Module['fps']['delta'];
-      let lastFps = Module['fps']['currentFps'];
-      
-      Module['fps']['currentFps'] = currentFps + (lastFps - currentFps) * 0.5;
-    } else {
-      return;
-    }
   }
 
-  // console.log(JSON.stringify(Module.fps))
+  const now = (performance != undefined) ? performance.now() : Date.now();
+  Module['fps']['delta'] = now - Module['fps']['then'];
+
+  let frames = (Module['fps']['maxFps'] > 30) ? 1 : 2;
+  xx++;
+  if (xx >= frames) xx = 0;
+  if (xx != 0){
+    requestAnimationFrame(_render);
+    return;
+  }
+
+  let currentFps = 1000/Module['fps']['delta'];
+  let lastFps = Module['fps']['currentFps'];
+
+  Module['fps']['currentFps'] = +(currentFps.toFixed(1));
+  // Module['fps']['currentFps'] = lastFps + (currentFps - lastFps) * 0.98;
+  Module['fps']['then'] = now;
 
   if (Module['canvas']) {
     // means we are in a web browser;
@@ -304,7 +321,10 @@ Module.render = function () {
   )
     res = Module.Handlers.onRender();
 
-  if (!res) return;
+  if (!res) {
+    requestAnimationFrame(_render);
+    return;
+  }
 
   // Render Scenegraph
   Module.ProjectManager.render();
@@ -321,8 +341,8 @@ Module.render = function () {
   scene.setCameraMatrix(Module.camera.view);
 
   if (isDirty || Module.ProjectManager.isDirty) {
-    // scene.setShadowsVolumeExtent(35,35,35)
-    // scene.setShadowsVolumeCenter(...Module.controls.target);
+    scene.setShadowsVolumeExtent(35,35,35)
+    scene.setShadowsVolumeCenter(...Module.controls.target);
 
     renderCount = 0;
     const World = Module.ProjectManager.getObject('world');
@@ -381,6 +401,8 @@ Module.render = function () {
   }
 
   Module.ProjectManager.isDirty = false;
+
+  requestAnimationFrame(_render);
 };
 
 Module.onDestroy = function () {

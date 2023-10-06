@@ -152,8 +152,12 @@ module.exports = (opt) => {
       p,
       controls.fov,        // 45 degree field of view
       aspect,
-      controls.near * near_cur,
-      (controls.far / 20) * far_max
+      controls.near,
+      controls.far
+      // controls.near * near_cur,
+      // (controls.far / 20) * far_max
+      
+      
       // 0.0025 * near_cur,
       // 5.0 * far_max
     );
@@ -459,6 +463,7 @@ module.exports = (opt) => {
     getPerspectiveMatrix,
     getLookatMatrix,
     getCameraDistance,
+    getCameraPosition,
     zoom,
     rotate,
     pan,
@@ -466,10 +471,20 @@ module.exports = (opt) => {
     setAngleX,
     setAngleY,
     rotateUpDown,
-    rotateLeftRight
+    rotateLeftRight,
+    update: ()=> {}
   });
 
   Object.defineProperties(controls, {
+      
+    projection: {
+      get: function () { return getPerspectiveMatrix() },
+    },
+
+    view: {
+      get: function () { return getLookatMatrix() },
+    },
+    
     viewport: {
       get: function () { return getViewPort() },
       set: function (v) {

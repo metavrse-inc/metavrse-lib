@@ -58,6 +58,7 @@ module.exports = (opt) => {
     rotateEnabled: true,
     zoomEnabled: true,
     panEnabled: true,
+    copyInto: ()=> {}
   }
 
   function clamp(value, min, max) {
@@ -90,7 +91,7 @@ module.exports = (opt) => {
   Object.defineProperties(controls, {
     target: {
       get: () => { return opt.camera.m_lookatPos; },
-      set: (v) => { opt.camera.m_lookatPos = vec3.fromValues(v[0], v[1], v[2]); },
+      set: (v) => { opt.camera.m_lookatPos =[v[0], v[1], v[2]]; },
     },
     distance: {
       get: () => { return opt.camera.m_camDistance; },
@@ -99,9 +100,45 @@ module.exports = (opt) => {
     position: {
       get: () => { return opt.camera.position; },
       set: (v) => {
-        var a = getAngleBetweenVertices(opt.camera.m_lookatPos, v);
-        opt.camera.setAngleY(a.y);
-        opt.camera.setAngleX(a.x);
+        let lp = opt.camera.m_lookatPos;
+        const position = { x: v[0], y: v[1], z: v[2] };
+        const target = { x: lp[0], y: lp[1], z: lp[2] };
+
+        // Calculate the direction vector from position to target
+        const D = {
+          x: target.x - position.x,
+          y: target.y - position.y,
+          z: target.z - position.z,
+        };
+
+        // Calculate the magnitude of the direction vector
+        const magnitudeD = Math.sqrt(D.x * D.x + D.y * D.y + D.z * D.z);
+
+        // Normalize the direction vector
+        const D_normalized = {
+          x: D.x / magnitudeD,
+          y: D.y / magnitudeD,
+          z: D.z / magnitudeD,
+        };
+
+        // Calculate the polar angle (θ) in radians
+        const theta = Math.acos(D_normalized.z);
+
+        // Calculate the azimuthal angle (φ) in radians
+        const phi = Math.atan2(D_normalized.y, D_normalized.x);
+
+        // Convert angles to degrees
+        const thetaDegrees = (theta * 180) / Math.PI;
+        const phiDegrees = (phi * 180) / Math.PI;
+
+        opt.camera.setAngleX(thetaDegrees);
+        opt.camera.setAngleY(-phiDegrees);
+
+        console.log([thetaDegrees,phiDegrees])
+
+        // var a = getAngleBetweenVertices(opt.camera.m_lookatPos, v);
+        // opt.camera.setAngleY(a.y);
+        // opt.camera.setAngleX(a.x);
       },
     },
     dragging: {
@@ -113,7 +150,6 @@ module.exports = (opt) => {
   })
 
   function onMouseEvent(event, button, x, y) {
-    //    console.log(event, button, x, y)
     var width = controls.camera.getViewPort[2];
     var height = controls.camera.getViewPort[3];
 
@@ -134,7 +170,10 @@ module.exports = (opt) => {
 
       dragging = false;
       multiTouch = false;
+      tapStart = 0;
     }
+
+    if (tapStart == 0) return;
 
     if (event == 2) {
       dragging = true;
@@ -254,6 +293,11 @@ module.exports = (opt) => {
     controls.camera.zoom(inputDelta[2]);
     controls.camera.pan(-inputDelta[3], -inputDelta[4]);
     controls.camera.dolly(inputDelta[5]);
+
+    let direction = controls.direction;
+    vec3.copy(direction, opt.camera.m_lookatPos)
+    vec3.subtract(direction, direction, opt.camera.getCameraPosition())
+    vec3.normalize(direction, direction)
   }
 
   function update() {

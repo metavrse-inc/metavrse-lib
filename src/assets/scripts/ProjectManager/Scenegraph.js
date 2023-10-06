@@ -388,7 +388,7 @@ module.exports = () => {
 
     updatedList.clear();
 
-    if (clearnow) scene.clearWebworkers();
+    // if (clearnow) scene.clearWebworkers();
   };
 
   // Deprecating
