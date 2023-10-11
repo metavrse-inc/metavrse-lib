@@ -177,10 +177,10 @@ let mouseQue = [];
 
 let renderLaunch = false;
 Module.render = function () {
-  if (!renderLaunch){
-    renderLaunch = true;
+  // if (!renderLaunch){
+  //   renderLaunch = true;
     _render();
-  }
+  // }
 }
 
 let xx =0;
@@ -198,14 +198,14 @@ let _render = function () {
   xx++;
   if (xx >= frames) xx = 0;
   if (xx != 0){
-    requestAnimationFrame(_render);
+    // requestAnimationFrame(_render);
     return;
   }
 
   let currentFps = 1000/Module['fps']['delta'];
   let lastFps = Module['fps']['currentFps'];
 
-  Module['fps']['currentFps'] = +(currentFps.toFixed(1));
+  Module['fps']['currentFps'] = currentFps;
   // Module['fps']['currentFps'] = lastFps + (currentFps - lastFps) * 0.98;
   Module['fps']['then'] = now;
 
@@ -322,7 +322,7 @@ let _render = function () {
     res = Module.Handlers.onRender();
 
   if (!res) {
-    requestAnimationFrame(_render);
+    // requestAnimationFrame(_render);
     return;
   }
 
@@ -402,7 +402,7 @@ let _render = function () {
 
   Module.ProjectManager.isDirty = false;
 
-  requestAnimationFrame(_render);
+  // requestAnimationFrame(_render);
 };
 
 Module.onDestroy = function () {
