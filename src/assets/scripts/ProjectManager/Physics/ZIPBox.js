@@ -310,7 +310,7 @@
 
                         let theta = (Module.fps.maxFps > 30) ? 500 : 250;
 
-                        // timeout = setTimeout(()=>{
+                        timeout = setTimeout(()=>{
                             try {
                                 if (level == 1){
                                     let del = (opts)=>{
@@ -333,9 +333,9 @@
                             } catch (error) {
                                 
                             }
-                        // }, theta)
+                        }, theta)
 
-                        // updateTimeout.set(el.item.key, timeout)
+                        updateTimeout.set(el.item.key, timeout)
 
                         
                     }

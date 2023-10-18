@@ -347,8 +347,8 @@ let _render = function (t) {
   scene.setCameraMatrix(Module.camera.view);
 
   if (isDirty || Module.ProjectManager.isDirty) {
-    // scene.setShadowsVolumeExtent(35,35,35)
-    // scene.setShadowsVolumeCenter(...Module.controls.target);
+    scene.setShadowsVolumeExtent(35,35,35)
+    scene.setShadowsVolumeCenter(...Module.controls.target);
 
     renderCount = 0;
     const World = Module.ProjectManager.getObject('world');
