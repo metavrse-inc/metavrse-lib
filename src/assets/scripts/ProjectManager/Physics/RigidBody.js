@@ -103,13 +103,13 @@
         if (parent) parent.children.delete(child.key);
         Physics.removeUpdate(child.key);
 
-        if (Physics.isResetting){
+        // if (Physics.isResetting){
             deleteBody();        
-        }else{
-            setTimeout(()=>{
-                deleteBody();        
-            });
-        }
+        // }else{
+        //     setTimeout(()=>{
+        //         deleteBody();        
+        //     });
+        // }
 
     }
     
@@ -351,13 +351,13 @@
             updateMath.btScales = new Ammo.btVector3();
             updateMath.btTransform = new Ammo.btTransform();
 
-            if (Physics.isResetting){
+            // if (Physics.isResetting){
                 addObject(payload)
-            }else{
-                setTimeout(()=>{
-                    addObject(payload)
-                });
-            }
+            // }else{
+            //     setTimeout(()=>{
+            //         addObject(payload)
+            //     });
+            // }
             
         } else if (isLoaded && body) {
             let reInsert = false;

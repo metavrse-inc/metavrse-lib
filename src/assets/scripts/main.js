@@ -167,7 +167,7 @@ Module['fps'] = {
   startTime: null,
   frame: -1,
 
-  then: (performance != undefined) ? performance.now() : Date.now(),
+  then: 0,
   interval : 1000 / 30,
   tolerance: 0,
 };
@@ -176,22 +176,28 @@ let touchQue = [];
 let mouseQue = [];
 
 let renderLaunch = false;
-Module.render = function () {
-  // if (!renderLaunch){
-  //   renderLaunch = true;
-    _render();
-  // }
+Module.render = function (t) {
+  if (!renderLaunch){
+    renderLaunch = true;
+    // requestAnimationFrame(_render);
+  }
+  _render(t);
 }
 
 let xx =0;
-let _render = function () {
+let _render = function (t) {
   // 'use strict';
 
   if (Module.setFPS) {
     Module.setFPS(Module['fps']['maxFps']);
   }
 
-  const now = (performance != undefined) ? performance.now() : Date.now();
+  const now = performance.now();
+  if (Module['fps']['then'] == 0){
+    Module['fps']['then'] = now;
+    // requestAnimationFrame(_render);
+    return; 
+  }
   Module['fps']['delta'] = now - Module['fps']['then'];
 
   let frames = (Module['fps']['maxFps'] > 30) ? 1 : 2;
@@ -341,8 +347,8 @@ let _render = function () {
   scene.setCameraMatrix(Module.camera.view);
 
   if (isDirty || Module.ProjectManager.isDirty) {
-    scene.setShadowsVolumeExtent(35,35,35)
-    scene.setShadowsVolumeCenter(...Module.controls.target);
+    // scene.setShadowsVolumeExtent(35,35,35)
+    // scene.setShadowsVolumeCenter(...Module.controls.target);
 
     renderCount = 0;
     const World = Module.ProjectManager.getObject('world');

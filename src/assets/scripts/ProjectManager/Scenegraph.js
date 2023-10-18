@@ -535,7 +535,7 @@ module.exports = () => {
       }
 
       if (obj.fov) ZIPManager.callbacks.fov.set(obj.item.key, addFN)
-      else addFN();
+      else ZIPManager.setAddZip(addFN)
     }
 
     if (is_async) ZIPManager.callbacks.add(o.data.url, cb)

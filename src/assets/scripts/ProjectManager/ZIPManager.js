@@ -5,6 +5,7 @@
  */
  module.exports = (opt) => {
     opt = opt || {};
+    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent));
   
     const surface = Module.getSurface();
     const scene = surface.getScene();
@@ -104,14 +105,69 @@
         });
     }
 
+    let zipAddQue = [];
+    let loadingMap = new Map();
+    let zipRunning = false;
+    let skipNext;
+    let zipCB = ()=>{
+        // if (zipRunning) return;
+        zipRunning = false;
+
+        if (zipAddQue.length > 0)
+        {
+            if (skipNext) clearTimeout(skipNext);
+
+            const lpID = loadingMap.size + 1;
+            loadingMap.set(lpID, true)
+            
+            let value = zipAddQue.shift();
+            zipRunning = true;
+            try {
+                // console.log("loading zip", lpID)
+                value({
+                    onLoaded: ()=>{
+                        if (!loadingMap.get(lpID)) return;
+                        if (skipNext) clearTimeout(skipNext);
+                        loadingMap.set(lpID, false)
+                        setTimeout(() => {
+                            requestAnimationFrame(zipCB)                
+                        }, 250);
+                    }
+                })
+            } catch (error) {    
+                console.log(error)            
+            }
+
+            skipNext = setTimeout(()=>{
+                if (!loadingMap.get(lpID)) return; // race condition
+
+                loadingMap.set(lpID, false)
+
+                requestAnimationFrame(zipCB)                
+            }, isIOS ? 1500 : 500);
+
+        }
+
+    }
+
+    let setAddZip = (fn)=> {
+        zipAddQue.push(fn);
+        if (zipRunning) return;
+
+        zipRunning = true;
+        zipCB();
+    }
+
     Object.defineProperties(manager, {
         zips: { get: () => { return zips; }, set: (v) => {} },
         callbacks: { get: () => { return callbacks; }, set: (v) => {} },
+        que: { get: () => { return zipAddQue; }, set: (v) => {} },
     });
 
  
     return Object.assign(manager, {
         addZip,
         mergeConfigurationsIntoTree: URLLoader.mergeConfigurationsIntoTree,
+        setAddZip
     });
 }

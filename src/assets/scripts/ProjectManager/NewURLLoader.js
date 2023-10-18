@@ -97,7 +97,7 @@ module.exports = (opt) => {
       Object.assign(headers, Module.ProjectManager.getHeaders())
     } catch (error) {}
 
-    let isIOS = getMobileOS() == "iOS";
+    let isIOS = false;//getMobileOS() == "iOS";
 
     if (lastTimeDownloaded && !isIOS && lastTimeDownloaded != "undefined") {
       headers['If-Modified-Since'] = lastTimeDownloaded;

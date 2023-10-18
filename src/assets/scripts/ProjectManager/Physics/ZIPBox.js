@@ -179,19 +179,36 @@
     let zipLaunched = false;
     let skipNext;
     let counter = 0;
+    let loadingMap = new Map();
     let zipCB = ()=>{
+        // if (zipRunning) return;
         zipRunning = false;
 
         if (zipAddQue.length > 0)
         {
             if (skipNext) clearTimeout(skipNext);
+
+            const lpID = loadingMap.size + 1;
+            loadingMap.set(lpID, true)
             
             let value = zipAddQue.shift();
             zipRunning = true;
             try {
                 // if (!zipLaunched) 
-                ++counter;                
-                value({onLoaded: ()=>{--counter;}})
+                ++counter;    
+                // console.log("loading zip", lpID)
+                value({
+                    onLoaded: ()=>{
+                        if (!loadingMap.get(lpID)) return;
+                        loadingMap.set(lpID, false)
+                        --counter; 
+                        // zipRunning = false; 
+                        setTimeout(() => {
+                            requestAnimationFrame(zipCB)                
+                        }, 100);
+                    }
+                })
+                // value({onLoaded: ()=>{--counter;}})
                 // setTimeout(()=>{value({onLoaded: zipCB})}, 150)
                 // else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
             } catch (error) {    
@@ -205,12 +222,21 @@
                 }
               }
 
+            skipNext = setTimeout(()=>{
+                if (!loadingMap.get(lpID)) return; // race condition
 
-              if (Module.fps.maxFps > 30){
-                try { rec(((counter)*8), zipCB) } catch (error) {}
-              } else {
-                try { rec(((counter)*4), zipCB) } catch (error) {}
-              }
+                --counter;
+                loadingMap.set(lpID, false)
+                // zipRunning = false; 
+
+                requestAnimationFrame(zipCB)                
+            }, 500);
+
+            //   if (Module.fps.maxFps > 30){
+            //     try { rec(((counter)*8), zipCB) } catch (error) {}
+            //   } else {
+            //     try { rec(((counter)*4), zipCB) } catch (error) {}
+            //   }
             // let theta = (Module.fps.maxFps > 30) ? 1500 : 250;
             // skipNext = setTimeout(zipCB, theta);
         }
@@ -282,9 +308,9 @@
                         const key = el.item.key.replace("_"+meshid, "");
                         const parent = el.parent;
 
-                        let theta = (Module.fps.maxFps > 30) ? 1000 : 500;
+                        let theta = (Module.fps.maxFps > 30) ? 500 : 250;
 
-                        timeout = setTimeout(()=>{
+                        // timeout = setTimeout(()=>{
                             try {
                                 if (level == 1){
                                     let del = (opts)=>{
@@ -296,20 +322,20 @@
                                         opts.onLoaded();
                                     }
 
-                                    zipAddQue.push(del)
+                                    Module.ProjectManager.ZIPManager.setAddZip(del)
                                 }else{                                    
                                     let zm = Module.ProjectManager.ZIPManager.callbacks;
                                     if (zm.fov.has(parent.item.key) && parent.children.size <= 1){
                                         let cb = zm.fov.get(parent.item.key);
-                                        zipAddQue.push(cb);
+                                        Module.ProjectManager.ZIPManager.setAddZip(cb);
                                     }
                                 }
                             } catch (error) {
                                 
                             }
-                        }, theta)
+                        // }, theta)
 
-                        updateTimeout.set(el.item.key, timeout)
+                        // updateTimeout.set(el.item.key, timeout)
 
                         
                     }
@@ -398,7 +424,7 @@
                                 }
                                 opts.onLoaded();
                             }
-                            zipAddQue.push(del)                            
+                            Module.ProjectManager.ZIPManager.setAddZip(del)                            
                         }, 250);
 
                         updateTimeout.set(value.el.item.key, timeout)
@@ -441,7 +467,7 @@
 
     // Props and Methods
     Object.defineProperties(object, {
-        que: { get: () => { return zipAddQue; }, set: (v) => {} },
+        que: { get: () => { return Module.ProjectManager.ZIPManager.que; }, set: (v) => {} },
     })
     
     Object.assign(object, {

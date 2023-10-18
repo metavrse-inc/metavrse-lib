@@ -180,12 +180,17 @@
     let zipLaunched = false;
     let skipNext;
     let counter = 0;
+    let loadingMap = new Map();
     let zipCB = ()=>{
         zipRunning = false;
 
         if (zipAddQue.length > 0)
         {
             if (skipNext) clearTimeout(skipNext);
+
+            const lpID = loadingMap.size + 1;
+            loadingMap.set(lpID, true)
+            // console.log("loading object", lpID)
             
             let value = zipAddQue.shift();
             zipRunning = true;
@@ -193,13 +198,29 @@
                 // if (!zipLaunched) 
                 // requestAnimationFrame(()=>{value({onLoaded: ()=>{}})})
                 ++counter;
-                value({onLoaded: ()=>{--counter;}})
+                value({
+                    onLoaded: ()=>{
+                        if (!loadingMap.get(lpID)) return;
+                        loadingMap.set(lpID, false)
+                        --counter; 
+                        setTimeout(() => {
+                            requestAnimationFrame(zipCB)                
+                        });
+                    }
+                })
                 // else requestAnimationFrame(()=>{value({onLoaded: zipCB})})
             } catch (error) {    
                 console.log(error)            
             }
             
-            // skipNext = setTimeout(zipCB, 20);
+            skipNext = setTimeout(()=>{
+                if (!loadingMap.get(lpID)) return; // race condition
+
+                --counter;
+                loadingMap.set(lpID, false)
+
+                requestAnimationFrame(zipCB)                
+            }, 75);
             let rec = (amt, _fn)=> {
                 if (amt > 0){
                   requestAnimationFrame(()=>{rec(amt-1, _fn)})
@@ -209,11 +230,11 @@
               }
 
 
-              if (Module.fps.maxFps > 30){
-                try { rec(((counter)*8), zipCB) } catch (error) {}
-              } else {
-                try { rec(((counter)*4), zipCB) } catch (error) {}
-              }
+            //   if (Module.fps.maxFps > 30){
+            //     try { rec(((counter)*8), zipCB) } catch (error) {}
+            //   } else {
+            //     try { rec(((counter)*4), zipCB) } catch (error) {}
+            //   }
         }
 
         if (!zipLaunched){
@@ -282,9 +303,16 @@
                 // else if (percentageArea < 25 && percentageArea >= 10 ) level = 2;
                 // else if (percentageArea < 10) level = 3;
 
-                if (percentageArea >= 50) level = 0;
-                else if (percentageArea < 50 && percentageArea >= 25 ) level = 1;
-                else if (percentageArea < 25) level = 2;
+                if (Module.fps.maxFps > 30){
+                    if (percentageArea >= 50) level = 0;
+                    else if (percentageArea < 50 && percentageArea >= 25 ) level = 1;
+                    else if (percentageArea < 25) level = 2;
+                } else {
+                    if (percentageArea >= 50) level = 1;
+                    else if (percentageArea < 50) level = 2;
+                    // else if (percentageArea < 25) level = 3;
+                }
+
                 
                 isVisible = (percentageArea > 2 ) ? 1 : 0;
 

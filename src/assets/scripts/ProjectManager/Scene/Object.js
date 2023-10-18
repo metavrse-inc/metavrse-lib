@@ -368,7 +368,7 @@ module.exports = (payload) => {
     render_fov_visible: d['render_fov_visible'] !== undefined ? d['render_fov_visible'] : true,
     render_fov_lod: d['render_fov_lod'] !== undefined ? d['render_fov_lod'] : true,
 
-    lod: 3,
+    lod: 2,
   };
 
   customAnimations = d['animations'] !== undefined ? [...d['animations']] : [];
@@ -991,13 +991,15 @@ module.exports = (payload) => {
                 fov_meshes.push(Physics.add(pl));   
                 
                 if (transformation.render_fov_lod){
-                  let meshes_ = obj.getMeshes();
+                  obj.setParameter("lod_level", transformation.lod)                                        
 
-                  for (var x=0; x < meshes_.size(); x++){                
-                    try {
-                      object.mesh.set(x, "lod_level", 3.0);
-                    } catch (e) {}
-                  }
+                  // let meshes_ = obj.getMeshes();
+
+                  // for (var x=0; x < meshes_.size(); x++){                
+                  //   try {
+                  //     object.mesh.set(x, "lod_level", 3.0);
+                  //   } catch (e) {}
+                  // }
                 }
 
                   // let meshes_ = obj.getMeshes();
@@ -1141,13 +1143,7 @@ module.exports = (payload) => {
       getAnimationList();
 
       if (World.lod_enabled && transformation.render_fov_lod){
-        let meshes_ = obj.getMeshes();
-  
-        for (var x=0; x < meshes_.size(); x++){                
-          try {
-            obj.setParameter(x, "lod_level", 3.0);
-          } catch (e) {}
-        }
+        obj.setParameter("lod_level", transformation.lod)                                        
       }
     }
 

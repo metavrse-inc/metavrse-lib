@@ -462,13 +462,21 @@
       
       let currentFps = 1 / Module.fps.currentFps;
       if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1 / Module.fps.maxFps;
-      physicsWorld.stepSimulation(currentFps, 0);
+      try {
+         physicsWorld.stepSimulation(currentFps, 0);         
+      } catch (error) {
+         // console.error(error)
+      }
       
       let tn = performance.now();
 
       // ZIP Physics
       if (modA % (Module.fps.maxFps / 4) == 0){
-         ZIP_physicsWorld.stepSimulation((tn - modAT) / 1000, 0);
+         try {
+            ZIP_physicsWorld.stepSimulation((tn - modAT) / 1000, 0);
+         } catch (error) {
+            // console.error(error)
+         }
          modAT = tn;
       }
       modA++;
@@ -476,19 +484,35 @@
 
       // LOD+FOV Physics
       if (modB % (Module.fps.maxFps / 2) == 0){
-         FOV_physicsWorld.stepSimulation((tn - modBT) / 1000, 0);
+         try {
+            FOV_physicsWorld.stepSimulation((tn - modBT) / 1000, 0);            
+         } catch (error) {
+            // console.error(error)
+         }
          modBT = tn;
       }
       modB++;
       if (modB == (Module.fps.maxFps / 2)) modB = 0;
 
       for (var [key, _u] of renderList) {
-         _u.update();
+         try {
+            _u.update();            
+         } catch (error) {
+            // console.error(error)
+         }
       }
 
    }
 
    const debugDraw = ()=> {
+      try {
+         _debugDraw();
+      } catch (error) {
+         // console.error(error)
+      }
+   }
+   
+   const _debugDraw = ()=> {
       if (!ammoInitalised || !debugEnabled) return;
     
       physicsWorld.debugDrawWorld();
