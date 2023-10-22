@@ -10,8 +10,8 @@ export const objectDefaults: Omit<ObjectEntity, 'key'> = {
   groupMat: [...mat4.create()],
   data: {},
   hud: false,
-  show_shadow: false,
-  cast_shadow: false,
+  show_shadow: true,
+  cast_shadow: true,
   visible: true,
   frame: ["0",0],
 };

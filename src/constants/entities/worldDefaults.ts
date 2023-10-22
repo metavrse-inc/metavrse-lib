@@ -11,16 +11,21 @@ export const worldDefaults: World = {
   transparent: false,
   skyboxRotation: [0, 0, 0],
   shadow: {
-    level: 3,
+    level: 2,
     enabled: false,
     position: [0, 0, 0],
     fov: false,
     texture: [2048, 2048],
+    volume: [50,50,50],
+    center: [0,0,0],
+    follow: false
+
   },
   controller: '',
   dpr: 0,
   fps: 30,
   fxaa: 1,
+  texture_level: 1,
   hudscale: 1,
   orientation: 0,
   css: '',

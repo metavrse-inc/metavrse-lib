@@ -231,4 +231,7 @@ export type CherryProjectManagerObject = {
   data: Record<string, string>;
 
   state: any;
+
+  texture_level: number,
+
 };

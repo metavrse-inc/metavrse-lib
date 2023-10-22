@@ -303,7 +303,11 @@
                 // else if (percentageArea < 25 && percentageArea >= 10 ) level = 2;
                 // else if (percentageArea < 10) level = 3;
 
-                if (Module.fps.maxFps > 30){
+                let level = (Module.fps.maxFps > 30) ? 0 : 1;
+                const World = Module.ProjectManager.getObject('world');
+                if (World) level = World.texture_level;
+
+                if (level == 0){
                     if (percentageArea >= 50) level = 0;
                     else if (percentageArea < 50 && percentageArea >= 25 ) level = 1;
                     else if (percentageArea < 25) level = 2;

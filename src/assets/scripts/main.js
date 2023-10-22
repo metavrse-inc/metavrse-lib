@@ -347,12 +347,18 @@ let _render = function (t) {
   scene.setCameraMatrix(Module.camera.view);
 
   if (isDirty || Module.ProjectManager.isDirty) {
-    scene.setShadowsVolumeExtent(35,35,35)
-    scene.setShadowsVolumeCenter(...Module.controls.target);
 
     renderCount = 0;
     const World = Module.ProjectManager.getObject('world');
+    
     if (World != undefined) {
+      if (World.shadow.follow){
+        let distance = vec3.length(World.shadow.volume) / 6;
+        if (vec3.distance(Module.controls.target, World.shadow.center) > distance){
+          scene.setShadowsVolumeCenter(...Module.controls.target);
+          World.shadow.center = [...Module.controls.target]
+        }
+      }
       if (!World.transparent || !Module['canvas']) {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';

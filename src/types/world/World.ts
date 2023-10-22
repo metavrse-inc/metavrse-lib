@@ -15,6 +15,9 @@ export type Shadow = {
   position: Vector3;
   fov: boolean;
   texture: TextureResolution;
+  volume: Vector3;
+  center: Vector3;
+  follow: boolean;
 };
 
 export type World = {
@@ -27,6 +30,7 @@ export type World = {
   dpr: number;
   fps: number;
   fxaa: number;
+  texture_level: number;
   orientation: number;
   hudscale: number;
   css: CherryKey;

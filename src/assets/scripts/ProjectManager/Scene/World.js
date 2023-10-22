@@ -103,12 +103,30 @@ module.exports = (payload) => {
       d['shadow'] && d['shadow']['fov'] != undefined
         ? d['shadow']['fov']
         : false,
+        
+    'shadow-volume':
+      d['shadow'] && d['shadow']['volume'] != undefined
+        ? [...d['shadow']['volume']]
+        : [50, 50, 50],
+
+    'shadow-center':
+      d['shadow'] && d['shadow']['center'] != undefined
+        ? [...d['shadow']['center']]
+        : [0,0,0],
+
+    'shadow-follow':
+      d['shadow'] && d['shadow']['follow'] != undefined
+        ? d['shadow']['follow']
+        : false,
 
     controller: d['controller'] || '',
     dpr: d['dpr'] !== undefined ? d['dpr'] : 0.25,
     fps: d['fps'] !== undefined ? d['fps'] : 30,
     fxaa: d['fxaa'] !== undefined ? d['fxaa'] : 1,
     // "camera": ""
+
+    texture_level: d['texture_level'] !== undefined ? d['texture_level'] : 1, // 0 - high, 1 - low
+
 
     orientation: d['orientation'] !== undefined ? d['orientation'] : 0,
     hudscale: d['hudscale'] !== undefined ? d['hudscale'] : 1,
@@ -158,6 +176,7 @@ module.exports = (payload) => {
     return object.links.get(prop);
   };
 
+  let skipRedraw = new Map();
   const setProperty = (prop, value, key) => {
     if (key == undefined) {
       world[prop] = value;
@@ -192,7 +211,9 @@ module.exports = (payload) => {
 
     object.links.set(prop, buckets);
 
-    addToRedraw(prop);
+    if (!skipRedraw.has(prop)) addToRedraw(prop);
+    
+    skipRedraw.delete(prop)
   };
 
   const removeLink = (prop, key) => {
@@ -274,6 +295,17 @@ module.exports = (payload) => {
           v = getLastValueInMap(getProperties(row.type));
           scene.enableShadowsFOV(v);
           break;
+
+        case 'shadow-volume':
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setShadowsVolumeExtent(v[0], v[1], v[2]);
+          break;
+
+        case 'shadow-center':
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setShadowsVolumeCenter(v[0], v[1], v[2]);
+          break;
+
         case 'hudscale':
           v = getLastValueInMap(getProperties(row.type));
           Module.screen.hudscale = v;
@@ -396,6 +428,9 @@ module.exports = (payload) => {
   setProperty('shadow-position', world['shadow-position']);
   setProperty('shadow-texture', world['shadow-texture']);
   setProperty('shadow-fov', world['shadow-fov']);
+  setProperty('shadow-volume', world['shadow-volume']);
+  setProperty('shadow-center', world['shadow-center']);
+  setProperty('shadow-follow', world['shadow-follow']);
 
   setProperty('color', world.color);
   setProperty('transparent', world.transparent);
@@ -407,6 +442,7 @@ module.exports = (payload) => {
   setProperty('fxaa', world.fxaa);
   setProperty('css', world.css);
   setProperty('hudscale', world.hudscale);
+  setProperty('texture_level', world.texture_level);
 
   setProperty('physics_debug_level', world.physics_debug_level);
   setProperty('fov_size', world.fov_size);
@@ -507,6 +543,36 @@ module.exports = (payload) => {
         setProperty('shadow-fov', v);
       },
     },
+
+    volume: {
+      get: () => {
+        return getProperty('shadow-volume')[1];
+      },
+      set: (v) => {
+        setProperty('shadow-volume', v);
+      },
+    },
+
+    center: {
+      get: () => {
+        return getProperty('shadow-center')[1];
+      },
+      set: (v) => {
+        if (getProperty('shadow-follow')[1]) skipRedraw.set('shadow-center', true);
+        setProperty('shadow-center', v);
+      },
+    },
+
+    follow: {
+      get: () => {
+        return getProperty('shadow-follow')[1];
+      },
+      set: (v) => {
+        skipRedraw.set('shadow-follow', true);
+        setProperty('shadow-follow', v);
+      },
+    },
+
   });
 
   // Props and Methods
@@ -573,6 +639,17 @@ module.exports = (payload) => {
         setProperty('fxaa', v);
       },
     },
+
+    texture_level: {
+      get: () => {
+        return getProperty('texture_level')[1];
+      },
+      set: (v) => {
+        skipRedraw.set('texture_level', true);
+        setProperty('texture_level', v);
+      },
+    },
+
     hudscale: {
       get: () => {
         return getProperty('hudscale')[1];
