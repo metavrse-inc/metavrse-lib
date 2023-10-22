@@ -4,7 +4,7 @@
 const surface = Module.getSurface();
 const scene = surface.getScene();
 
-var { mat4 } = Module.require('assets/gl-matrix.js'); // deprecating
+var { mat4, vec3 } = Module.require('assets/gl-matrix.js'); // deprecating
 
 Module.animationids = {};
 Module.ProjectManager = Module.require(
