@@ -231,7 +231,7 @@ export const handleRemoveChangeListener = (
 ): void => {
   const object = viewer.ProjectManager.getObject(key);
 
-  if (object) {
+  if (object && object.removeChangeListener) {
     object.removeChangeListener((type: UpdateTypes) => {
       updateGizmo(type)
     });
@@ -245,7 +245,7 @@ export const handleAddChangeListener = (
 ): void => {
   const object = viewer.ProjectManager.getObject(key);
 
-  if (object) {
+  if (object && object.addChangeListener) {
     object.addChangeListener((type: UpdateTypes) => {
       updateGizmo(type)
     });

@@ -18,7 +18,7 @@ module.exports = (payload) => {
 
   const surface = Module.getSurface();
   const scene = surface.getScene();
-  const { mat4, vec3 } = Module.require('assets/gl-matrix.js');
+  const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
 
   const getLastItemInMap = (map) => Array.from(map)[map.size - 1];
   const getLastKeyInMap = (map) => Array.from(map)[map.size - 1][0];
@@ -94,7 +94,7 @@ module.exports = (payload) => {
     'shadow-position':
       d['shadow'] && d['shadow']['position'] != undefined
         ? [...d['shadow']['position']]
-        : [1, 1, 2],
+        : [0, 0, 0],
     'shadow-texture':
       d['shadow'] && d['shadow']['texture'] != undefined
         ? [...d['shadow']['texture']]
@@ -118,6 +118,16 @@ module.exports = (payload) => {
       d['shadow'] && d['shadow']['follow'] != undefined
         ? d['shadow']['follow']
         : false,
+
+    'shadow-direction':
+      d['shadow'] && d['shadow']['direction'] != undefined
+        ? [...d['shadow']['direction']]
+        : [0, 0, 0],
+
+    'shadow-rotation':
+      d['shadow'] && d['shadow']['rotation'] != undefined
+        ? [...d['shadow']['rotation']]
+        : [0, 0, 0],
 
     controller: d['controller'] || '',
     dpr: d['dpr'] !== undefined ? d['dpr'] : 0.25,
@@ -146,6 +156,8 @@ module.exports = (payload) => {
   };
 
   let liveData = JSON.parse(JSON.stringify(world));
+
+  let shadow_rotation = quat.create();
 
   let object = {
     item: {
@@ -284,8 +296,23 @@ module.exports = (payload) => {
           scene.enableShadows(v);
           break;
         case 'shadow-position':
+          // anchor position for day-light shadow
+          // v = getLastValueInMap(getProperties(row.type));
+          // scene.setShadowsLightLocation(v[0], v[1], v[2]);
+          break;
+        case 'shadow-direction':
           v = getLastValueInMap(getProperties(row.type));
           scene.setShadowsLightDirection(v[0], v[1], v[2]);
+          break;
+        case 'shadow-rotation':
+          v = getLastValueInMap(getProperties(row.type));
+          
+          // euler angles
+          quat.fromEuler(shadow_rotation, ...v);
+          let f = [0,0,-1];
+          vec3.transformQuat(f, f, shadow_rotation);
+
+          scene.setShadowsLightDirection(f[0], f[1], f[2]);
           break;
         case 'shadow-texture':
           v = getLastValueInMap(getProperties(row.type));
@@ -431,6 +458,8 @@ module.exports = (payload) => {
   setProperty('shadow-volume', world['shadow-volume']);
   setProperty('shadow-center', world['shadow-center']);
   setProperty('shadow-follow', world['shadow-follow']);
+  // setProperty('shadow-direction', world['shadow-direction']);
+  setProperty('shadow-rotation', world['shadow-rotation']);
 
   setProperty('color', world.color);
   setProperty('transparent', world.transparent);
@@ -570,6 +599,24 @@ module.exports = (payload) => {
       set: (v) => {
         skipRedraw.set('shadow-follow', true);
         setProperty('shadow-follow', v);
+      },
+    },
+
+    direction: {
+      get: () => {
+        return getProperty('shadow-direction')[1];
+      },
+      set: (v) => {
+        setProperty('shadow-direction', v);
+      },
+    },
+
+    rotation: {
+      get: () => {
+        return getProperty('shadow-rotation')[1];
+      },
+      set: (v) => {
+        setProperty('shadow-rotation', v);
       },
     },
 

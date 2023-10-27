@@ -13,6 +13,8 @@ export type Shadow = {
   level: number;
   enabled: boolean;
   position: Vector3;
+  rotation: Vector3;
+  direction: Vector3;
   fov: boolean;
   texture: TextureResolution;
   volume: Vector3;

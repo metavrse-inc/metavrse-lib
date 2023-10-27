@@ -18,4 +18,5 @@ export type TreeNodeType =
   | 'object-group-link'
   | 'video-link'
   | 'HTMLElement-link'
-  | 'camera';
+  | 'camera'
+  | 'world';
