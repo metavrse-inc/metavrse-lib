@@ -16,10 +16,11 @@ export const worldDefaults: World = {
     position: [0, 0, 0],
     fov: false,
     texture: [2048, 2048],
-    volume: [50,50,50],
-    center: [0,0,0],
-    follow: false
-
+    volume: [50, 50, 50],
+    center: [0, 0, 0],
+    follow: false,
+    rotation: [0,0,0],
+    direction: [0,0,0]
   },
   controller: '',
   dpr: 0,
