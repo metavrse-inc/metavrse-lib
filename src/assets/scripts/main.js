@@ -6,7 +6,21 @@ const scene = surface.getScene();
 
 var { mat4, vec3 } = Module.require('assets/gl-matrix.js'); // deprecating
 
-Module.animationids = {};
+Module.animations = {
+  ids : 1,
+  fns : new Map(),
+  timeouts: new Map(),
+}
+
+Module.animations['cancelAnimationFrame'] = (id)=> { Module.animations.fns.delete(id); };
+Module.animations['requestAnimationFrame'] = (fn)=> {
+  const id = ++Module.animations.ids;
+  Module.animations.fns.set(id, fn);
+  return id;
+}
+
+let requestAnimationFrame = Module.animations['requestAnimationFrame'];
+
 Module.ProjectManager = Module.require(
   'assets/ProjectManager/ProjectManager.js'
 )();
@@ -206,6 +220,17 @@ let _render = function (t) {
   if (xx != 0){
     // requestAnimationFrame(_render);
     return;
+  }
+
+  let local_redraws = new Map(Module.animations.fns);
+  Module.animations.fns.clear();
+
+  for (var [aid, fn] of local_redraws){
+    try {
+      fn(now);
+    } catch (error) {
+      
+    }
   }
 
   let currentFps = 1000/Module['fps']['delta'];
@@ -423,9 +448,7 @@ Module.onDestroy = function () {
   if (Module.Handlers && typeof Module.Handlers.onDestroy === 'function')
     Module.Handlers.onDestroy();
 
-  Object.keys(Module.animationids).forEach((key) => {
-    cancelAnimationFrame(key);
-  });
+  Module.animations.fns.clear();
 };
 
 Module.onMouseEvent = function (event, button, x, y) {
@@ -584,21 +607,25 @@ Module.onKeyEvent = function (
   metaKey,
   repeat
 ) {
-  let event = { type, key, code, shiftKey, ctrlKey, altKey, metaKey, repeat };
+  let run = ()=>{
+    let event = { type, key, code, shiftKey, ctrlKey, altKey, metaKey, repeat };
 
-  var res = true;
-  if (
-    Module.ProjectManager.projectRunning &&
-    Module.ProjectManager.worldController &&
-    typeof Module.ProjectManager.worldController.onKeyEvent === 'function'
-  )
-    res = Module.ProjectManager.worldController.onKeyEvent(event);
-  else if (
-    !Module.ProjectManager.projectRunning &&
-    Module.Handlers &&
-    typeof Module.Handlers.onKeyEvent === 'function'
-  )
-    Module.Handlers.onKeyEvent(event);
+    var res = true;
+    if (
+      Module.ProjectManager.projectRunning &&
+      Module.ProjectManager.worldController &&
+      typeof Module.ProjectManager.worldController.onKeyEvent === 'function'
+    )
+      res = Module.ProjectManager.worldController.onKeyEvent(event);
+    else if (
+      !Module.ProjectManager.projectRunning &&
+      Module.Handlers &&
+      typeof Module.Handlers.onKeyEvent === 'function'
+    )
+      Module.Handlers.onKeyEvent(event);
+  }
+
+    requestAnimationFrame(run);
 };
 
 Module.onTextureCallback = (status) => {

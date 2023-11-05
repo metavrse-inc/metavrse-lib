@@ -30,6 +30,8 @@ module.exports = (payload) => {
     let onUpdate = null;
     let updateHandlers = new Map();
 
+    let requestAnimationFrame = Module.animations['requestAnimationFrame'];
+
     const getFile = (file, buffer) => {
         try {
             const archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
@@ -94,12 +96,15 @@ module.exports = (payload) => {
 
     const deleteBody = ()=> {
         try {
-            if (body == null || characterController == null) return;
-            PhysicsWorld.removeCollisionObject(body);
-            PhysicsWorld.removeAction(characterController)
-            Ammo.destroy(characterController)
-            Ammo.destroy(body)
+            if (geometry) Ammo.destroy(geometry); geometry = null;
+            if (TRANSFORM_AUX) Ammo.destroy(TRANSFORM_AUX); TRANSFORM_AUX = null;
+            if (updateMath.btScales) Ammo.destroy(updateMath.btScales); updateMath.btScales = null;
+            if (updateMath.btTransform) Ammo.destroy(updateMath.btTransform); updateMath.btTransform = null;
             
+            if (characterController) PhysicsWorld.removeAction(characterController)
+            if (body) PhysicsWorld.removeCollisionObject(body);
+            Ammo.destroy(characterController); characterController = null;
+            Ammo.destroy(body); body = null;
         } catch (error) {
             
         }
@@ -112,13 +117,7 @@ module.exports = (payload) => {
 
         if (parent) parent.children.delete(child.key);
 
-        // if (Physics.isResetting){
-            deleteBody();
-        // }else{
-        //     setTimeout(()=>{
-        //         deleteBody();
-        //     });
-        // }
+        requestAnimationFrame(deleteBody);
     }
     
     var geometry;
@@ -207,7 +206,7 @@ module.exports = (payload) => {
                     }
 
                     let om = scene.getObjectGeometry(shapePath + "@" + o.zip_id);
-                    const mesh = new Ammo.btTriangleMesh(false, false);
+                    let mesh = new Ammo.btTriangleMesh(false, false);
                     let triangles = om.triangles;
                     let verts = om.vertices;
                     
@@ -232,6 +231,9 @@ module.exports = (payload) => {
                         }
     
                         geometry = new Ammo.btBvhTriangleMeshShape(mesh);
+
+                        // Ammo.destroy(mesh);
+                        mesh = null;      
                         
                         // don't break on error, run default
                         break;
@@ -506,9 +508,12 @@ module.exports = (payload) => {
 
             var angle = Math.acos(normal.y())
             
-            onGround = !isGhost && angle == 0;
+            onGround = !isGhost && angle < 0.1;
         }
 
+        Ammo.destroy(rayResult)
+
+        rayResult = null;
 
         if (!onGround) {
             characterController.setGravity(characterGravity);

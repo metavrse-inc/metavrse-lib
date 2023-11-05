@@ -134,7 +134,7 @@ module.exports = (opt) => {
         opt.camera.setAngleX(thetaDegrees);
         opt.camera.setAngleY(-phiDegrees);
 
-        console.log([thetaDegrees,phiDegrees])
+        // console.log([thetaDegrees,phiDegrees])
 
         // var a = getAngleBetweenVertices(opt.camera.m_lookatPos, v);
         // opt.camera.setAngleY(a.y);

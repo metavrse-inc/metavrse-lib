@@ -61,12 +61,7 @@ module.exports = () => {
           : 1;
       Module['pixelDensity'] = 1 + (dpr - 1) * 0.5;
 
-      Object.keys(Module.animationids).forEach((key) => {
-        try {
-          cancelAnimationFrame(key);
-        } catch (error) {}
-      });
-      Module.animationids = {};
+      Module.animations.fns.clear();
 
       for (let [key, media] of Module.videoids) {
         try {

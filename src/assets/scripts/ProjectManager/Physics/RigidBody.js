@@ -27,6 +27,8 @@
 
     let updateHandlers = new Map();
 
+    let requestAnimationFrame = Module.animations['requestAnimationFrame'];
+
     const getFile = (file, buffer) => {
         try {
             const archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
@@ -89,9 +91,17 @@
 
     const deleteBody = ()=> {
         try {
-            if (body == null) return;
-            PhysicsWorld.removeRigidBody(body);
-            Ammo.destroy(body);
+            if (body){
+                PhysicsWorld.removeRigidBody(body);
+                Ammo.destroy(body);
+                body = null;
+            }
+
+            if (geometry) Ammo.destroy(geometry); geometry = null;
+            if (TRANSFORM_AUX) Ammo.destroy(TRANSFORM_AUX); TRANSFORM_AUX = null;
+            if (updateMath.btScales) Ammo.destroy(updateMath.btScales); updateMath.btScales = null;
+            if (updateMath.btTransform) Ammo.destroy(updateMath.btTransform); updateMath.btTransform = null;
+
             
         } catch (error) {
             
@@ -104,10 +114,10 @@
         Physics.removeUpdate(child.key);
 
         // if (Physics.isResetting){
-            deleteBody();        
+            // Physics.addFn(deleteBody);        
         // }else{
         //     setTimeout(()=>{
-        //         deleteBody();        
+            requestAnimationFrame(deleteBody);        
         //     });
         // }
 
@@ -119,7 +129,9 @@
     let center = {f1:0,f2:0,f3:0}
     const addObject = (args) => {
         try {
-            _addObject(args)
+            // Physics.addFn(()=>{                
+                _addObject(args);
+            // })
         } catch (error) {
         }
     }
@@ -196,7 +208,7 @@
 
                     let om = scene.getObjectGeometry(shapePath + "@" + o.zip_id);
 
-                    const mesh = new Ammo.btTriangleMesh(false, false);
+                    let mesh = new Ammo.btTriangleMesh(false, false);
                     let triangles = om.triangles;
                     let verts = om.vertices;
                     
@@ -221,6 +233,8 @@
                         }
     
                         geometry = new Ammo.btBvhTriangleMeshShape(mesh);
+                        // Ammo.destroy(mesh);
+                        mesh = null;            
                      
                         // don't break on error, run default
                         break;

@@ -15,6 +15,8 @@ module.exports = (opt) => {
 
   var loadingBar;
 
+  let requestAnimationFrame = Module.animations['requestAnimationFrame'];
+
   const validURL = (str) => {
     var pattern = new RegExp(
       '^(https?:\\/\\/)?' + // protocol

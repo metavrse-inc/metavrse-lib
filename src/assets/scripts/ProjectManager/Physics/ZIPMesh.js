@@ -4,45 +4,15 @@
  */
  module.exports = (payload) => {
     const Physics = payload.Physics;
-    const Ammo = Physics.ZIP_Ammo;
-    const PhysicsWorld = Physics.ZIP_PhysicsWorld;
-    const CollisionFlags = Physics.CollisionFlags;
 
     let child = payload.child;
     let parent = payload.parent;
-    const redrawAddMethod = payload.addToRedraw;
-    let sceneprops = payload.sceneprops;
-    let scaleT = 0.1;
 
     var _d = payload.data;
 
-    const surface = Module.getSurface();
-    const scene = surface.getScene();
     const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
-    const { quaternionToEuler } = Module.require('assets/ProjectManager/Physics/helpers.js');
 
-    let renderList = [];
     let body = null;
-
-    const getFile = (file, buffer) => {
-        try {
-            const archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
-            var _f;
-            if (file.includes("assets/")) {
-                _f = surface.readBinary(file);
-            } else if (!scene.hasFSZip()) {
-                _f = surface.readBinary(Module.ProjectManager.path + file);
-            } else {
-                _f = archive.fopen(file);
-            }
-
-            if (buffer) return _f;
-            return new TextDecoder("utf-8").decode(_f);
-        } catch (e) {
-            return
-        }
-
-    }
 
     var render = () => { }; // header declaration
 
@@ -71,40 +41,11 @@
     }
 
 
-    const deleteBody = ()=> {
-        try {
-            if (body == null) return;
-            PhysicsWorld.removeCollisionObject(body);
-            Ammo.destroy(body);
-        } catch (error) {
-            
-        }
-    }
-
     const remove = ()=> {
         if (parent) parent.children.delete(child.key);
         Physics.removeUpdate(child.key);
-        
-        if (Physics.isResetting){
-            try {
-                deleteBody();
-            } catch (error) {
-                
-            }
-        }else{
-            setTimeout(()=>{
-                try {
-                    deleteBody();
-                } catch (error) {
-                    
-                }
-            });
-        }
     }
     
-    let _object = null;
-    var geometry;
-    var so = null;
     const addObject = (args) => {
         try {
             _addObject(args)
@@ -143,40 +84,12 @@
         mat4.fromRotationTranslation(object.matrix, q, positionOriginal);
         
         mat4.translate(m, m, position);
-        
-        q = args.q || q;
-        key = args.key || key;
-  
-        geometry = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
-        vec3.multiply(size, size, scales)
-        geometry.setLocalScaling(new Ammo.btVector3(...size));
-  
-        var transform = new Ammo.btTransform();
-        transform.setFromOpenGLMatrix(m);
-
-        body = new Ammo.btPairCachingGhostObject();
-        body.setCollisionShape(geometry);
-        body.setWorldTransform(transform);
-        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_KINEMATIC_OBJECT);
-        body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE);
-        // body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
-        body.setUserIndex(object.idx);
-  
-        PhysicsWorld.addCollisionObject(body, 16);
 
         Module.ProjectManager.isDirty = true;
-  
-     }
+
+    }
 
     var isLoaded = false;
-    let TRANSFORM_AUX = null;
-
-    let reAddTimer = null;
-    let reAdd = ()=> {
-        deleteBody();
-        isLoaded = false;
-        render();
-    };
 
     let updateMath = {
         scales: vec3.create(),
@@ -199,26 +112,10 @@
         opts = opts || {};
         if (!isLoaded){
             isLoaded = true;
-            TRANSFORM_AUX = new Ammo.btTransform();
-            updateMath.btScales = new Ammo.btVector3();
-            updateMath.btTransform = new Ammo.btTransform();
 
-            if (Physics.isResetting){
-                try {
-                    addObject(payload)
-                } catch (error) {
-                    
-                }
-            }else{
-                setTimeout(()=>{
-                    try {
-                        addObject(payload)
-                    } catch (error) {
-                        
-                    }
-                });
-            }
-        } else if (isLoaded && body) {
+            addObject(payload);
+
+        } else if (isLoaded) {
             if (opts.transform ) {
                 let scales = updateMath.scales;
                 mat4.getScaling(scales, opts.transform)
@@ -234,24 +131,9 @@
                     object.center[1] * scales[1], 
                     object.center[2] * scales[2])
 
-                let m4 = updateMath.m4;
+                let m4 = object.matrix;
                 mat4.fromRotationTranslation(m4, q, position);
                 mat4.translate(m4, m4, positionMesh);
-
-                let extent = object.extent;
-                let size = [extent[0], extent[1], extent[2]]
-                vec3.multiply(size, size, scales)
-
-
-                let sc = updateMath.btScales;
-                sc.setValue(...size)
-                geometry.setLocalScaling(sc);
-
-                let moveTransform = body.getWorldTransform();
-                moveTransform.setFromOpenGLMatrix(m4);
-                body.setWorldTransform(moveTransform);
-            // } else if (opts.transform){
-                // reAdd();
             }
         }
     }
@@ -260,10 +142,83 @@
         
     }
 
-    // add to physics world
-    // if (scene.getObject(payload.parent.item.key)){
-        render();            
-    // }
+    const getDebugLines = ()=> {
+        let TheColors = [];
+        let TheLines = [];
+        let TheLinesCount = 0;
+        let TheColorsCount = 0;
+        let m4 = object.matrix;
+        let extent = [...object.extent];
+
+        let q = [0,0,0,0];
+        let p = [0,0,0];
+        let s = [1,1,1];
+        mat4.getRotation(q, m4);
+        mat4.getTranslation(p, m4);
+        mat4.getScaling(s, m4);
+
+        vec3.multiply(s, s, extent);
+        vec3.multiply(s, s, [0.5,0.5,0.5]);
+
+        let tris = [];
+        tris.push([[-1,-1,-1],[-1,1,-1]]);
+        tris.push([[-1,-1,-1],[1,-1,-1]]);
+        tris.push([[-1,-1,-1],[-1,-1,1]]);
+
+        tris.push([[-1,1,1],[1,1,1]]);
+        tris.push([[-1,1,1],[-1,1,-1]]);
+        tris.push([[-1,1,1],[-1,-1,1]]);
+
+        tris.push([[1,-1,1],[-1,-1,1]]);
+        tris.push([[1,-1,1],[1,1,1]]);
+        tris.push([[1,-1,1],[1,-1,-1]]);
+
+        tris.push([[1,1,-1],[1,1,1]]);
+        tris.push([[1,1,-1],[-1,1,-1]]);
+        tris.push([[1,1,-1],[1,-1,-1]]);
+
+        let r = 0;
+        let g = 0;
+        let b = 255;
+        
+        let addLine = (from, to)=> {
+            TheLines.push(...from, ...to);
+            TheLinesCount += 2;
+    
+            var colorFrom = [r, g, b];
+            var colorTo = [r, g, b];
+            TheColors.push(...colorFrom, ...colorTo);
+            TheColorsCount += 2;
+        }
+
+        for (var line of tris){
+            let from = [...line[0]];
+            let to = [...line[1]];
+            
+            vec3.transformQuat(from, from, q);
+            vec3.multiply(from, from, s);
+            vec3.add(from, from, p);
+
+            vec3.transformQuat(to, to, q);
+            vec3.multiply(to, to, s);
+            vec3.add(to, to, p);
+
+            // vec3.transformMat4(from, from, m4)
+            // vec3.transformMat4(to, to, m4)
+
+            addLine(from, to);
+        }
+
+        return {
+            TheColors,
+            TheLines,
+            TheLinesCount,
+            TheColorsCount
+        }
+
+    }
+
+    render();            
     // console.log(payload)
 
     // add to parent
@@ -278,7 +233,8 @@
     Object.assign(object, {
         remove,
         render,
-        update
+        update,
+        getDebugLines
     })
 
     return object;

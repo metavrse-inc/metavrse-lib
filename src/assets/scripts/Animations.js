@@ -29,16 +29,12 @@ module.exports = () => {
         easeInOutQuint: function (t) { return t < .5 ? 16 * t * t * t * t * t : 1 + 16 * (--t) * t * t * t * t }
     }
 
-    var setRequestId = (id, add)=>{
-        if (!Module.animationids) Module.animationids = {};
-        if (add) Module.animationids[id] = 1;
-        else delete Module.animationids[id];
-    }
-
     var getSessionType = ()=> {
-        if (Module.xrSession) return Module.xrSession;
+        // if (Module.xrSession) return Module.xrSession;
         
-        return window;
+        // return window;
+
+        return Module.animations
     }
 
     var create = (opt) => {
@@ -63,13 +59,13 @@ module.exports = () => {
 
         var animate = (t) => {
             if (animation.state != "playing") {
-                getSessionType().cancelAnimationFrame(animation.req);
-                setRequestId(animation.req, false);
+                // getSessionType().cancelAnimationFrame(animation.req);
+                // setRequestId(animation.req, false);
                 return;
             }
 
             // t always starts at 0, using real ms timestamp instead
-            var time = new Date().getTime();
+            var time = t;
             if (!animation.start) {
                 if (animation.time != 0) animation.start = time - (animation.duration * animation.time);
                 else animation.start = time;
@@ -88,8 +84,8 @@ module.exports = () => {
                 if (animation.loop == 0 || animation.loop == animation.counter) {
                     // finished
                     if (animation.onComplete) animation.onComplete(); // animation complete
-                    getSessionType().cancelAnimationFrame(animation.req);
-                    setRequestId(animation.req, false);
+                    // getSessionType().cancelAnimationFrame(animation.req);
+                    // setRequestId(animation.req, false);
                     animation.state = "stopped";
                     animation.time = 0;    // percentage of time
                     animation.counter = 0; // loop counter
@@ -99,11 +95,11 @@ module.exports = () => {
                     animation.time = 0;
                     animation.start = undefined;
                     animation.req = getSessionType().requestAnimationFrame(animate);
-                    setRequestId(animation.req, true);
+                    // setRequestId(animation.req, true);
                 }
             } else {
                 animation.req = getSessionType().requestAnimationFrame(animate);
-                setRequestId(animation.req, true);
+                // setRequestId(animation.req, true);
             }
         }
 
@@ -111,26 +107,26 @@ module.exports = () => {
             animation.state = "playing";
             animation.start = undefined;
             animation.req = getSessionType().requestAnimationFrame(animate);
-            setRequestId(animation.req, true);
+            // setRequestId(animation.req, true);
         }
 
         var pause = () => {
             animation.state = "paused";
-            getSessionType().cancelAnimationFrame(animation.req);
-            setRequestId(animation.req, false);
+            // getSessionType().cancelAnimationFrame(animation.req);
+            // setRequestId(animation.req, false);
         }
 
         var stop = () => {
             animation.state = "stopped";
             animation.time = 0;    // percentage of time
             animation.counter = 0; // loop counter
-            getSessionType().cancelAnimationFrame(animation.req);
-            setRequestId(animation.req, false);
+            // getSessionType().cancelAnimationFrame(animation.req);
+            // setRequestId(animation.req, false);
         }
 
         var setPos = (pos) => { // 0 - 1 (percentage)
-            getSessionType().cancelAnimationFrame(animation.req);
-            setRequestId(animation.req, false);
+            // getSessionType().cancelAnimationFrame(animation.req);
+            // setRequestId(animation.req, false);
             animation.start = undefined;
             animation.time = Number(pos);
             animation.state = "paused";

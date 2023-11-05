@@ -5,47 +5,21 @@
 
  module.exports = (payload) => {
     const Physics = payload.Physics;
-    const Ammo = Physics.FOV_Ammo;
-    const PhysicsWorld = Physics.FOV_PhysicsWorld;
-    const CollisionFlags = Physics.CollisionFlags;
 
     let child = payload.child;
     let parent = payload.parent;
-    const redrawAddMethod = payload.addToRedraw;
-    let sceneprops = payload.sceneprops;
-    let scaleT = 0.1;
 
     var _d = payload.data || {};
 
     const surface = Module.getSurface();
     const scene = surface.getScene();
     const { mat4, vec3, vec4, quat } = Module.require('assets/gl-matrix.js');
-    const { quaternionToEuler } = Module.require('assets/ProjectManager/Physics/helpers.js');
 
-    let renderList = [];
-    let body = null;
-
-    const getFile = (file, buffer) => {
-        try {
-            const archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
-            var _f;
-            if (file.includes("assets/")) {
-                _f = surface.readBinary(file);
-            } else if (!scene.hasFSZip()) {
-                _f = surface.readBinary(Module.ProjectManager.path + file);
-            } else {
-                _f = archive.fopen(file);
-            }
-
-            if (buffer) return _f;
-            return new TextDecoder("utf-8").decode(_f);
-        } catch (e) {
-            return
-        }
-
-    }
+    const fovs = Physics.fovs;
 
     var render = () => { }; // header declaration
+
+    let requestAnimationFrame = Module.animations['requestAnimationFrame'];
 
     let params = {
         "lod_enabled": (_d["lod_enabled"] !== undefined) ? _d['lod_enabled'] : false,
@@ -63,60 +37,24 @@
 
     const remove = ()=> {
         isLoaded = false;
-        if (body == null) return;
-        PhysicsWorld.removeCollisionObject(body);
-        Ammo.destroy(body);
     }
     
-    let _object = null;
-    let size = [500,500,500];
     const addObject = (args) => {
         try {
             _addObject(args)
         } catch (error) {
         }
     }
-    var geometry;
     const _addObject = (args) => {
-        size = args.size;
-
-        geometry = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
-        // geometry = new Ammo.btSphereShape( size[1] * 0.5);
-        let v = [...size];
-        vec3.scale(v, v, scaleT)
-        geometry.setLocalScaling(new Ammo.btVector3(...v));
-  
-        var transform = new Ammo.btTransform();
-        transform.setIdentity();
-        transform.setOrigin(new Ammo.btVector3(0,0,0));
-        transform.setRotation(new Ammo.btQuaternion(0,0,0,1));
-
-        body = new Ammo.btPairCachingGhostObject();
-        body.setCollisionShape(geometry);
-        body.setWorldTransform(transform);
-        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_KINEMATIC_OBJECT);
-        body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE);
-        // body.setUserIndex("FOVBox");
-
-  
-        PhysicsWorld.addCollisionObject(body, 16);
+       
   
      }
 
      var setSize = (s)=> {
-        if (!geometry) return;
-
-        size = s;
-        let v = [...size];
-        vec3.scale(v, v, scaleT)
-        geometry.setLocalScaling(new Ammo.btVector3(...v));
      }
 
     var isLoaded = false;
-    let TRANSFORM_AUX = null;
-    let mov_vec3 = null;
 
-    let reAddTimer = null;
     let reAdd = ()=> {
         remove();
         isLoaded = false;
@@ -127,8 +65,6 @@
         opts = opts || {};
         if (!isLoaded){
             isLoaded = true;
-            TRANSFORM_AUX = new Ammo.btTransform();
-            mov_vec3 = new Ammo.btVector3();
 
             addObject(payload)
             // console.log('adding from FOVBox')
@@ -139,35 +75,7 @@
 
     // var moveTransform = null;
     let move = (pos)=> {
-        if (!body) return;
-
-        // if (moveTransform == null) moveTransform = new Ammo.btTransform();
-        let moveTransform = body.getWorldTransform();
-
-        // let angle = Math.atan2( Module.controls.direction[0], Module.controls.direction[2] );
-        // let qx = 0
-        // let qy = 1 * Math.sin( angle/2 )
-        // let qz = 0
-        // let qw = Math.cos( angle/2 )
-
-        // let q = quat.fromValues(qx, qy, qz, qw);
-
-        // if (Module.XRSession){
-        //     // quat.rotateY(q, q, Math.PI / 2)
-        // }
-
-        // moveTransform.setRotation(new Ammo.btQuaternion(...q));
-
-        // let target = vec3.fromValues(...Module.controls.target);
-        // let offset = vec3.fromValues(0,0,(size[2]/2) * scaleT);
-        // vec3.transformQuat(offset, offset, q);
-
-        // vec3.add(target, target, offset);
-
-        mov_vec3.setValue(...Module.controls.target);
-        moveTransform.setOrigin(mov_vec3);
-
-        body.setWorldTransform(moveTransform);
+        
     }
 
     let collisionStatus = new Map();
@@ -204,7 +112,7 @@
                         loadingMap.set(lpID, false)
                         --counter; 
                         setTimeout(() => {
-                            requestAnimationFrame(zipCB)                
+                            zipCB()
                         });
                     }
                 })
@@ -219,7 +127,8 @@
                 --counter;
                 loadingMap.set(lpID, false)
 
-                requestAnimationFrame(zipCB)                
+                zipCB();
+                // requestAnimationFrame(zipCB)                
             }, 75);
             let rec = (amt, _fn)=> {
                 if (amt > 0){
@@ -330,12 +239,7 @@
                         const parent = el.parent;
                         const _curLevel = el.lod_level;
                         const _newLevel = level;
-                        let thetaMin = (Module.fps.maxFps > 30) ? 120 : 60;
-                        let theta = thetaMin;
-
-                        theta *= (1 + camera_velocity)
-                        if (isNaN(theta) || theta == Infinity || theta <= 0 ) theta = thetaMin;
-                        if (theta > 1000) theta = 1000;
+                        let theta = (Module.fps.maxFps > 30) ? 500 : 250;
 
                         timeout = setTimeout(()=>{
                             let fn = (opts)=> {
@@ -370,7 +274,11 @@
         return isVisible;
     }
 
+    let cx = -1;
     const update = ()=> {
+        ++cx;
+        if (cx == 8) cx = 0;
+        if (cx % 8 != 0) return;
         try {
             _update();
         } catch (error) {
@@ -389,14 +297,8 @@
 
         move();
         runZipAdd();
-        var overlapping = body.getNumOverlappingObjects();
-        for (var x=0; x < overlapping; x++){
-            if (body.getNumOverlappingObjects() != overlapping) return;
-            
-            let obj = body.getOverlappingObject(x);
-            let idx = obj.getUserIndex();     
 
-            let el = Physics.get(idx)
+        for (var [idx, el] of fovs){
             try {
                 if (el.item.type == "FOVMesh"){
                     let ks = el.item.key.split("_")
@@ -421,13 +323,13 @@
                     let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
                     let key = el.item.key.replace("_"+meshid, "");
 
-                    if (!collisionStatus.has(el.item.key)){
-                        collisionStatus.set(el.item.key, {
-                            inContact: true,
-                            el,
-                            idx,
-                            meshid
-                        })
+                    // if (!collisionStatus.has(el.item.key)){
+                    //     collisionStatus.set(el.item.key, {
+                    //         inContact: true,
+                    //         el,
+                    //         idx,
+                    //         meshid
+                    //     })
 
                         let isVisible = Boolean(checkDistance(params.lod_enabled, el, meshid));
 
@@ -441,10 +343,10 @@
                         }
                         
 
-                    } else {
-                        checkDistance(params.lod_enabled, el, meshid);
-                        collisionStatus.get(el.item.key).inContact = true;
-                    }
+                    // } else {
+                    //     checkDistance(params.lod_enabled, el, meshid);
+                    //     collisionStatus.get(el.item.key).inContact = true;
+                    // }
                 }
 
                 
@@ -454,60 +356,60 @@
             }
         }
 
-        collisionStatus.forEach((value,key,map)=>
-        {
-            if (!value.inContact){
-                if (value.el.item.type == "FOVMeshObject"){
-                    let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
-                    let key = value.el.item.key.replace("_"+meshid, "");
+        // collisionStatus.forEach((value,key,map)=>
+        // {
+        //     if (!value.inContact){
+        //         if (value.el.item.type == "FOVMeshObject"){
+        //             let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
+        //             let key = value.el.item.key.replace("_"+meshid, "");
 
-                    let obj = scene.getObject(key);
-                    if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined) && obj) obj.setParameter('visible', false);
-                    if (params.lod_enabled && obj) {
-                        // let timeout = updateTimeout.get(value.el.item.key);
-                        // if (timeout) clearTimeout(timeout);
+        //             let obj = scene.getObject(key);
+        //             if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined) && obj) obj.setParameter('visible', false);
+        //             if (params.lod_enabled && obj) {
+        //                 // let timeout = updateTimeout.get(value.el.item.key);
+        //                 // if (timeout) clearTimeout(timeout);
 
-                        // // const key = value.el.item.key.replace("_"+meshid, "");
-                        // // const parent = value.el.parent;
-                        // let theta = (Module.fps.maxFps > 30) ? 2000 : 500;
+        //                 // // const key = value.el.item.key.replace("_"+meshid, "");
+        //                 // // const parent = value.el.parent;
+        //                 // let theta = (Module.fps.maxFps > 30) ? 2000 : 500;
 
-                        // timeout = setTimeout(()=>{
-                        //     let fn=(opts)=>{
-                        //         parent.setLOD(3)
-                        //         // opts.onLoaded();
-                        //     }
+        //                 // timeout = setTimeout(()=>{
+        //                 //     let fn=(opts)=>{
+        //                 //         parent.setLOD(3)
+        //                 //         // opts.onLoaded();
+        //                 //     }
 
-                        //     zipAddQue.push(fn)
-                        //     // fn();
+        //                 //     zipAddQue.push(fn)
+        //                 //     // fn();
 
-                        // }, theta)
+        //                 // }, theta)
 
-                        // updateTimeout.set(value.el.item.key, timeout)
+        //                 // updateTimeout.set(value.el.item.key, timeout)
 
-                    }
-                    // if (el.object) el.object.setParameter('visible', el.parent.visible);
-                }
-                else {
-                    if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined)) value.el.parent.mesh.set(value.meshid, "visible", false);
-                }
-                map.delete(key);
-            } else {
-                let isVisible = Boolean(checkDistance(params.lod_enabled, value.el, value.meshid));
+        //             }
+        //             // if (el.object) el.object.setParameter('visible', el.parent.visible);
+        //         }
+        //         else {
+        //             if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined)) value.el.parent.mesh.set(value.meshid, "visible", false);
+        //         }
+        //         map.delete(key);
+        //     } else {
+        //         let isVisible = Boolean(checkDistance(params.lod_enabled, value.el, value.meshid));
 
-                if (value.el.item.type == "FOVMeshObject"){
-                    let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
-                    let key = value.el.item.key.replace("_"+meshid, "");
-                    let obj = scene.getObject(key);
-                    if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined) && obj) {
-                        if (value.el.parent) obj.setParameter('visible', value.el.parent.parentOpts.visible && isVisible);
-                    }
-                }else {
-                    if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined)) value.el.parent.mesh.set(value.meshid, "visible", true);
-                }
-            }
+        //         if (value.el.item.type == "FOVMeshObject"){
+        //             let meshid = value.el.item.key.substring(value.el.item.key.lastIndexOf("_")+1);
+        //             let key = value.el.item.key.replace("_"+meshid, "");
+        //             let obj = scene.getObject(key);
+        //             if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined) && obj) {
+        //                 if (value.el.parent) obj.setParameter('visible', value.el.parent.parentOpts.visible && isVisible);
+        //             }
+        //         }else {
+        //             if (params.fov_enabled && (value.el.render_fov_visible || value.el.render_fov_visible == undefined)) value.el.parent.mesh.set(value.meshid, "visible", true);
+        //         }
+        //     }
             
-            value.inContact = false;
-        });
+        //     value.inContact = false;
+        // });
     }
 
     reAdd();

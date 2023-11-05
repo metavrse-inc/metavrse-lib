@@ -4,51 +4,17 @@
  */
  module.exports = (payload) => {
     const Physics = payload.Physics;
-    const Ammo = Physics.FOV_Ammo;
-    const PhysicsWorld = Physics.FOV_PhysicsWorld;
-    const CollisionFlags = Physics.CollisionFlags;
 
     let child = payload.child;
     let parent = payload.parent;
-    const redrawAddMethod = payload.addToRedraw;
-    let sceneprops = payload.sceneprops;
-    let scaleT = 0.1;
-
-    var _d = payload.data;
 
     const surface = Module.getSurface();
     const scene = surface.getScene();
     const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
-    const { quaternionToEuler } = Module.require('assets/ProjectManager/Physics/helpers.js');
 
-    let renderList = [];
     let body = null;
 
-    const getFile = (file, buffer) => {
-        try {
-            const archive = (Module.ProjectManager && Module.ProjectManager.archive) ? Module.ProjectManager.archive : undefined;
-            var _f;
-            if (file.includes("assets/")) {
-                _f = surface.readBinary(file);
-            } else if (!scene.hasFSZip()) {
-                _f = surface.readBinary(Module.ProjectManager.path + file);
-            } else {
-                _f = archive.fopen(file);
-            }
-
-            if (buffer) return _f;
-            return new TextDecoder("utf-8").decode(_f);
-        } catch (e) {
-            return
-        }
-
-    }
-
     var render = () => { }; // header declaration
-
-    let params = {
-        // "mass": (_d["mass"] !== undefined) ? _d['mass'] : 0,
-    };
 
     let object = {
         item: {
@@ -68,39 +34,12 @@
         children: new Map(),
     }
 
-    const deleteBody = ()=> {
-        try {
-            if (body == null) return;
-            PhysicsWorld.removeCollisionObject(body);
-            Ammo.destroy(body);
-        } catch (error) {
-            
-        }
-    }
-
     const remove = ()=> {
         if (parent) parent.children.delete(child.key);
         Physics.removeUpdate(child.key);
         
-        if (Physics.isResetting){
-            try {
-                deleteBody();
-            } catch (error) {
-                
-            }
-        }else{
-            setTimeout(()=>{
-                try {
-                    deleteBody();
-                } catch (error) {
-                    
-                }
-            });
-        }
     }
     
-    let _object = null;
-    var geometry;
     var so = null;
     const addObject = (args) => {
         try {
@@ -115,8 +54,6 @@
         if (!so) return;
 
         _object = so;
-        var mass = Number(params.mass || 0)
-        var friction = Number(args.friction || 0)
   
         if (object.item.type == "FOVMeshObject"){
             object.extents = so.getParameterVec3("extent");
@@ -158,34 +95,11 @@
         q = args.q || q;
         key = args.key || key;
   
-        geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
-        geometry.setLocalScaling(new Ammo.btVector3(...scales));
-  
-        var transform = new Ammo.btTransform();
-        transform.setFromOpenGLMatrix(m);
-
-        body = new Ammo.btPairCachingGhostObject();
-        body.setCollisionShape(geometry);
-        body.setWorldTransform(transform);
-        // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_KINEMATIC_OBJECT);
-        body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT);
-        body.setUserIndex(object.idx);
-  
-        PhysicsWorld.addCollisionObject(body, 16);
-
         Module.ProjectManager.isDirty = true;
   
      }
 
     var isLoaded = false;
-    let TRANSFORM_AUX = null;
-
-    let reAddTimer = null;
-    let reAdd = ()=> {
-        deleteBody();
-        isLoaded = false;
-        render();
-    };
 
     let updateMath = {
         scales: vec3.create(),
@@ -208,26 +122,9 @@
         opts = opts || {};
         if (!isLoaded){
             isLoaded = true;
-            TRANSFORM_AUX = new Ammo.btTransform();
-            updateMath.btScales = new Ammo.btVector3();
-            updateMath.btTransform = new Ammo.btTransform();
 
-            if (Physics.isResetting){
-                try {
-                    addObject(payload)
-                } catch (error) {
-                    
-                }
-            }else{
-                setTimeout(()=>{
-                    try {
-                        addObject(payload)
-                    } catch (error) {
-                        
-                    }
-                });
-            }
-        } else if (isLoaded && body) {
+            addObject(payload)
+        } else if (isLoaded) {
             if (opts.transform) {
                 let scales = updateMath.scales;
                 mat4.getScaling(scales, opts.transform)
@@ -243,18 +140,9 @@
                     object.center.f2 * scales[1], 
                     object.center.f3 * scales[2])
 
-                let m4 = updateMath.m4;
+                let m4 = object.matrix;
                 mat4.fromRotationTranslation(m4, q, position);
                 mat4.translate(m4, m4, positionMesh);
-
-
-                let sc = updateMath.btScales;
-                sc.setValue(...scales)
-                geometry.setLocalScaling(sc);
-
-                let moveTransform = body.getWorldTransform();
-                moveTransform.setFromOpenGLMatrix(m4);
-                body.setWorldTransform(moveTransform);
 
             }
         }

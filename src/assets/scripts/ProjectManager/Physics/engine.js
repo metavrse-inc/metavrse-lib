@@ -7,8 +7,6 @@
    const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
    const _Ammo = Module.require('assets/lib/ammo.js');
 
-   const { quaternionToEuler } = Module.require('assets/ProjectManager/Physics/helpers.js');
-
    let _physics = {};
 
    const RigidBody = Module.require('assets/ProjectManager/Physics/RigidBody.js');
@@ -30,26 +28,6 @@
    var debugDrawer;
    var debugEnabled = false;
 
-   // engine fov
-   var FOV_Ammo;
-   var FOV_collisionConfiguration;
-   var FOV_dispatcher;
-   var FOV_broadphase;
-   var FOV_solver;
-   var FOV_physicsWorld;
-   var FOV_ammoInitalised = false;
-   var FOV_debugDrawer;
-
-   // engine zip
-   var ZIP_Ammo;
-   var ZIP_collisionConfiguration;
-   var ZIP_dispatcher;
-   var ZIP_broadphase;
-   var ZIP_solver;
-   var ZIP_physicsWorld;
-   var ZIP_ammoInitalised = false;
-   var ZIP_debugDrawer;
-
    // numbers
    var gravity = -9.8;
    var scaleT = 0.1; // Scale to match our world
@@ -60,7 +38,10 @@
    var renderList = new Map(); // objects that need to be updated
    var allList = new Map(); // objects that need to be updated
    var idx2=0;
-   
+
+   var fov_objects = new Map(); // fov objects that need to be updated
+   var zip_objects = new Map(); // zip objects that need to be updated
+
    var objectIndexes = new Map();   // all physics objects
    var objectIndexes2 = new Map();   // all physics objects
 
@@ -158,48 +139,14 @@
       physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
       physicsWorld.setGravity(new Ammo.btVector3(0, Number(gravity), 0));
       physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
-      let s = physicsWorld.getSolverInfo()
-      s.m_numIterations = 100;
+      // let s = physicsWorld.getSolverInfo()
+      // s.m_numIterations = 1;
       // s.m_splitImpulse = false;
-      s.m_splitImpulsePenetrationThreshold = -5;
+      // s.m_splitImpulsePenetrationThreshold = -5;
       // s.m_splitImpulsePenetrationThreshold = -0.04;
 
-      /// fov
-      FOV_Ammo = await _Ammo(getOptions());
-      FOV_collisionConfiguration = new FOV_Ammo.btDefaultCollisionConfiguration();
-      FOV_dispatcher = new FOV_Ammo.btCollisionDispatcher(FOV_collisionConfiguration);
-      FOV_broadphase = new FOV_Ammo.btDbvtBroadphase();
-      FOV_solver = new FOV_Ammo.btSequentialImpulseConstraintSolver();
-      FOV_physicsWorld = new FOV_Ammo.btDiscreteDynamicsWorld(FOV_dispatcher, FOV_broadphase, FOV_solver, FOV_collisionConfiguration);
-      FOV_physicsWorld.setGravity(new FOV_Ammo.btVector3(0, Number(gravity), 0));
-      FOV_physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new FOV_Ammo.btGhostPairCallback());
-
-      FOV_physicsWorld.getSolverInfo().m_numIterations = 1;
-      // m_dynamicsWorld->getSolverInfo().m_solverMode |= SOLVER_ENABLE_FRICTION_DIRECTION_CACHING;  //don't recalculate friction values each frame
-	   // m_dynamicsWorld->getSolverInfo().m_numIterations = 5;                                       //few solver iterations
-      
-      
-      /// fov      
-      // console.log('Physics initialized')
-      // console.log('Gravity: ' + gravity + ' m/s');
-
-      /// ZIP
-      ZIP_Ammo = await _Ammo(getOptions());
-      ZIP_collisionConfiguration = new ZIP_Ammo.btDefaultCollisionConfiguration();
-      ZIP_dispatcher = new ZIP_Ammo.btCollisionDispatcher(ZIP_collisionConfiguration);
-      ZIP_broadphase = new ZIP_Ammo.btDbvtBroadphase();
-      ZIP_solver = new ZIP_Ammo.btSequentialImpulseConstraintSolver();
-      ZIP_physicsWorld = new ZIP_Ammo.btDiscreteDynamicsWorld(ZIP_dispatcher, ZIP_broadphase, ZIP_solver, ZIP_collisionConfiguration);
-      ZIP_physicsWorld.setGravity(new ZIP_Ammo.btVector3(0, Number(gravity), 0));
-      ZIP_physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new ZIP_Ammo.btGhostPairCallback());
-
-      ZIP_physicsWorld.getSolverInfo().m_numIterations = 1;
-      // console.log('ZIP Physics initialized')
-      
-      /// ZIP      
-
       // resusable
-      TRANSFORM_AUX = new Ammo.btTransform();
+      // TRANSFORM_AUX = new Ammo.btTransform();
 
       // var fp = Ammo.Runtime.addFunction(detectCollision);
       // physicsWorld.setInternalTickCallback(fp);
@@ -300,113 +247,11 @@
    
          physicsWorld.setDebugDrawer(debugDrawer);
 
-         /// FOV
-         FOV_debugDrawer = new FOV_Ammo.DebugDrawer();
-         FOV_debugDrawer.DebugDrawMode = 1;
-         FOV_debugDrawer.drawLine = function (from, to, color) {
-            const heap = FOV_Ammo.HEAPF32;
-            const r = heap[(color + 0) / 4];
-            const g = heap[(color + 4) / 4];
-            const b = heap[(color + 8) / 4];
-
-            const fromX = heap[(from + 0) / 4];
-            const fromY = heap[(from + 4) / 4];
-            const fromZ = heap[(from + 8) / 4];
-
-            const toX = heap[(to + 0) / 4];
-            const toY = heap[(to + 4) / 4];
-            const toZ = heap[(to + 8) / 4];
-
-            //   console.log("drawLine", from, to, color);
-            // draws a simple line of pixels between points but stores them for later draw
-            var lineFrom = [fromX, fromY, fromZ];
-            var lineTo = [toX, toY, toZ];
-            TheLines.push(...lineFrom, ...lineTo);
-            TheLinesCount += 2;
-
-            var colorFrom = [r, g, b];
-            var colorTo = [r, g, b];
-            TheColors.push(...colorFrom, ...colorTo);
-            TheColorsCount += 2;
-         };
-         FOV_debugDrawer.drawContactPoint = function (pointOnB, normalOnB, distance, lifeTime, color) {
-         //   console.log("drawContactPoint")
-         };
-         FOV_debugDrawer.reportErrorWarning = function(warningString) {
-         //   console.warn(warningString);
-         };
-         FOV_debugDrawer.draw3dText = function(location, textString) {
-         //   console.log("draw3dText", location, textString);
-         };
-         FOV_debugDrawer.setDebugMode = function(debugMode) {
-           this.DebugDrawMode = debugMode;
-         };
-         FOV_debugDrawer.getDebugMode = function() {
-           return this.DebugDrawMode;
-         };
-   
-         FOV_physicsWorld.setDebugDrawer(FOV_debugDrawer);
-         /// FOV
-
-         /// ZIP
-         ZIP_debugDrawer = new ZIP_Ammo.DebugDrawer();
-         ZIP_debugDrawer.DebugDrawMode = 1;
-         ZIP_debugDrawer.drawLine = function (from, to, color) {
-            const heap = ZIP_Ammo.HEAPF32;
-            // const r = heap[(color + 0) / 4];
-            // const g = heap[(color + 4) / 4];
-            // const b = heap[(color + 8) / 4];
-
-            const r = 0;
-            const g = 0;
-            const b = 255;
-
-            const fromX = heap[(from + 0) / 4];
-            const fromY = heap[(from + 4) / 4];
-            const fromZ = heap[(from + 8) / 4];
-
-            const toX = heap[(to + 0) / 4];
-            const toY = heap[(to + 4) / 4];
-            const toZ = heap[(to + 8) / 4];
-
-            //   console.log("drawLine", from, to, color);
-            // draws a simple line of pixels between points but stores them for later draw
-            var lineFrom = [fromX, fromY, fromZ];
-            var lineTo = [toX, toY, toZ];
-            TheLines.push(...lineFrom, ...lineTo);
-            TheLinesCount += 2;
-
-            var colorFrom = [r, g, b];
-            var colorTo = [r, g, b];
-            TheColors.push(...colorFrom, ...colorTo);
-            TheColorsCount += 2;
-         };
-         ZIP_debugDrawer.drawContactPoint = function (pointOnB, normalOnB, distance, lifeTime, color) {
-         //   console.log("drawContactPoint")
-         };
-         ZIP_debugDrawer.reportErrorWarning = function(warningString) {
-         //   console.warn(warningString);
-         };
-         ZIP_debugDrawer.draw3dText = function(location, textString) {
-         //   console.log("draw3dText", location, textString);
-         };
-         ZIP_debugDrawer.setDebugMode = function(debugMode) {
-           this.DebugDrawMode = debugMode;
-         };
-         ZIP_debugDrawer.getDebugMode = function() {
-           return this.DebugDrawMode;
-         };
-   
-         ZIP_physicsWorld.setDebugDrawer(ZIP_debugDrawer);
-         /// ZIP
-
       }
 
       addFOVBox();
       addZIPBox();
 
-      FOV_ammoInitalised = true;
-      ZIP_ammoInitalised = true;
       ammoInitalised = true;
    }
 
@@ -454,9 +299,7 @@
 
    let onGround = true;
 
-   let modA = 0; let modAT = performance.now();
-   let modB = 0; let modBT = performance.now();
-   const render = () => {
+   const render = (t) => {
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
       
@@ -465,40 +308,14 @@
       try {
          physicsWorld.stepSimulation(currentFps, 0);         
       } catch (error) {
-         // console.error(error)
+         console.error(error)
       }
       
-      let tn = performance.now();
-
-      // ZIP Physics
-      if (modA % (Module.fps.maxFps / 4) == 0){
-         try {
-            ZIP_physicsWorld.stepSimulation((tn - modAT) / 1000, 0);
-         } catch (error) {
-            // console.error(error)
-         }
-         modAT = tn;
-      }
-      modA++;
-      if (modA == (Module.fps.maxFps / 4)) modA = 0;
-
-      // LOD+FOV Physics
-      if (modB % (Module.fps.maxFps / 2) == 0){
-         try {
-            FOV_physicsWorld.stepSimulation((tn - modBT) / 1000, 0);            
-         } catch (error) {
-            // console.error(error)
-         }
-         modBT = tn;
-      }
-      modB++;
-      if (modB == (Module.fps.maxFps / 2)) modB = 0;
-
       for (var [key, _u] of renderList) {
          try {
             _u.update();            
          } catch (error) {
-            // console.error(error)
+            console.error(error)
          }
       }
 
@@ -516,8 +333,20 @@
       if (!ammoInitalised || !debugEnabled) return;
     
       physicsWorld.debugDrawWorld();
-      FOV_physicsWorld.debugDrawWorld();
-      ZIP_physicsWorld.debugDrawWorld();
+
+      for (var [idx, el] of zip_objects){
+         try {
+            if (el.getDebugLines){
+               let dl = el.getDebugLines();
+               TheLines.push(...dl.TheLines);
+               TheColors.push(...dl.TheColors);
+               TheLinesCount += dl.TheLinesCount;
+               TheColorsCount += dl.TheColorsCount;
+            }            
+         } catch (error) {
+            
+         }
+      }
       
       if (TheLines.length == 0) {
          TheLines = [];
@@ -564,141 +393,11 @@
    }
 
    const addObject = (args) => {
-      let o = args.object;
-      let key = o.item.key;
-      let so = scene.getObject(key);
-
-      var mass = Number(args.mass || 0)
-      var friction = Number(args.friction || 0)
-      var ghost = (args.ghost == undefined) ? false : Boolean(args.ghost);
-
-      let extents = so.getParameterVec3("extent");
-      let scales = vec3.create();
-      mat4.getScaling(scales, o.parentOpts.transform)
-      let size = [extents.f1 * scales[0] / scaleT, extents.f2 * scales[1] / scaleT, extents.f3 * scales[2] / scaleT]
-      let q = quat.create();
-      quat.fromEuler(q, ...o.rotate);
-
-      size = args.size || size;
-      let position = args.position || o.position;
-      q = args.q || q;
-      key = args.key || key;
-
-      var geometry;
-
-      if (args.geometry) geometry = args.geometry;
-      else{
-         geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
-         geometry.setLocalScaling(new Ammo.btVector3(scaleT, scaleT, scaleT));
-      }
-
-      var transform = new Ammo.btTransform();
-
-      if (args.transform) transform = args.transform;
-      else {
-         transform.setIdentity();
-         transform.setOrigin(new Ammo.btVector3(position[0], position[1], position[2]));
-         transform.setRotation(new Ammo.btQuaternion(q[0], q[1], q[2], q[3]));
-      }
-      
-      var motionState = new Ammo.btDefaultMotionState(transform);
-
-      var localInertia = new Ammo.btVector3(0, 0, 0);
-      geometry.calculateLocalInertia(mass, localInertia);
-
-      var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, geometry, localInertia);
-      var body = new Ammo.btRigidBody(rbInfo);
-      if (ghost) body.setCollisionFlags(CollisionFlags.CF_NO_CONTACT_RESPONSE);
-      // else if (mass == 0)
-      //    body.setCollisionFlags(CollisionFlags.CF_STATIC_OBJECT);
-
-      body.setFriction(friction);
-
-      // let idx = objectIndexes.size;
-      let physics_object = {
-         key,
-         object: o,
-         physicsBody: body,
-         inContact: false,
-         ghost,
-         mass,
-         mesh: (args.mesh != undefined) ? args.mesh : 0,
-         type: 'rigidBody'
-      };
-
-      objectIndexes.set(key, physics_object);
-      let id = ++idx;
-      body.setUserIndex(id);
-      indexKey.set(id, key);
-
-      physicsWorld.addRigidBody(body);
-
-      if (mass > 0) syncList.set(key);
-
-      physics_object['setMass'] = (mass)=> {
-         if (mass < 0) return;
-         syncList.delete(key);
-
-         physics_object.mass = mass;
-
-         body.getCollisionShape().calculateLocalInertia(mass, localInertia);
-         body.setMassProps(mass, localInertia);
-         
-         if (mass > 0) syncList.set(key);
-      }
 
    }
 
    const addGhostObject = (args) => {
-      let o = args.object;
-      let key = o.item.key;
-      let so = scene.getObject(key);
-
-      var ghost = true;
-
-      let extents = so.getParameterVec3("extent");
-      let scales = vec3.create();
-      mat4.getScaling(scales, o.parentOpts.transform)
-      let size = [extents.f1 * scales[0] / scaleT, extents.f2 * scales[1] / scaleT, extents.f3 * scales[2] / scaleT]
-      let q = quat.create();
-      quat.fromEuler(q, ...o.rotate);
-
-      var geometry;
-      if (args.shape && args.shape == "sphere"){
-         geometry = new Ammo.btSphereShape(size[0] * 0.5);
-         // geometry = new Ammo.btSphereShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
-      }else{
-         geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
-      }
-
-      geometry.setLocalScaling(new Ammo.btVector3(scaleT, scaleT, scaleT));
-
-      var transform = new Ammo.btTransform();
-      transform.setIdentity();
-      transform.setOrigin(new Ammo.btVector3(o.position[0], o.position[1], o.position[2]));
-      transform.setRotation(new Ammo.btQuaternion(q[0], q[1], q[2], q[3]));
-
-      var body = new Ammo.btPairCachingGhostObject();
-        
-      body.setCollisionShape(geometry);
-      body.setWorldTransform(transform);
-      // body.setCollisionFlags(CollisionFlags.CF_STATIC_OBJECT);
-
-      // let idx = objectIndexes.size;
-      let physics_object = {
-         object: o,
-         physicsBody: body,
-         inContact: false,
-         ghost,
-         type: 'ghostObject'
-      };
-
-      objectIndexes.set(key, physics_object);
-      let id = ++idx;
-      body.setUserIndex(id);
-      indexKey.set(id, key);
-
-      physicsWorld.addCollisionObject(body);
+      
    }
 
    const addCharacter = (args) => {
@@ -725,10 +424,15 @@
    const _reset = ()=> {
       syncList.clear();   
 
+
       for (var [key, val] of objectIndexes){
-         if (val.type=="rigidBody") physicsWorld.removeRigidBody(val.physicsBody);
-         else physicsWorld.removeCollisionObject(val.physicsBody);
-         Ammo.destroy(val.physicsBody);
+         try {
+            if (val.type=="rigidBody") physicsWorld.removeRigidBody(val.physicsBody);
+            else physicsWorld.removeCollisionObject(val.physicsBody);
+            Ammo.destroy(val.physicsBody);            
+         } catch (error) {
+            
+         }
       }
 
       for (var [key, val] of allList){
@@ -739,6 +443,8 @@
 
       renderList.clear();
       allList.clear();
+      zip_objects.clear();
+      fov_objects.clear();
 
       if (FOVBox_r) {
          renderList.set("FOVBox", FOVBox_r)
@@ -755,6 +461,15 @@
       
       idx=0;
       indexKey.clear();
+
+
+      Ammo.destroy(collisionConfiguration); collisionConfiguration = null;
+      Ammo.destroy(dispatcher); dispatcher = null;
+      Ammo.destroy(broadphase); broadphase = null;
+      Ammo.destroy(solver); solver = null;
+      Ammo.destroy(physicsWorld); physicsWorld = null;
+
+      Ammo = null;
 
       // addFOVBox();
 
@@ -778,6 +493,13 @@
       if (obj){
          if (type != "FOVMesh" && type != "FOVMeshObject" && type != "ZIPMesh") renderList.set(args.idx, obj)
          allList.set(args.idx, obj)
+
+         if (type == "FOVMesh" || type == "FOVMeshObject"){
+            fov_objects.set(args.idx, obj);
+         } else if (type == "ZIPMesh") {
+            zip_objects.set(args.idx, obj);
+         }
+
          return obj;
       }
    }
@@ -803,6 +525,9 @@
    const removeUpdate = (key)=> {
       allList.delete(key);
       renderList.delete(key);
+
+      fov_objects.delete(key);
+      zip_objects.delete(key);
       
       try {
          FOVBox_r.removeMesh(key);
@@ -891,12 +616,12 @@
       PhysicsWorld: { get: () => { return physicsWorld; }, set: (v) => {} },
       debugEnabled: { get: () => { return debugEnabled; }, set: (v) => { debugEnabled = v} },
 
-      FOV_Ammo: { get: () => { return FOV_Ammo; }, set: (v) => {} },
-      FOV_PhysicsWorld: { get: () => { return FOV_physicsWorld; }, set: (v) => {} },
-      ZIP_Ammo: { get: () => { return ZIP_Ammo; }, set: (v) => {} },
-      ZIP_PhysicsWorld: { get: () => { return ZIP_physicsWorld; }, set: (v) => {} },
       isResetting: { get: () => { return isResetting; }, set: (v) => { isResetting = v} },
       onGround: { get: () => { return onGround; }, set: (v) => { onGround = v} },
+
+      fovs: { get: () => { return fov_objects; }, set: (v) => {} },
+      zips: { get: () => { return zip_objects; }, set: (v) => {} },
+
    })
 
    return Object.assign(_physics, {
@@ -923,6 +648,6 @@
       
       reset,
       debugDraw,
-      isReady : ()=> {return (FOV_ammoInitalised && ammoInitalised)}
+      isReady : ()=> {return (ammoInitalised)},
    })
 }

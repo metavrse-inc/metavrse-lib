@@ -158,8 +158,7 @@ module.exports = (payload) => {
 
     try {
       /* code */
-      object.playAnimation(realid);
-      object.pauseAnimation();
+      object.setAnimationIndex(realid);
       object.setAnimationTime(newStart);
 
       currentSystemTime = object.getAnimationTime();
@@ -235,7 +234,7 @@ module.exports = (payload) => {
         let a_idx2 = object.getAnimationIndex();
         let a_time2 = object.getAnimationTime();
         if (a_idx != a_idx2 || a_time != a_time2) {
-          timer.stop();
+          animationTimer.stop();
           return;
         } else {
           for (let [key, handler] of animationHandlers) {

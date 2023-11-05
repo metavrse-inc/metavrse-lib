@@ -109,6 +109,8 @@ module.exports = () => {
   let ZIPLaunchKeys = [];
   let ZIPAddCallbacks = [];
 
+  let requestAnimationFrame = Module.animations['requestAnimationFrame'];
+
   // async sleep
   const sleep = (ms) => {
     return new Promise((resolve) => setTimeout(resolve, ms));

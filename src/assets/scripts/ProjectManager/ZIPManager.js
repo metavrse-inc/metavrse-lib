@@ -33,6 +33,8 @@
     const callback_list = new Map();
     // const fov_list = new Map();
 
+    let requestAnimationFrame = Module.animations['requestAnimationFrame'];
+
     const addCallback = (url, cb)=> {
         if (!callback_list.has(url)){
             callback_list.set(url, [])
