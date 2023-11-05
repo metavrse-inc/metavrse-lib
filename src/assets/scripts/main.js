@@ -387,7 +387,7 @@ let _render = function (t) {
       if (!World.transparent || !Module['canvas']) {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-        surface.render_clear(
+        if (!Module.ProjectManager.disablePaint) surface.render_clear(
           World.color[0] / 255,
           World.color[1] / 255,
           World.color[2] / 255,
@@ -396,12 +396,12 @@ let _render = function (t) {
       } else {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
-        surface.render();
+          if (!Module.ProjectManager.disablePaint) surface.render();
       }
     } else {
       if (Module['canvas'])
         Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-      surface.render_clear(0, 0, 0, 1);
+        if (!Module.ProjectManager.disablePaint) surface.render_clear(0, 0, 0, 1);
     }
 
     Module.ProjectManager.Physics.debugDraw();
@@ -415,7 +415,7 @@ let _render = function (t) {
         if (!World.transparent || !Module['canvas']) {
           if (Module['canvas'])
             Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-          surface.render_clear(
+            if (!Module.ProjectManager.disablePaint) surface.render_clear(
             World.color[0] / 255,
             World.color[1] / 255,
             World.color[2] / 255,
@@ -424,12 +424,12 @@ let _render = function (t) {
         } else {
           if (Module['canvas'])
             Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
-          surface.render();
+            if (!Module.ProjectManager.disablePaint) surface.render();
         }
       } else {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-        surface.render_clear(0, 0, 0, 1);
+          if (!Module.ProjectManager.disablePaint) surface.render_clear(0, 0, 0, 1);
       }
       renderCount++;
 

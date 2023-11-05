@@ -21,6 +21,8 @@ module.exports = () => {
   let payload = undefined;
   let projectRunning = false;
 
+  let disablePaint = false;
+
   let disableVideos = false;
 
   let published_url =  location.protocol + '//' + location.host;
@@ -418,6 +420,15 @@ module.exports = () => {
       },
       set: (v) => {
         disableVideos = v;
+      },
+    },
+
+    disablePaint: {
+      get: () => {
+        return disablePaint;
+      },
+      set: (v) => {
+        disablePaint = v;
       },
     },
   });
