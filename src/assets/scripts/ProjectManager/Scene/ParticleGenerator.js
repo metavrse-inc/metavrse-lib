@@ -1,0 +1,1895 @@
+/**
+ * Object Scenegraph Component
+ * @param {object} opt
+ */
+module.exports = (payload) => {
+  let child = payload.child;
+  let parent = payload.parent;
+  let data = payload.data;
+  let opt = payload.opt;
+  const redrawAddMethod = payload.addToRedraw;
+  const addToUpdated = payload.addToUpdated;
+  let sceneprops = payload.sceneprops;
+
+  var loadingState = 'none';
+  var loadingCallback = payload.loadingCallback;
+
+  let loadingTimeout;
+
+  if (opt && opt.ZIPElement){
+    opt.ZIPElement.setQueItem(child.key, true);
+  }
+
+  var d = data || {};
+
+  const surface = Module.getSurface();
+  const scene = surface.getScene();
+  const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
+  let requestAnimationFrame = Module.animations['requestAnimationFrame'];
+
+  const {
+    System,
+    BoxZone,
+    Color,
+    CrossZone,
+    CustomRenderer,
+    Debug,
+    Emitter,
+    Gravity,
+    Life,
+    Mass,
+    RadialVelocity,
+    Radius,
+    Rate,
+    Rotate,
+    Scale,
+    Span,
+    Vector3D,
+    ease,
+    Position,
+    SphereZone,
+    RandomDrift
+  } = Module.require('assets/lib/three-nebula.min.js');
+
+  const createZone = () => {
+    const zone = new BoxZone(600);
+  
+    zone.friction = 0.95;
+    zone.max = 7;
+  
+    return zone;
+  };
+  
+  const createEmitter = zone => {
+    const emitter = new Emitter();
+  
+    return emitter
+      .setRate(new Rate(new Span(10, 15), new Span(0.05, 0.1)))
+      .addInitializers([
+        new Mass(1),
+        new Life(1, 3),
+        new Position(new SphereZone(20)),
+        new RadialVelocity(new Span(500, 800), new Vector3D(0, 1, 0), 30),
+      ])
+      .addBehaviours([
+        new RandomDrift(10, 10, 10, 0.05),
+        new Scale(new Span(2, 3.5), 0),
+        new Gravity(6),
+        new Color('#FF0026', ['#ffff00', '#ffff11'], Infinity, ease.easeOutSine),
+      ])
+      .setPosition({ x: 0, y: -150 })
+      .emit();
+  };
+
+  // loading flag
+  let isLoading = 0;
+  const Physics = Module.ProjectManager.Physics;
+  // const Ammo = Physics.Ammo;
+  // const PhysicsWorld = Physics.PhysicsWorld;
+  // const CollisionFlags = Physics.CollisionFlags;
+
+  // const { quaternionToEuler } = Module.require('assets/ProjectManager/Physics/helpers.js');
+  // const FOVMesh = Module.require('assets/ProjectManager/Physics/FOVMesh.js');
+
+  const World = Module.ProjectManager.getObject("world") || {};
+  if (World.fov_enabled == undefined) World.fov_enabled = false;
+  if (World.lod_enabled == undefined) World.lod_enabled = false;
+
+  // helper methods
+  var Animations = Module.require('assets/Animations.js')(); // built in animation helper
+  const getDiffVec3 = (perc, a1, a2) => {
+    return [
+      perc * (a2[0] - a1[0]) + a1[0],
+      perc * (a2[1] - a1[1]) + a1[1],
+      perc * (a2[2] - a1[2]) + a1[2],
+    ];
+  };
+  const getDiffFloat = (perc, a1, a2) => {
+    return perc * (a2 - a1) + a1;
+  };
+
+  let animation_list = [];
+  let animation_size = 0;
+  let current_animation_id = 0;
+  let animationTimer = null;
+  let animationDelay = null;
+  let customAnimations = [];
+  let animationHandlers = new Map();
+
+  const getAnimationList = () => {
+    animation_list = [];
+    const object = scene.getObject(child.key);
+    if (!object) return;
+
+    const v_animations = object.getAnimations();
+    animation_size = v_animations.size();
+
+    let x = 0;
+    for (x = 0; x < animation_size; x++) {
+      let details = v_animations.get(x);
+      details.duration_ms = details.duration_ms - 1;
+      if (details.duration_ms <= 0) continue;
+      details.id = x;
+
+      animation_list.push(details);
+    }
+
+    x--;
+    for (const canimation of customAnimations) {
+      let details = v_animations.get(canimation.track);
+      if (details == undefined || details.duration_ms == 0) continue;
+      x++;
+      details.id = x;
+      details.startTime = canimation.startTime;
+      details.endTime = canimation.endTime;
+      details.reverse = canimation.reverse;
+      details.name = canimation.name;
+      details.track = canimation.track;
+
+      animation_list.push(details);
+    }
+  };
+
+  const playAnimation = (animation) => {
+    const object = scene.getObject(child.key);
+    const animation_id = animation.id;
+    if (
+      !object ||
+      animation_id == undefined ||
+      isNaN(animation_id) ||
+      animation_id >= animation_list.length
+    )
+      return;
+    for (let [key, handler] of animationHandlers) {
+      handler('onTrackChange', animation_id);
+    }
+
+    const details = animation_list[animation_id];
+
+    current_animation_id = animation_id;
+
+    let realid = details.track != undefined ? details.track : animation_id;
+
+    let realduration = details.duration_ms;
+    if (realduration <= 0) realduration = 0;
+
+    let newEnd = realduration;
+    let newStart = 0;
+
+    if (animation.end == undefined && details.endTime != undefined)
+      animation.end = details.endTime;
+    if (animation.start == undefined && details.startTime != undefined)
+      animation.start = details.startTime;
+
+    if (animation.raw) {
+      if (animation.end != undefined && animation.end >= 0)
+        newEnd = animation.end;
+      if (animation.start != undefined && animation.start >= 0)
+        newStart = animation.start;
+
+      if (animation.reverse) {
+        let tmp = newEnd;
+        newEnd = newStart;
+        newStart = tmp;
+      }
+    } else {
+      if (animation.reverse == undefined && details.reverse != undefined)
+        animation.reverse = details.reverse;
+
+      if (animation.reverse && animation.end == 0) newEnd = 0;
+      else if (animation.end > 0) newEnd = animation.end;
+
+      if (animation.start > 0) newStart = animation.start;
+      else if (animation.reverse && animation.start == 0)
+        newStart = realduration;
+    }
+
+    let reverse = newStart > newEnd;
+
+    let duration = reverse ? newStart - newEnd : newEnd - newStart;
+    // let startOffset = (reverse) ? realduration - newStart : newStart;
+
+    let currentSystemTime = 0;
+
+    try {
+      /* code */
+      object.setAnimationIndex(realid);
+      object.setAnimationTime(newStart);
+
+      currentSystemTime = object.getAnimationTime();
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (animationTimer) animationTimer.stop();
+    if (animationDelay) {
+      clearTimeout(animationDelay);
+      animationDelay = null;
+    }
+
+    animationTimer = Animations.create({
+      duration: duration,
+      loop: animation.loop != undefined ? animation.loop : 0, // -1 =  infinite loop
+      timing:
+        animation.timing != undefined
+          ? animation.timing
+          : Animations.timing.linear,
+      speed: animation.speed != undefined ? animation.speed : 1,
+      onDraw: (perc) => {
+        // 0 -1
+        let newPerc = reverse ? 1 - perc : perc;
+        let newTime = reverse
+          ? newPerc * duration + newEnd
+          : newPerc * duration + newStart;
+        let obj2 = scene.getObject(child.key);
+        if (!obj2) return;
+
+        let a_idx = obj2.getAnimationIndex();
+        let a_time = obj2.getAnimationTime();
+        if (a_idx != realid || a_time != currentSystemTime) {
+          animationTimer.stop();
+          return;
+        }
+
+        try {
+          obj2.setAnimationTime(newTime);
+        } catch (e) {
+          console.error(e);
+        }
+
+        currentSystemTime = obj2.getAnimationTime();
+
+        if (animation.onDraw) animation.onDraw(perc);
+        for (let [key, handler] of animationHandlers) {
+          handler('onDraw', perc);
+        }
+
+        Module.ProjectManager.isDirty = true;
+      },
+      onComplete: () => {
+        if (animation.onComplete) animation.onComplete();
+
+        for (let [key, handler] of animationHandlers) {
+          handler('onComplete');
+        }
+
+        Module.ProjectManager.isDirty = true;
+      },
+    });
+
+    if (
+      animation.delay != undefined &&
+      !isNaN(animation.delay) &&
+      animation.delay > 0
+    ) {
+      let a_idx = object.getAnimationIndex();
+      let a_time = object.getAnimationTime();
+
+      animationDelay = setTimeout(() => {
+        let a_idx2 = object.getAnimationIndex();
+        let a_time2 = object.getAnimationTime();
+        if (a_idx != a_idx2 || a_time != a_time2) {
+          animationTimer.stop();
+          return;
+        } else {
+          for (let [key, handler] of animationHandlers) {
+            handler('onPlay');
+          }
+          animationTimer.play();
+        }
+      }, animation.delay);
+    } else {
+      for (let [key, handler] of animationHandlers) {
+        handler('onPlay');
+      }
+      animationTimer.play();
+    }
+  };
+
+  const stopAnimation = () => {
+    if (animationTimer) animationTimer.stop();
+
+    for (let [key, handler] of animationHandlers) {
+      handler('onStop');
+    }
+  };
+  const pauseAnimation = () => {
+    if (animationTimer) animationTimer.pause();
+
+    for (let [key, handler] of animationHandlers) {
+      handler('onPause', animationTimer ? animationTimer.getPos() : undefined);
+    }
+  };
+  const resumeAnimation = () => {
+    if (animationTimer) animationTimer.play();
+
+    for (let [key, handler] of animationHandlers) {
+      handler('onResume');
+    }
+  };
+
+  const setPos = (pos) => {
+    if (animationTimer) animationTimer.setPos(pos);
+  };
+  const setTiming = (timing) => {
+    if (animationTimer) animationTimer.setTiming(timing);
+  };
+  const getPos = () => {
+    if (animationTimer) return animationTimer.getPos();
+    else return 0;
+  };
+  const getState = () => {
+    if (animationTimer) return animationTimer.getState();
+  };
+  const setDuration = (duration) => {
+    if (animationTimer) animationTimer.setDuration(duration);
+  };
+  // helper methods
+
+  let o_animation = {
+    // animations: animation_list,
+    play: playAnimation,
+    stop: stopAnimation,
+    pause: pauseAnimation,
+    resume: resumeAnimation,
+    setPos,
+    setTiming,
+    getPos,
+    getState,
+    setDuration,
+    getCurrentAnimation: ()=> { return animationTimer },
+
+    addChangeListener: (callback) => {
+      animationHandlers.set(callback, callback);
+    },
+
+    removeChangeListener: (callback) => {
+      animationHandlers.delete(callback);
+    },
+
+    clearChangeHandlers: () => {
+      animationHandlers.clear();
+    },
+  };
+
+  Object.defineProperties(o_animation, {
+    animations: {
+      get: () => {
+        return animation_list;
+      },
+      set: (v) => {},
+    },
+    track: {
+      get: () => {
+        return current_animation_id;
+      },
+      set: (v) => {},
+    },
+  });
+
+  let renderList = [];
+
+  let updateHandlers = new Map();
+
+  // removing
+  const insert = (array, value) => {};
+  const remove = (array, value) => {};
+  // removing
+
+  const getLastItemInMap = (map) => Array.from(map)[map.size - 1];
+  const getLastKeyInMap = (map) => Array.from(map)[map.size - 1][0];
+  const getLastValueInMap = (map) => Array.from(map)[map.size - 1][1];
+
+  let transformation = {
+    position: d['position'] !== undefined ? [...d['position']] : [0, 0, 0],
+    rotate: d['rotate'] !== undefined ? [...d['rotate']] : [0, 0, 0],
+    scale: d['scale'] !== undefined ? [...d['scale']] : [1, 1, 1],
+    groupMat: d['groupMat'] !== undefined ? [...d['groupMat']] : mat4.create(),
+    anchor: d['anchor'] !== undefined ? [...d['anchor']] : [0.5, 0.5, 0],
+    hud: d['hud'] !== undefined ? d['hud'] : false,
+    pivot: d['pivot'] !== undefined ? [...d['pivot']] : [0, 0, 0],
+    autoscale: d['autoscale'] !== undefined ? d['autoscale'] : 1,
+    visible: d['visible'] !== undefined ? d['visible'] : true,
+    controller: d['controller'] !== undefined ? d['controller'] : null,
+    show_shadow: true,
+    cast_shadow: true,
+    front_facing: d['front_facing'] !== undefined ? d['front_facing'] : false,
+
+    meshes: d['data'] != undefined ? JSON.parse(JSON.stringify(d['data'])) : {},
+    frame: d['frame'] !== undefined ? d['frame'] : [0, 0], // animation 0, frame 0 (ms)
+    hudscale: d['hudscale'] !== undefined ? d['hudscale'] : 1,
+    render_back_faces: d['render_back_faces'] !== undefined ? d['render_back_faces'] : true,
+    render_fov_visible: d['render_fov_visible'] !== undefined ? d['render_fov_visible'] : true,
+    render_fov_lod: d['render_fov_lod'] !== undefined ? d['render_fov_lod'] : true,
+
+    lod: 2,
+  };
+
+  customAnimations = d['animations'] !== undefined ? [...d['animations']] : [];
+
+  // console.log(payload)
+  // zips
+  let zip_id = (payload.opt && payload.opt.zip_id) ? payload.opt.zip_id : (d['zip_id'] !== undefined ? d['zip_id'] : "default");
+// console.log(zip_id)
+
+  //
+  const finalTransformation = mat4.create();
+  let finalVisibility = transformation.visible;
+  let parentOpts = {};
+
+  const axisX = vec3.fromValues(1, 0, 0);
+  const axisY = vec3.fromValues(0, 1, 0);
+  const axisZ = vec3.fromValues(0, 0, 1);
+
+  var fieldTypes = {
+    use_pbr: 'boolen',
+    ao_ratio: 'float',
+    ao_texture: 'string',
+    ao_texture_channel: 'string',
+
+    metalness_ratio: 'float',
+    metalness_texture: 'string',
+    metalness_texture_channel: 'string',
+
+    roughness_ratio: 'float',
+    roughness_texture: 'string',
+    roughness_texture_channel: 'string',
+
+    albedo_ratio: 'vec3',
+    albedo_texture: 'string',
+    albedo_video: 'string',
+
+    emissive_ratio: 'vec3',
+    emissive_texture: 'string',
+
+    diffuse_ibl_ratio: 'vec3',
+    specular_pbr_ratio: 'vec3',
+    specular_ibl_ratio: 'vec3',
+
+    //shared fields
+    normal_texture: 'string',
+    normal_ratio: 'float',
+    uv_animation: 'float',
+
+    opacity_ratio: 'float',
+    opacity_texture: 'string',
+    opacity_texture_channel: 'string',
+
+    // standard
+    ambient_ratio: 'vec3',
+    ambient_texture: 'string',
+    ambient_video: 'string',
+
+    diffuse_ratio: 'vec3',
+    diffuse_texture: 'string',
+
+    specular_ratio: 'vec3',
+    specular_texture: 'string',
+    specular_power: 'float',
+  };
+
+  const rgbs = [
+    'albedo_ratio',
+    'emissive_ratio',
+    'diffuse_pbr_ratio',
+    'diffuse_ibl_ratio',
+    'specular_pbr_ratio',
+    'specular_ibl_ratio',
+    'ambient_ratio',
+    'diffuse_ratio',
+    'specular_ratio',
+    'sheen_color_ratio',
+    'specular_glossiness_diffuse_ratio',
+    'specular_glossiness_specular_ratio',
+  ];
+
+  const textures = [
+    'ao_texture',
+    'specular_texture',
+    'metalness_texture',
+    'roughness_texture',
+    'albedo_texture',
+    'emissive_texture',
+    'normal_texture',
+    'opacity_texture',
+    'ambient_texture',
+    'diffuse_texture',
+    'clearcoat_texture',
+    'transmission_texture',
+    'sheen_color_texture',
+    'sheen_roughness_texture',
+    'specular_glossiness_texture',
+    'specular_glossiness_diffuse_texture',
+  ];
+
+  const videos = ['albedo_video', 'ambient_video'];
+
+  const pbr_bundle_textures = [
+    'ao_texture',
+    'roughness_texture',
+    'metalness_texture',
+  ];
+  const transparency_bundle_textures = [
+    'albedo_texture',
+    'diffuse_texture',
+    'opacity_texture',
+  ];
+
+  let object = {
+    parent,
+    item: {
+      type: child.type,
+      key: child.key,
+      title: child.title,
+      id: child.id,
+    },
+    transformation: {},
+    buckets: {},
+    meshdata: new Map(),
+    children: new Map(),
+
+    links: new Map(),
+    meshlinks: new Map(),
+  };
+
+  let autoscaleObject = false;
+  let autospivotObject = false;
+
+  let object_lod_paths = []
+
+  const getTransformationValues = () => {
+    const transformArray = [
+      'position',
+      'rotate',
+      'scale',
+      'anchor',
+      'hud',
+      'pivot',
+      'autoscale',
+      'groupMat',
+      'controller',
+      'hudscale',
+    ];
+
+    const vals = {};
+    for (const opt of transformArray) {
+      vals[opt] = getLastValueInMap(getProperties(opt));
+    }
+
+    return vals;
+  };
+
+  // resusable transformation params
+  let trv = {
+    m: mat4.create(),
+    piv: mat4.create(),
+    mi: mat4.create(),
+    q_rot: quat.create(),
+    scale: vec3.create(),
+    translate: vec3.create(),
+  };
+
+  const calculateTransformation = (obj) => {
+    const transform = getTransformationValues();
+
+    const globalHudScale = transform.hud ? Module.screen.hudscale : 1;
+    const localHudScale = transform.hud ? transform.hudscale : 1;
+
+    const pixelDensity =
+      transform.hud && Module.pixelDensity != undefined
+        ? Module.pixelDensity
+        : 1;
+
+    vec3.set(
+      trv.scale,
+      transform.scale[0] *
+        pixelDensity *
+        transform.autoscale *
+        localHudScale *
+        globalHudScale,
+      transform.scale[1] *
+        pixelDensity *
+        transform.autoscale *
+        localHudScale *
+        globalHudScale,
+      transform.scale[2] *
+        pixelDensity *
+        transform.autoscale *
+        localHudScale *
+        globalHudScale
+    );
+
+    vec3.set(
+      trv.translate,
+      transform.position[0] * pixelDensity * localHudScale * globalHudScale,
+      transform.position[1] * pixelDensity * localHudScale * globalHudScale,
+      transform.position[2] * pixelDensity * localHudScale * globalHudScale
+    );
+
+    let version = 1;
+
+    try {
+      version = Module.ProjectManager.project.data.version;
+    } catch (e) {
+      version = 1;
+    }
+
+    mat4.identity(trv.m);
+    mat4.identity(trv.piv);
+    mat4.identity(trv.mi);
+
+    // TODO: [MET-2226] Check semversion
+    if (version == 1) {
+      mat4.translate(trv.m, trv.m, trv.translate);
+      mat4.scale(trv.m, trv.m, trv.scale);
+      mat4.rotate(trv.m, trv.m, transform.rotate[0] * (Math.PI / 180), axisX);
+      mat4.rotate(trv.m, trv.m, transform.rotate[1] * (Math.PI / 180), axisY);
+      mat4.rotate(trv.m, trv.m, transform.rotate[2] * (Math.PI / 180), axisZ);
+    } else {
+      // let q_rot = quat.create();
+      quat.fromEuler(trv.q_rot, ...transform.rotate);
+      mat4.fromRotationTranslation(trv.m, trv.q_rot, trv.translate);
+      mat4.scale(trv.m, trv.m, trv.scale);
+    }
+
+    // pivot
+    // const piv = mat4.create();
+    // const mi = mat4.create();      // used for pivot point
+    mat4.translate(
+      trv.piv,
+      trv.piv,
+      vec3.fromValues(
+        transform.pivot[0],
+        transform.pivot[1],
+        transform.pivot[2]
+      )
+    );
+    mat4.invert(trv.mi, trv.piv); // used for pivot point
+    mat4.multiply(trv.m, trv.m, trv.mi); // used for pivot point
+
+    // group (auto matrix)
+    mat4.multiply(trv.m, transform.groupMat, trv.m);
+
+    // hud
+    if (transform.hud) {
+      obj.setParameter('hud', transform.hud);
+      obj.setParameter(
+        'hud_alignment',
+        transform.anchor[0],
+        transform.anchor[1],
+        transform.anchor[2]
+      );
+    }
+
+    mat4.copy(finalTransformation, trv.m);
+  };
+
+  const autoScale = () => {
+    let obj = scene.getObject(child.key);
+    if (obj) {
+      let extents = obj.getParameterVec3('extent');
+      let largestScale =
+        extents.f1 > extents.f2
+          ? extents.f1 > extents.f3
+            ? extents.f1
+            : extents.f3
+          : extents.f2 > extents.f3
+          ? extents.f2
+          : extents.f3;
+      const autoscale =
+        largestScale > 3 || largestScale < 1 ? 1 / largestScale : 1;
+      setProperty('autoscale', autoscale);
+    }
+  };
+
+  const autoPivot = () => {
+    let obj = scene.getObject(child.key);
+    if (obj) {
+      let center = obj.getParameterVec3('center');
+      setProperty('pivot', [center.f1, center.f2, center.f3]);
+    }
+  };
+
+  const getProperty = (prop, key) => {
+    if (!object.links.has(prop)) return [undefined, undefined];
+
+    let buckets = object.links.get(prop);
+
+    if (key != undefined && buckets.has(key)) return [key, buckets.get(key)];
+    else if (key != undefined) return [undefined, undefined];
+    else return [object.item.key, buckets.get(object.item.key)];
+  };
+
+  const getProperties = (prop) => {
+    if (!object.links.has(prop)) return undefined;
+    return object.links.get(prop);
+  };
+
+  const setProperty = (prop, value, key) => {
+    if (key == undefined) {
+      transformation[prop] = value;
+      key = object.item.key;
+
+      addToUpdated(key, isLoading < 2 ? 'loaded' : 'changed', { prop, value });
+    }
+
+    let buckets = object.links.has(prop) ? object.links.get(prop) : new Map();
+
+    let lastKey = buckets.size > 0 ? getLastKeyInMap(buckets) : key;
+
+    buckets.set(key, value);
+
+    // key is at the end of the chain already
+    if (key == lastKey) {
+    } else if (key != object.item.key) {
+      // only move links to the end
+
+      let bucket = buckets.get(key);
+      buckets.delete(key);
+
+      // reinsert at end
+      buckets.set(key, bucket);
+
+      if (lastKey != object.item.key)
+        addToUpdated(lastKey, 'changed', {
+          prop: prop + '_enabled',
+          value: false,
+        });
+    }
+
+    object.links.set(prop, buckets);
+
+    addToRedraw(prop);
+  };
+
+  const removeLink = (prop, key) => {
+    if (key == undefined || !object.links.has(prop)) return false;
+
+    let buckets = object.links.get(prop);
+
+    if (buckets.delete(key)) {
+      addToRedraw(prop);
+      return true;
+    }
+
+    return false;
+  };
+
+  // meshes
+
+  const paintedProperty = (meshid, prop) => {
+    let obj = scene.getObject(object.item.key);
+    if (obj) {
+      let type = fieldTypes[prop];
+      if (type != undefined) {
+        var tValue = undefined;
+        let an = Number(meshid);
+        let option = prop;
+        switch (type) {
+          case 'boolean':
+            tValue = Boolean(obj.getParameterBool(an, option));
+            break;
+          case 'string':
+            tValue =
+              tValue != null && tValue != ''
+                ? tValue
+                : String(obj.getParameterString(an, option));
+            break;
+          case 'float':
+            tValue = Number(
+              parseFloat(obj.getParameterFloat(an, option)).toFixed(3)
+            );
+            break;
+          case 'vec3':
+            var arr = obj.getParameterVec3(an, option);
+            if (rgbs.includes(option)) {
+              tValue = [
+                Number((arr.f1 * 255).toFixed(0)),
+                Number((arr.f1 * 255).toFixed(0)),
+                Number((arr.f1 * 255).toFixed(0)),
+              ];
+            } else {
+              tValue = [
+                Number(arr.f1.toFixed(3)),
+                Number(arr.f2.toFixed(3)),
+                Number(arr.f3.toFixed(3)),
+              ];
+            }
+
+            break;
+          default:
+        }
+
+        return tValue;
+      }
+    }
+
+    return undefined;
+  };
+
+  const getPropertyMesh = (meshid, prop, key) => {
+    meshid = String(meshid);
+
+    if (!object.meshlinks.has(meshid)) {
+      return [object.item.key, paintedProperty(meshid, prop)];
+    }
+
+    let mesh = object.meshlinks.get(meshid);
+
+    if (!mesh.has(prop)) {
+      return [object.item.key, paintedProperty(meshid, prop)];
+    }
+
+    let buckets = mesh.get(prop);
+
+    if (key != undefined && buckets.has(key)) return [key, buckets.get(key)];
+    else if (key != undefined) return [key, undefined];
+    else return [object.item.key, buckets.get(object.item.key)];
+  };
+
+  const getPropertiesMesh = (meshid, prop) => {
+    meshid = String(meshid);
+
+    if (!object.meshlinks.has(meshid)) return undefined;
+
+    let mesh = object.meshlinks.get(meshid);
+
+    if (!mesh.has(prop)) return undefined;
+
+    return mesh.get(prop);
+  };
+
+  const setPropertyMesh = (meshid, prop, value, key) => {
+    meshid = String(meshid);
+
+    let isLink = false;
+    if (key == undefined) {
+      if (transformation['meshes'][meshid] == undefined) {
+        transformation['meshes'][meshid] = {};
+      }
+
+      let meshrow = transformation['meshes'][meshid];
+
+      meshrow[prop] = value;
+      key = object.item.key;
+
+      addToUpdated(key, isLoading < 2 ? 'loaded' : 'changed', {
+        meshid,
+        prop,
+        value,
+      });
+    } else {      
+      isLink = true;
+      // we are trying to add a link check if there is a default value
+      if (transformation['meshes'][meshid] == undefined) {
+        transformation['meshes'][meshid] = {};
+      }
+
+      let meshrow = transformation['meshes'][meshid];
+
+      if (meshrow[prop] == undefined){
+        meshrow[prop] = paintedProperty(meshid, prop);
+        addToUpdated(object.item.key, 'added', {
+          meshid,
+          prop,
+          value : meshrow[prop],
+        });
+      }
+    }
+
+    let mesh = object.meshlinks.has(meshid)
+      ? object.meshlinks.get(meshid)
+      : new Map();
+
+    // if mesh links does not have a default bucket for mesh id and trying to add link
+    if (!object.meshlinks.has(meshid) && key != object.item.key) {
+      if (transformation['meshes'][meshid] == undefined) {
+        transformation['meshes'][meshid] = {};
+      }
+
+      let buckets = new Map();
+      let meshrow = transformation['meshes'][meshid];
+      // console.log(key, object.item, 'no bucket')
+      // meshrow[prop] = meshrow[prop] == undefined ? paintedProperty(meshid, prop) : meshrow[prop];
+      buckets.set(object.item.key, meshrow[prop]);
+      mesh.set(prop, buckets);
+
+      object.meshlinks.set(meshid, mesh);
+    }
+////////////////////
+    let buckets = mesh.has(prop) ? mesh.get(prop) : new Map();
+
+    // if mesh does not have a default prop and trying to add link
+    if (!mesh.has(prop) && key != object.item.key) {
+      if (transformation['meshes'][meshid] == undefined) {
+        transformation['meshes'][meshid] = {};
+      }
+
+      let meshrow = transformation['meshes'][meshid];
+      // console.log(key, object.item, 'no default prop')
+      // meshrow[prop] = meshrow[prop] == undefined ? paintedProperty(meshid, prop) : meshrow[prop];
+      buckets.set(object.item.key, meshrow[prop]);
+      mesh.set(prop, buckets);
+
+      object.meshlinks.set(meshid, mesh);
+    }
+
+    // if (isLink){
+    //   console.log('link', {meshid, prop, value, key})
+    //   return;
+    // }
+
+    buckets.set(key, JSON.parse(JSON.stringify(value)));
+////////////
+    
+
+    let lastKey = getLastKeyInMap(buckets);
+
+    // key is at the end of the chain already
+    if (key == lastKey) {
+    } else if (key != object.item.key) {
+      // only move links to the end
+
+      let bucket = buckets.get(key);
+      buckets.delete(key);
+
+      // reinsert at end
+      buckets.set(key, bucket);
+
+      if (lastKey != object.item.key)
+        addToUpdated(lastKey, 'changed', {
+          meshid,
+          prop: prop + '_enabled',
+          value: false,
+        });
+    }
+
+    mesh.set(prop, buckets);
+    object.meshlinks.set(meshid, mesh);
+
+    addToRedraw('mesh', { meshid, option: prop });
+  };
+
+  const removeLinkMesh = (meshid, prop, key) => {
+    meshid = String(meshid);
+
+    if (key == undefined || !object.meshlinks.has(meshid)) return false;
+
+    let mesh = object.meshlinks.get(meshid);
+
+    if (!mesh.has(prop)) return false;
+
+    let buckets = mesh.get(prop);
+
+    if (buckets.delete(key)) {
+      addToRedraw('mesh', { meshid, option: prop });
+      return true;
+    }
+
+    return false;
+  };
+
+  // meshes
+
+  let fov_meshes = [];
+  // let isLoading = 0;
+
+  let pendingRenderList = []; // needed only when object has not been loaded
+
+  // meshes
+  const getPathByVersion = () => {
+    if (zip_id != "default") return "files/";
+
+    if (/^\d+\.\d+\..+$/.test(sceneprops.project.data.version)) {
+      return Module.ProjectManager.path;
+    }
+    return !scene.hasFSZip() ? Module.ProjectManager.path : '';
+  };
+
+  const removeFOV =()=> {
+      for (var m of fov_meshes){
+          m.remove();
+      }
+
+      fov_meshes = [];
+  }
+
+  const toggleFOV = (isVisible)=> {
+      
+  }
+
+  const render = (opts) => {
+    try {
+      _render(opts)
+    } catch (error) {
+      
+    }
+  }
+
+  const _render = (opts) => {
+    opts = opts || {};
+    // loop renderlist and draw out
+    let obj = scene.getObject(child.key);
+    let isLoaded = true;
+    if (!obj) {
+
+      try {
+        
+        const path = !isNaN(child.id) && zip_id == "default"
+          ? Module.ProjectManager.objPaths[String(child.id)]
+          : (!isNaN(child.id) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(child.id)]: String(child.id);
+
+       
+        obj = scene.addObject(String(child.key), path + "@" + zip_id);
+
+        isLoading = 1;
+      } catch (error) {
+        if (opt && opt.ZIPElement){
+          if (loadingTimeout) clearTimeout(loadingTimeout)
+          opt.ZIPElement.setQueItem(child.key, false)
+        }
+        renderList = [];
+        return;
+      }
+
+      if (!obj) {
+        if (opt && opt.ZIPElement){
+          if (loadingTimeout) clearTimeout(loadingTimeout)
+          opt.ZIPElement.setQueItem(child.key, false)
+        }
+        renderList = [];
+        return;
+      }
+
+      obj.setParameter('visible', false);
+      isLoaded = false;
+      Module.ProjectManager.objects[String(obj.$$.ptr)] = { key: child.key };
+    }
+
+    if (obj.getStatus() == 0) {
+      if (Module.ProjectManager.launched) pendingRenderList.push(...renderList);
+      return;
+    }
+
+    if (Module.ProjectManager.launched) {
+      renderList = [...pendingRenderList, ...renderList];
+      pendingRenderList = [];
+    }
+
+    if (isLoading == 1){
+      isLoading = 2;      
+      if (opt && opt.ZIPElement){
+        if (loadingTimeout) clearTimeout(loadingTimeout)
+        opt.ZIPElement.setQueItem(child.key, false)
+      }
+      getAnimationList();
+
+      if (World.lod_enabled && transformation.render_fov_lod){
+        obj.setParameter("lod_level", transformation.lod)                                        
+      }
+
+      const system = new System();
+      const renderer = new CustomRenderer();
+      // const mesh = new THREE.Mesh(
+      //   new THREE.BoxGeometry(1, 1, 1),
+      //   new THREE.MeshNormalMaterial()
+      // );
+      const zone = createZone();
+      const emitter = createEmitter(zone);
+
+      renderer.onParticleCreated = function(p) {
+        p.target = {
+          object: obj.addInstance(),
+          mat: mat4.create(),          
+        }
+
+        mat4.fromTranslation(p.target.mat, [p.position.x, p.position.y, p.position.z])
+        mat4.multiply(p.target.mat, parentOpts.transform, p.target.mat);
+
+        p.target.object.setTransformMatrix(p.target.mat);
+
+        // p.target.position.copy(p.position);
+        // console.log("add", p)
+        // scene.add(p.target);
+      };
+
+
+      let qrot = quat.create();
+      renderer.onParticleUpdate = function(p) {
+        const scale = p.scale;
+        quat.fromEuler(qrot, p.rotation.x, p.rotation.y, p.rotation.z);
+
+        mat4.fromRotationTranslationScale(p.target.mat, qrot, [p.position.x, p.position.y, p.position.z], [scale,scale,scale])
+        mat4.multiply(p.target.mat, parentOpts.transform, p.target.mat);
+        p.target.object.setTransformMatrix(p.target.mat);
+        // p.target.position.copy(p.position);
+        // p.target.rotation.set(p.rotation.x, p.rotation.y, p.rotation.z);
+        // p.target.scale.set(scale, scale, scale);
+        Module.ProjectManager.isDirty = true;
+      };
+
+      renderer.onParticleDead = function(p) {
+        this.targetPool.expire(p.target);
+        // scene.remove(p.target);
+        // p.target.
+        // console.log("remove", p)
+
+        obj.removeInstance(p.target.object);
+
+        p.target = null;
+      };
+
+      system.addEmitter(emitter).addRenderer(renderer);
+
+      
+      let runParticles = (t)=> {        
+        requestAnimationFrame(runParticles);
+        system.update(Module['fps']['delta'] / 1000);
+      }
+
+      requestAnimationFrame(runParticles);
+    }
+
+    if (d['autoscaled']) {
+      autoScale();
+      delete d['autoscaled'];
+    }
+
+    if (d['autopivot']) {
+      autoPivot();
+      delete d['autopivot'];
+    }
+
+    if (autoscaleObject) {
+      autoscaleObject = false;
+      autoScale();
+    }
+
+    if (autospivotObject) {
+      autoPivot();
+      autospivotObject = false;
+    }
+
+    let renderTransformation = false;
+    const pbrBundle = new Map();
+    const transparencyBundle = new Map();
+    let renderVisibility = false;
+    let renderMesh = false;
+
+    let transformApplied = false;
+
+    for (var i in renderList) {
+      const row = renderList[i];
+      switch (row.type) {
+        case 'position':
+        case 'rotate':
+        case 'scale':
+        case 'groupMat':
+        case 'anchor':
+        case 'hud':
+        case 'pivot':
+        case 'autoscale':
+        case 'hudscale':
+          if (!transformApplied) {
+            calculateTransformation(obj);
+            renderTransformation = true;
+            transformApplied = true;
+          }
+          break;
+
+        case 'mesh':
+          const meshid = String(row.value.meshid);
+          const option = row.value.option;
+
+          if (!object.meshlinks.has(meshid)) continue;
+
+          const _row = object.meshlinks.get(meshid);
+
+          if (_row.has(option)) {
+            const value = getLastValueInMap(_row.get(option));
+
+            const type =
+              value == null ||
+              Object.prototype.toString.call(value) === '[object String]'
+                ? 'string'
+                : typeof value;
+
+            // for (let [key, handler] of updateHandlers) {
+            //     handler(row.type);
+            // }
+
+            if (option == 'render_back_faces') {
+              if (value > -1) {
+                obj.setParameter(Number(meshid), option, Boolean(value));
+              } else {
+                obj.setParameter(
+                  Number(meshid),
+                  option,
+                  transformation[option]
+                );
+              }
+              // console.log('mesh - render_back_faces', idx, value)
+              break;
+            }
+
+            if (option == 'enable_fov') {
+              let pho = Physics.get(child.key + '_' + meshid);
+              if (pho == undefined) break;
+              if (value > -1) {
+                pho.render_fov_visible = value;
+              } else {
+                pho.render_fov_visible = transformation['render_fov_visible'];
+              }
+
+              // console.log('mesh - render_fov_visible', idx, value)
+              break;
+            }
+
+            if (option == 'enable_lod') {
+              let pho = Physics.get(child.key + '_' + meshid);
+              if (pho == undefined) break;
+              if (value > -1) {
+                pho.render_fov_lod = value;
+              } else {
+                pho.render_fov_lod = transformation['render_fov_lod'];
+              }
+
+              // console.log('mesh - render_fov_lod', idx, value)
+              break;
+            }
+
+            if (videos.includes(option)) {
+              // get texture id from video object
+              let v = (zip_id != "default" && payload.opt && payload.opt.prefix) ? payload.opt.prefix + "_" + value : value;
+              const video = Module.ProjectManager.getObject(v);
+              if (video) {
+                const textureID =
+                  video.textureId == null || video.textureId == ''
+                    ? 0
+                    : video.textureId;
+
+                obj.setParameter(Number(meshid), option, textureID);
+              } else obj.setParameter(Number(meshid), option, 0);
+            } else if (type == 'object') {
+              if (rgbs.includes(option)) {
+                obj.setParameter(
+                  Number(meshid),
+                  option,
+                  value[0] / 255,
+                  value[1] / 255,
+                  value[2] / 255
+                );
+              } else {
+                obj.setParameter(
+                  Number(meshid),
+                  option,
+                  value[0],
+                  value[1],
+                  value[2]
+                );
+              }
+            } else {
+              if (textures.includes(option)) {
+                if (window && window.textureIgnores && window.textureIgnores.includes(option)) continue;
+                let channel = '';
+
+                if (_row.has(option + '_channel')) {
+                  var cvalue = getLastValueInMap(_row.get(option + '_channel'));
+                  channel = '_' + cvalue;
+                } else if (fieldTypes[option + '_channel']){
+                  channel = '_r';
+                }
+
+                if (pbr_bundle_textures.includes(option)) {
+                  let pbrMeshRow = {
+                    options: '',
+                    paths: '',
+                  };
+
+                  if (pbrBundle.has(meshid)) pbrMeshRow = pbrBundle.get(meshid);
+                  else pbrBundle.set(meshid, pbrMeshRow);
+
+                  let cur_path = ((value != "") ? getPathByVersion():"") + value;
+                  if (cur_path != "") cur_path += '@' + zip_id;
+
+                  pbrMeshRow.options += option + channel + ';';
+                  pbrMeshRow.paths += cur_path + ';';
+                } else if (transparency_bundle_textures.includes(option)) {
+                  let transparencyMeshRow = {
+                    options: '',
+                    paths: '',
+                  };
+
+                  if (transparencyBundle.has(meshid))
+                    transparencyMeshRow = transparencyBundle.get(meshid);
+                  else transparencyBundle.set(meshid, transparencyMeshRow);
+
+                  let cur_path = ((value != "") ? getPathByVersion():"") + value;
+                  if (cur_path != "") cur_path += '@' + zip_id;
+
+                  transparencyMeshRow.options += option + channel + ';';
+                  transparencyMeshRow.paths += cur_path + ';';
+                } else {
+                  let cur_path = ((value != "") ? getPathByVersion():"") + value;
+                  if (cur_path != "") cur_path += '@' + zip_id;
+
+                  obj.setParameter(Number(meshid), option, cur_path);
+                }
+              } else {
+                obj.setParameter(Number(meshid), option, value);
+              }
+            }
+
+            renderMesh = true;
+          }
+          break;
+
+        case 'visible':
+          finalVisibility = getLastValueInMap(getProperties(row.type));
+          renderVisibility = true;
+
+          break;
+        case 'show_shadow':
+          obj.setParameter(
+            'show_shadow',
+            getLastValueInMap(getProperties(row.type))
+          );
+          renderVisibility = true;
+
+          break;
+        case 'cast_shadow':
+          obj.setParameter(
+            'cast_shadow',
+            getLastValueInMap(getProperties(row.type))
+          );
+          renderVisibility = true;
+
+          break;
+
+        case 'front_facing':
+          obj.setParameter(
+            'front_facing',
+            getLastValueInMap(getProperties(row.type))
+          );
+          renderVisibility = true;
+
+          break;
+        case 'frame':
+          {
+            const vcs = getLastValueInMap(getProperties('frame'));
+
+            let opts = {
+              id: Number(vcs[0]), // animation id (index # from animations list)
+              raw: true,
+            };
+            playAnimation(opts);
+            setPos(vcs[1]);
+            renderVisibility = true;
+          }
+
+          break;
+        case 'render_back_faces':
+          {
+            const vcs = getLastValueInMap(getProperties('render_back_faces'));
+
+            let meshes_ = obj.getMeshes();
+  
+            for (var x=0; x < meshes_.size(); x++){                
+              try {
+                obj.setParameter(String(x), "render_back_faces", vcs);
+              } catch (e) {}
+            }
+
+            Module.ProjectManager.isDirty = true;
+
+
+          }
+          break;
+      }
+    }
+
+    renderList = [];
+
+    if (renderTransformation || opts.transform) {
+      const transformOut = mat4.clone(finalTransformation);
+      if (opts.transform) {
+        mat4.multiply(transformOut, opts.transform, transformOut);
+      } else if (object.parent && object.parent.parentOpts.transform) {
+        mat4.multiply(
+          transformOut,
+          object.parent.parentOpts.transform,
+          transformOut
+        );
+      }
+
+      parentOpts.transform = transformOut;
+      obj.setTransformMatrix(transformOut);
+
+      renderTransformation = true;
+
+      for (let [key, handler] of updateHandlers) {
+        try {
+          handler('transform', obj);
+        } catch (err) {
+          // console.log(err);
+        }
+      }
+    }
+
+    if (renderVisibility || opts.visible != undefined) {
+      // opts
+      if (opts.visible !== undefined) {
+        parentOpts.visible = opts.visible && finalVisibility;
+      } else if (
+        object.parent &&
+        object.parent.parentOpts.visible !== undefined
+      ) {
+        parentOpts.visible =
+          object.parent.parentOpts.visible && finalVisibility;
+      } else {
+        parentOpts.visible = finalVisibility;
+      }
+      obj.setParameter('visible', parentOpts.visible);
+      renderVisibility = true;
+      
+      for (let [key, handler] of updateHandlers) {
+        try {
+          handler('visible', obj);
+        } catch (err) {
+          // console.log(err);
+        }
+      }
+    }
+
+    if (renderTransformation){
+      setTimeout(() => {
+        toggleFOV(parentOpts.visible);        
+      });
+    }
+
+    for (let [meshid, value] of pbrBundle) {
+      obj.setParameter(Number(meshid), value.options, value.paths);
+    }
+
+    for (let [meshid, value] of transparencyBundle) {
+      obj.setParameter(Number(meshid), value.options, value.paths);
+    }
+
+    if (renderTransformation || renderVisibility || renderMesh) {
+      Module.ProjectManager.isDirty = true;
+    }
+
+    if (loadingState == 'loading') {
+      loadingState = 'loaded';      
+      if (loadingCallback) loadingCallback(object);
+    }
+
+    if (isLoaded && renderTransformation) {
+      for (let [key, value] of object.children) {
+        value.render({ transform: parentOpts.transform });
+      }
+    }
+  };
+
+  Object.assign(object, {
+    render,
+  });
+
+  const addToRedraw = (type, value) => {
+    renderList.push({ type, value });
+    redrawAddMethod(child.key, object);
+  };
+
+  const addToBucket = (category, type, value, enabled, key, childkey) => {};
+  const insertIntoBucket = (
+    category,
+    type,
+    value,
+    enabled,
+    key,
+    childkey
+  ) => {};
+  const toggleLink = (category, type, link, enabled) => {};
+  const regenerateLink = (category, type, link) => {};
+
+  // added
+  addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
+
+  setProperty('visible', transformation.visible);
+  setProperty('position', transformation.position);
+  setProperty('scale', transformation.scale);
+  setProperty('rotate', transformation.rotate);
+  setProperty('groupMat', transformation.groupMat);
+  setProperty('anchor', transformation.anchor);
+  setProperty('hud', transformation.hud);
+  setProperty('controller', transformation.controller);
+  setProperty('show_shadow', transformation.show_shadow);
+  setProperty('cast_shadow', transformation.cast_shadow);
+  setProperty('front_facing', transformation.front_facing);
+
+  setProperty('render_back_faces', transformation.render_back_faces);
+  setProperty('render_fov_visible', transformation.render_fov_visible);
+  setProperty('render_fov_lod', transformation.render_fov_lod);
+
+  setProperty('pivot', transformation.pivot);
+  setProperty('autoscale', transformation.autoscale);
+
+  setProperty('frame', transformation.frame);
+  setProperty('hudscale', transformation.hudscale);
+
+  // load mesh data
+  Object.keys(transformation['meshes']).map((meshid) => {
+    var mesh_data = transformation['meshes'][meshid];
+    meshid = String(meshid);
+    Object.keys(mesh_data).map((option) => {
+      setPropertyMesh(meshid, option, mesh_data[option]);
+    });
+  });
+
+  if (object.parent) object.parent.children.set(child.key, object);
+
+  let meshdata = {
+    get: (meshid, option) => {
+      meshid = String(meshid);
+      return getPropertyMesh(meshid, option)[1];
+    },
+    set: (meshid, option, value) => {
+      meshid = String(meshid);
+      setPropertyMesh(meshid, option, value);
+    },
+
+    getAll: (meshid, option) => {
+      meshid = String(meshid);
+      return getPropertiesMesh(meshid, option);
+    },
+  };
+
+  const regenerateMeshes = (d) => {};
+
+  Object.defineProperties(meshdata, {});
+
+  // Props and Methods
+  Object.defineProperties(object, {
+    position: {
+      get: () => {
+        return getProperty('position')[1];
+      },
+      set: (v) => {
+        setProperty('position', v);
+      },
+    },
+    scale: {
+      get: () => {
+        return getProperty('scale')[1];
+      },
+      set: (v) => {
+        setProperty('scale', v);
+      },
+    },
+    rotate: {
+      get: () => {
+        return getProperty('rotate')[1];
+      },
+      set: (v) => {
+        setProperty('rotate', v);
+      },
+    },
+    groupMat: {
+      get: () => {
+        return getProperty('groupMat')[1];
+      },
+      set: (v) => {
+        setProperty('groupMat', v);
+      },
+    },
+    anchor: {
+      get: () => {
+        return getProperty('anchor')[1];
+      },
+      set: (v) => {
+        setProperty('anchor', v);
+      },
+    },
+    hud: {
+      get: () => {
+        return getProperty('hud')[1];
+      },
+      set: (v) => {
+        setProperty('hud', v);
+      },
+    },
+    pivot: {
+      get: () => {
+        return getProperty('pivot')[1];
+      },
+      set: (v) => {
+        setProperty('pivot', v);
+      },
+    },
+
+    visible: {
+      get: () => {
+        return getProperty('visible')[1];
+      },
+      set: (v) => {
+        setProperty('visible', v);
+      },
+    },
+    show_shadow: {
+      get: () => {
+        return getProperty('show_shadow')[1];
+      },
+      set: (v) => {
+        setProperty('show_shadow', v);
+      },
+    },
+    cast_shadow: {
+      get: () => {
+        return getProperty('cast_shadow')[1];
+      },
+      set: (v) => {
+        setProperty('cast_shadow', v);
+      },
+    },
+    front_facing: {
+      get: () => {
+        return getProperty('front_facing')[1];
+      },
+      set: (v) => {
+        setProperty('front_facing', v);
+      },
+    },
+
+    autoscale: {
+      get: () => {
+        return getProperty('autoscale')[1];
+      },
+      set: (v) => {
+        setProperty('autoscale', v);
+      },
+    },
+    controller: {
+      get: () => {
+        return getProperty('controller')[1];
+      },
+      set: (v) => {
+        setProperty('controller', v);
+      },
+    },
+    frame: {
+      get: () => {
+        return getProperty('frame')[1];
+      },
+      set: (v) => {
+        setProperty('frame', v);
+      },
+    },
+
+    mesh: {
+      get: () => {
+        return meshdata;
+      },
+      set: (v) => {},
+    },
+
+    finalTransformation: {
+      get: () => {
+        return finalTransformation;
+      },
+      set: (v) => {},
+    },
+    finalVisibility: {
+      get: () => {
+        return finalVisibility;
+      },
+      set: (v) => {},
+    },
+    parentOpts: {
+      get: () => {
+        return parentOpts;
+      },
+      set: (v) => {},
+    },
+
+    animation: {
+      get: () => {
+        return o_animation;
+      },
+    },
+
+    animations: {
+      get: () => {
+        return customAnimations;
+      },
+      set: (v) => {
+        customAnimations = [...v];
+        getAnimationList();
+      },
+    },
+
+    hudscale: {
+      get: () => {
+        return getProperty('hudscale')[1];
+      },
+      set: (v) => {
+        setProperty('hudscale', v);
+      },
+    },
+    code: {
+      get: () => {
+        return getProperty('code')[1];
+      },
+      set: (v) => {
+        setProperty('code', v);
+      },
+    },
+
+    FOVMeshes: {
+      get: () => {
+        return fov_meshes;
+      },
+      set: (v) => {
+      },
+    },
+
+    zip_id: {
+      get: () => {
+        return zip_id;
+      },
+      set: (v) => {
+        zip_id = v;
+      },
+    },
+
+    render_back_faces: { 
+      get: () => { return getProperty('render_back_faces')[1]; },
+      set: (v) => { setProperty('render_back_faces', v); },
+    },
+
+    render_fov_visible: { 
+      get: () => { return getProperty('render_fov_visible')[1]; },
+      set: (v) => { setProperty('render_fov_visible', v); },
+    },
+
+    render_fov_lod: { 
+      get: () => { return getProperty('render_fov_lod')[1]; },
+      set: (v) => { setProperty('render_fov_lod', v); },
+    },
+  });
+
+  Object.assign(object, {
+    addToBucket,
+    insertIntoBucket,
+    regenerateLink,
+    toggleLink,
+
+    addToRedraw,
+
+    setProperty,
+    getProperty,
+    getProperties,
+    removeLink,
+
+    setPropertyMesh,
+    getPropertyMesh,
+    getPropertiesMesh,
+    removeLinkMesh,
+
+    applyAutoScale: () => {
+      autoscaleObject = true;
+    },
+    applyAutoPivot: () => {
+      autospivotObject = true;
+    },
+
+    clearRender: () => {
+      renderList = [];
+    },
+
+    regenerateMeshes,
+
+    addChangeListener: (callback) => {
+      updateHandlers.set(callback, callback);
+    },
+
+    removeChangeListener: (callback) => {
+      updateHandlers.delete(callback);
+    },
+
+    clearChangeHandlers: () => {
+      updateHandlers.clear();
+    },
+
+    getGeometryLOD : ()=>{
+      return object_lod_paths;
+    },
+
+    setLOD: (level)=> {
+      if (transformation.lod == level) return;
+
+      transformation.lod = level;
+      try {
+        let obj = scene.getObject(child.key);
+        if (!obj) return;
+        try {
+            obj.setParameter("lod_level", level)                                        
+            if (object_lod_paths.length > 1) obj.setActiveGeometryLOD(level);
+        } catch (e) {}
+
+      } catch (error) {
+          
+      }
+    },
+
+    remove: () => {
+      // if (Physics.isResetting){
+      //   removeFOV(); 
+      // }else{
+      //   setTimeout(()=>{
+          removeFOV(); 
+      //   });
+      // }
+
+      if (animationTimer) animationTimer.stop();
+
+      if (animationDelay) {
+        clearTimeout(animationDelay);
+        animationDelay = null;
+      }
+
+      try {
+        sceneprops.objectControllers[child.key] = undefined;
+        delete sceneprops.objectControllers[child.key];
+      } catch (error) {
+        
+      }
+
+      for (let [key, child] of object.children) {
+        child.remove();
+      }
+
+      for (let [key, handler] of updateHandlers) {
+        try {
+          handler('removed');
+        } catch (err) {
+          // console.log(err);
+        }
+      }
+
+      m = [];
+
+      sceneprops.sceneIndex.delete(object.item.key);
+      if (object.parent) object.parent.children.delete(object.item.key);
+
+      try { scene.removeObject(object.item.key); } catch (error) {}
+      Module.ProjectManager.isDirty = true;
+
+      addToUpdated(object.item.key, 'removed', {
+        prop: 'item',
+        value: object.item,
+      });
+    },
+  });
+
+  return object;
+};

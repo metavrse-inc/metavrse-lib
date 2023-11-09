@@ -47,6 +47,8 @@ module.exports = () => {
     'assets/ProjectManager/Scene/CameraLink.js'
   );
 
+  const ParticleGenerator = Module.require('assets/ProjectManager/Scene/ParticleGenerator.js');
+
   let redraws = new Map();
 
   let isResetting = false;
@@ -453,13 +455,13 @@ module.exports = () => {
     
           let maxsize = objects;
           let amt = 1;
+          let skipNext;
           let zip_loader = (list)=>{
-            if (list.size > maxsize) maxsize = list.size;
-            if (maxsize == 0) {
-              obj.removeLoadingListener(zip_loader);
-              if (opt.onLoaded) requestAnimationFrame(()=>{opt.onLoaded(obj)});
-              return;
+            if(skipNext) {
+              clearTimeout(skipNext);
+              skipNext = null;
             }
+            if (list.size > maxsize) maxsize = list.size;            
 
             let shouldReturn =false;
             let theta = (Module.fps.maxFps > 30) ? true: false;
@@ -468,28 +470,12 @@ module.exports = () => {
             {
               shouldReturn = true;
               map.delete(key);
-              let rec = (amt, _fn)=> {
-                if (amt > 0){
-                  requestAnimationFrame(()=>{rec(amt-1, _fn)})
-                } else {
-                  _fn();
-                }
-              }
-              if (theta){
-                try { rec(0, fn) } catch (error) {}
-              } else {
-                try { rec(0, fn) } catch (error) {}
-              }
-              // try { setTimeout(fn,theta) } catch (error) {}
+              fn();             
 
               return;
-              // fn();
             });
 
             if (shouldReturn){
-              // for (var [k, cfn] of configs){
-              //   try { cfn(); } catch (error) {}
-              // }
               return;
             }
   
@@ -504,11 +490,29 @@ module.exports = () => {
               configs.clear();
               if (opt.onLoaded) requestAnimationFrame(()=>{opt.onLoaded(obj)});
               obj.removeLoadingListener(zip_loader);
+            } else {
+              skipNext = setTimeout(() => {
+                zip_loader({
+                  size: list.size-1
+                })
+              }, 2000);
             }
           }
+
+          if (maxsize == 0) {
+            for (var [k, cfn] of configs){
+              try { cfn(); } catch (error) {}
+            }
+            try { initControllersZip(obj.item.key);  } catch (error) { }
+
+            configs.clear();
+            if (opt.onLoaded) requestAnimationFrame(()=>{opt.onLoaded(obj)});
+            return;
+          } else {
+            obj.addLoadingListener(zip_loader)
+          }
           
-          obj.addLoadingListener(zip_loader)
-    
+
           // add world for zip
           _addObject({
             key: "world",
@@ -639,6 +643,15 @@ module.exports = () => {
         case 'object-hud':
         case 'object':
           obj = ObjectModel(payload);
+          if (
+            payload.data['controller'] != undefined &&
+            payload.data['controller'] != ''
+          )
+            objectControllerkeys.set(child.key, payload.data['controller']);
+
+          break;
+        case 'particle-generator':
+          obj = ParticleGenerator(payload);
           if (
             payload.data['controller'] != undefined &&
             payload.data['controller'] != ''
@@ -1181,6 +1194,48 @@ module.exports = () => {
         } else {
           if (opt.setReady) opt.setReady();
           obj = ObjectModel(payload);
+          addToZIPRow();
+        }
+        break;
+      case 'particle-generator':
+        if (opt.setQue && opt.getReady()){
+          const pload = payload;
+          const _opt = opt;
+          const _data = data;
+          const _child = child;
+          let fn = ()=>{
+            // test if zip is being
+            let zipobj = sceneprops.sceneIndex.get(_opt.prefix);
+            if (!zipobj || zipobj.children.length < 2) return;
+
+            let obj = ParticleGenerator(pload);
+            // addToZIPRow();
+            if ( pload && pload.data && pload.data['controller'] != undefined && pload.data['controller'] != '' && _opt.zip_id && Module.ProjectManager.projectRunning)
+            {
+                if (!objectControllerkeysZIP.has(_opt.prefix)) objectControllerkeysZIP.set(_opt.prefix, new Map());
+                let ziprow = objectControllerkeysZIP.get(_opt.prefix);
+                ziprow.set(_child.key, {controller: pload.data['controller'], data:_data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
+            }
+
+            if (obj) {
+              sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+        
+              if (_child.children) {
+                for (let x = 0; x < _child.children.length; x++) {
+                  _addObject(_child.children[x], _data, obj, pload.key, _opt);
+                }
+              }
+        
+              if (obj.isLoading != undefined) {
+                obj.isLoading = false;
+              }
+        
+            }
+          }
+          opt.setQue(pload.child.key, fn)
+        } else {
+          if (opt.setReady) opt.setReady();
+          obj = ParticleGenerator(payload);
           addToZIPRow();
         }
         break;

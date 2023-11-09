@@ -43,11 +43,13 @@ import Video from './scripts/ProjectManager/Scene/Video';
 import VideoLink from './scripts/ProjectManager/Scene/VideoLink';
 import World from './scripts/ProjectManager/Scene/World';
 import ZIPElement from './scripts/ProjectManager/Scene/ZIPElement';
+import ParticleGenerator from './scripts/ProjectManager/Scene/ParticleGenerator';
 
 import AmmoJS from './scripts/lib/ammo';
 import CherryWW from './scripts/lib/CherryWW';
 
 import AmmoWASM from './scripts/lib/ammo.wasm.wasm';
+import ThreeNebula from './scripts/lib/three-nebula.min';
 
 // Physics
 import PhysicsEngine from './scripts/ProjectManager/Physics/engine';
@@ -118,13 +120,14 @@ export const scripts = {
   [`${SCENE}/VideoLink.js`]: VideoLink,
   [`${SCENE}/World.js`]: World,
   [`${SCENE}/ZIPElement.js`]: ZIPElement,
+  [`${SCENE}/ParticleGenerator.js`]: ParticleGenerator,
 
   [`${LIBS}/`]: null, // Folder to create
   [`${LIBS}/ammo.js`]: AmmoJS,
   [`${LIBS}/CherryWW.js`]: CherryWW,
 
   [`${LIBS}/ammo.wasm.wasm`]: AmmoWASM,
-
+  [`${LIBS}/three-nebula.min.js`]: ThreeNebula,
 
   [`${PHYSICS}/`]: null, // Folder to create
   [`${PHYSICS}/engine.js`]: PhysicsEngine,
