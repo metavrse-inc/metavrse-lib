@@ -161,6 +161,92 @@
     // add to parent
     if (parent) parent.children.set(child.key, object);
 
+    const getDebugLines = ()=> {
+        if (!parent.parentOpts.visible){
+            return {
+                TheColors: [],
+                TheLines: [],
+                TheLinesCount: 0,
+                TheColorsCount: 0
+            }
+        }
+        let o = object.parent;
+        let TheColors = [];
+        let TheLines = [];
+        let TheLinesCount = 0;
+        let TheColorsCount = 0;
+        let m4 = object.matrix;
+        let extents = object.extents;
+        let extent = [extents.f1, extents.f2, extents.f3];
+
+        let q = [0,0,0,0];
+        let p = [0,0,0];
+        let s = [1,1,1];
+        mat4.getRotation(q, m4);
+        mat4.getTranslation(p, m4);
+        mat4.getScaling(s, o.parentOpts.transform);
+
+        vec3.multiply(s, s, extent);
+        vec3.multiply(s, s, [0.5,0.5,0.5]);
+
+        let tris = [];
+        tris.push([[-1,-1,-1],[-1,1,-1]]);
+        tris.push([[-1,-1,-1],[1,-1,-1]]);
+        tris.push([[-1,-1,-1],[-1,-1,1]]);
+
+        tris.push([[-1,1,1],[1,1,1]]);
+        tris.push([[-1,1,1],[-1,1,-1]]);
+        tris.push([[-1,1,1],[-1,-1,1]]);
+
+        tris.push([[1,-1,1],[-1,-1,1]]);
+        tris.push([[1,-1,1],[1,1,1]]);
+        tris.push([[1,-1,1],[1,-1,-1]]);
+
+        tris.push([[1,1,-1],[1,1,1]]);
+        tris.push([[1,1,-1],[-1,1,-1]]);
+        tris.push([[1,1,-1],[1,-1,-1]]);
+
+        let r = 255;
+        let g = 255;
+        let b = 0;
+        
+        let addLine = (from, to)=> {
+            TheLines.push(...from, ...to);
+            TheLinesCount += 2;
+    
+            var colorFrom = [r, g, b];
+            var colorTo = [r, g, b];
+            TheColors.push(...colorFrom, ...colorTo);
+            TheColorsCount += 2;
+        }
+
+        for (var line of tris){
+            let from = [...line[0]];
+            let to = [...line[1]];
+            
+            vec3.multiply(from, from, s);
+            vec3.transformQuat(from, from, q);
+            vec3.add(from, from, p);
+
+            vec3.multiply(to, to, s);
+            vec3.transformQuat(to, to, q);
+            vec3.add(to, to, p);
+
+            // vec3.transformMat4(from, from, m4)
+            // vec3.transformMat4(to, to, m4)
+
+            addLine(from, to);
+        }
+
+        return {
+            TheColors,
+            TheLines,
+            TheLinesCount,
+            TheColorsCount
+        }
+
+    }
+
     // Props and Methods
     Object.defineProperties(object, {
         object: { get: () => { return so; }, set: (v) => {} },
@@ -170,7 +256,8 @@
     Object.assign(object, {
         remove,
         render,
-        update
+        update,
+        getDebugLines
     })
 
     return object;

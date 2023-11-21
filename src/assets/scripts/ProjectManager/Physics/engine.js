@@ -347,6 +347,20 @@
             
          }
       }
+
+      // for (var [idx, el] of fov_objects){
+      //    try {
+      //       if (el.getDebugLines){
+      //          let dl = el.getDebugLines();
+      //          TheLines.push(...dl.TheLines);
+      //          TheColors.push(...dl.TheColors);
+      //          TheLinesCount += dl.TheLinesCount;
+      //          TheColorsCount += dl.TheColorsCount;
+      //       }            
+      //    } catch (error) {
+            
+      //    }
+      // }
       
       if (TheLines.length == 0) {
          TheLines = [];
@@ -541,6 +555,7 @@
    }
 
    const resetFOV = ()=> {
+      return;
       try {
          FOVBox_r.reset();
       } catch (error) {

@@ -195,12 +195,12 @@
             let from = [...line[0]];
             let to = [...line[1]];
             
-            vec3.transformQuat(from, from, q);
             vec3.multiply(from, from, s);
+            vec3.transformQuat(from, from, q);
             vec3.add(from, from, p);
 
-            vec3.transformQuat(to, to, q);
             vec3.multiply(to, to, s);
+            vec3.transformQuat(to, to, q);
             vec3.add(to, to, p);
 
             // vec3.transformMat4(from, from, m4)

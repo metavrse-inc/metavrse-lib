@@ -231,19 +231,16 @@
 
                 if (el.lod_level != level && lod){
 
-                    if (el.item.type == "FOVMeshObject"){
-                        let timeout = updateTimeout.get(el.item.key);
-                        if (timeout) clearTimeout(timeout);
+                    let timeout = updateTimeout.get(el.item.key);
+                    if (timeout) clearTimeout(timeout);
 
-                        const key = el.item.key.replace("_"+meshid, "");
-                        const parent = el.parent;
-                        const _curLevel = el.lod_level;
-                        const _newLevel = level;
-                        let theta = (Module.fps.maxFps > 30) ? 500 : 250;
+                    const parent = el.parent;
+                    let theta = (Module.fps.maxFps > 30) ? 500 : 250;
+                    if (el.item.type == "FOVMeshObject"){
 
                         timeout = setTimeout(()=>{
                             let fn = (opts)=> {
-                                parent.setLOD(level);
+                                parent.setLOD(level, "object");
                                 opts.onLoaded();
 
                             }
@@ -257,6 +254,19 @@
 
                         
                     } else {
+                        timeout = setTimeout(()=>{
+                            let fn = (opts)=> {
+                                parent.setLOD(level, "texture");
+                                opts.onLoaded();
+
+                            }
+
+                            zipAddQue.push(fn)
+                            // requestAnimationFrame(fn);
+
+                        }, theta)
+
+                        updateTimeout.set(el.item.key, timeout)
                         // el.parent.mesh.set(meshid, "albedo_ratio", (level == 0 ? red : level == 1 ? green : level == 2 ? blue : purple))
                     }
 
@@ -304,6 +314,7 @@
                     let ks = el.item.key.split("_")
                     // let key = ks[0];
                     let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
+                    let key = el.item.key.replace("_"+meshid, "");
 
                     if (!collisionStatus.has(el.item.key)){
                         collisionStatus.set(el.item.key, {
@@ -312,7 +323,12 @@
                             meshid
                         })
                         let isVisible = Boolean(checkDistance(params.lod_enabled, el, meshid));
-                        if (params.fov_enabled && el.render_fov_visible) el.parent.mesh.set(meshid, "visible", true && isVisible);
+                        if (params.fov_enabled && el.render_fov_visible) {
+                            let obj = scene.getObject(key);
+                            if (obj) {
+                                obj.setParameter(meshid, 'visible', el.parent.parentOpts.visible && isVisible);
+                            }
+                        }
 
                     } else {
                         checkDistance(params.lod_enabled, el, meshid);

@@ -963,7 +963,7 @@ module.exports = (payload) => {
       if (!World.fov_enabled && !World.lod_enabled) return;
 
       // add fov meshes
-      if (Module.ProjectManager.projectRunning && !transformation.hud){
+      if (!transformation.hud){
           let mesh_render_back_faces = transformation['render_back_faces'];
           let mesh_enable_fov = transformation['render_fov_visible'];
           let mesh_enable_lod = transformation['render_fov_lod'];
@@ -990,7 +990,7 @@ module.exports = (payload) => {
                 fov_meshes.push(Physics.add(pl));   
                 
                 if (transformation.render_fov_lod){
-                  obj.setParameter("lod_level", transformation.lod)                                        
+                  // obj.setParameter("lod_level", transformation.lod)                                        
 
                   // let meshes_ = obj.getMeshes();
 
@@ -1001,38 +1001,40 @@ module.exports = (payload) => {
                   // }
                 }
 
-                  // let meshes_ = obj.getMeshes();
+                /*
+                let meshes_ = obj.getMeshes();
 
-                  // for (var x=0; x < meshes_.size(); x++){                
-                  // try {
-                  //     if (d['data'] && d['data'][x]){
-                  //         let _d = d['data'][x];
+                for (var x=0; x < meshes_.size(); x++){                
+                  try {
+                      if (d['data'] && d['data'][x]){
+                          let _d = d['data'][x];
 
-                  //         if (_d['render_back_faces'] > -1) mesh_render_back_faces = Boolean(_d['render_back_faces']);
-                  //         if (_d['enable_lod'] > -1) mesh_enable_lod = Boolean(_d['enable_lod']);
-                  //         if (_d['enable_fov'] > -1) mesh_enable_fov = Boolean(_d['enable_fov']);
+                          if (_d['render_back_faces'] > -1) mesh_render_back_faces = Boolean(_d['render_back_faces']);
+                          if (_d['enable_lod'] > -1) mesh_enable_lod = Boolean(_d['enable_lod']);
+                          if (_d['enable_fov'] > -1) mesh_enable_fov = Boolean(_d['enable_fov']);
                           
-                  //     }
-                  //     let pl = {
-                  //         child: {type:'FOVMesh', key: child.key + "_" + x},
-                  //         parent: object,
-                  //         render_fov_visible: mesh_enable_fov,                            
-                  //         render_fov_lod: mesh_enable_lod,                            
-                  //         data: {
-                  //             mesh: x,
-                  //         }
-                  //     }
+                      }
+                      let pl = {
+                          child: {type:'FOVMesh', key: child.key + "_" + x},
+                          parent: object,
+                          render_fov_visible: mesh_enable_fov,                            
+                          render_fov_lod: mesh_enable_lod,                            
+                          data: {
+                              mesh: x,
+                          }
+                      }
 
-                  //     let obj = Physics.add(pl);
-                  //     fov_meshes.push(obj);
+                      let obj = Physics.add(pl);
+                      fov_meshes.push(obj);
 
-                  //     // if (mesh_enable_fov) object.mesh.set(x, "visible", false);
-                  //     // object.mesh.set(x, "lod_level", 3.0);
+                      // if (mesh_enable_fov) object.mesh.set(x, "visible", false);
+                      // object.mesh.set(x, "lod_level", 3.0);
                       
-                  //     // object.mesh.set(x, "render_back_faces", mesh_render_back_faces);
-                  // }catch(e){
-                  // }
-              // }
+                      // object.mesh.set(x, "render_back_faces", mesh_render_back_faces);
+                  }catch(e){
+                  }
+                }
+                */
           } else if (fov_meshes.length > 0) {
               for (var m of fov_meshes){
                 m.render(parentOpts.transform)
@@ -1286,7 +1288,7 @@ module.exports = (payload) => {
               }
             } else {
               if (textures.includes(option)) {
-                if (window && window.textureIgnores && window.textureIgnores.includes(option)) continue;
+                if (Module.ProjectManager.textureIgnores.includes(option)) continue;
                 let channel = '';
 
                 if (_row.has(option + '_channel')) {
@@ -1458,9 +1460,7 @@ module.exports = (payload) => {
     }
 
     if (renderTransformation){
-      setTimeout(() => {
-        toggleFOV(parentOpts.visible);        
-      });
+      toggleFOV(parentOpts.visible);        
     }
 
     for (let [meshid, value] of pbrBundle) {
@@ -1820,7 +1820,7 @@ module.exports = (payload) => {
       return object_lod_paths;
     },
 
-    setLOD: (level)=> {
+    setLOD: (level, type)=> {
       if (transformation.lod == level) return;
 
       transformation.lod = level;
