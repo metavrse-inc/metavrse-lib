@@ -460,6 +460,7 @@ module.exports = (payload) => {
     let physics_transformation = {
         position: vec3.create(),
         rotation: quat.create(),
+        object_rotation: quat.create(),
         m4 : mat4.create(),
     }
 
@@ -532,13 +533,15 @@ module.exports = (payload) => {
 
         let mp = false;
         let mr = false;
+        let mor = false;
 
         if (!vec3.equals(physics_transformation.position, _p)) mp = true;   // approx using epsilon
         if (!quat.equals(physics_transformation.rotation, _q)) mr = true;   // approx using epsilon
-
+        if (!quat.equals(physics_transformation.object_rotation, params.object_rotate)) mor = true;   // approx using epsilon
+        
         let m4 = physics_transformation.m4;
        
-        if (mp || mr){
+        if (mp || mr || mor){
             vec3.set(physics_transformation.position, ..._p);
             quat.set(physics_transformation.rotation, ..._q);
     
@@ -547,6 +550,7 @@ module.exports = (payload) => {
     
             let finalRotation = updateMath.finalRotation;
 
+            quat.set(physics_transformation.object_rotation, ...params.object_rotate);
             quat.set(finalRotation, ...params.object_rotate);
             quat.multiply(finalRotation, _q, finalRotation);
             // physics

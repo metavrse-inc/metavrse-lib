@@ -661,10 +661,10 @@ if (Module['canvas']) {
     }
   }
   // keyboard
-  document.addEventListener('keydown', keydown);
-  c.addEventListener('keydown', keydown);
+  Module['canvas'].ownerDocument.documentElement.addEventListener('keydown', keydown);
+  // Module['canvas'].ownerDocument.documentElement.addEventListener('keydown', keydown);
 
-  c.addEventListener('keypress', (e) => {
+  Module['canvas'].ownerDocument.documentElement.addEventListener('keypress', (e) => {
     // Module.onKeyEvent('keypress', e.key, e.code, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey, e.repeat);
     // let tagName = document.activeElement.tagName.toLowerCase();
     // if (tagName !== 'input' && tagName !== 'textarea' && tagName !== 'select') {
@@ -691,12 +691,12 @@ if (Module['canvas']) {
     }
   }
 
-  document.addEventListener('keyup', keyup);
-  c.addEventListener('keyup', keyup);
+  Module['canvas'].ownerDocument.documentElement.addEventListener('keyup', keyup);
+  // Module['canvas'].ownerDocument.documentElement.addEventListener('keyup', keyup);
 
   // mouse
   let getXY = (e) => {
-    var rect = e.target.getBoundingClientRect();
+    var rect = Module.canvas.getBoundingClientRect();
     var x = e.clientX - rect.left;
     var y = e.clientY - rect.top;
     var dpr = Module.pixelDensity;
@@ -743,7 +743,7 @@ if (Module['canvas']) {
 
   // if (!isTouchDevice()){
   c.addEventListener('click', (e) => {
-    if (document.activeElement !== c) {
+    if (document.activeElement !== Module.canvas) {
       c.focus();
     }
   });

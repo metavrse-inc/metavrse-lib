@@ -111,6 +111,10 @@ module.exports = (payload) => {
 
     const details = animation_list[animation_id];
 
+    // if (current_animation_id != animation_id) {
+    //   object.stopAnimationIndex(current_animation_id);
+    // }
+
     current_animation_id = animation_id;
 
     let realid = details.track != undefined ? details.track : animation_id;
@@ -161,7 +165,7 @@ module.exports = (payload) => {
       object.setAnimationIndex(realid);
       object.setAnimationTime(newStart);
 
-      currentSystemTime = object.getAnimationTime();
+      // currentSystemTime = object.getAnimationTime();
     } catch (e) {
       console.error(e);
     }
@@ -186,23 +190,23 @@ module.exports = (payload) => {
         let newTime = reverse
           ? newPerc * duration + newEnd
           : newPerc * duration + newStart;
-        let obj2 = scene.getObject(child.key);
-        if (!obj2) return;
+        // let obj2 = scene.getObject(child.key);
+        // if (!obj2) return;
 
-        let a_idx = obj2.getAnimationIndex();
-        let a_time = obj2.getAnimationTime();
-        if (a_idx != realid || a_time != currentSystemTime) {
-          animationTimer.stop();
-          return;
-        }
+        // let a_idx = obj2.getAnimationIndex();
+        // let a_time = obj2.getAnimationTime();
+        // if (a_idx != realid || a_time != currentSystemTime) {
+        //   animationTimer.stop();
+        //   return;
+        // }
 
         try {
-          obj2.setAnimationTime(newTime);
+          object.setAnimationTime(newTime);
         } catch (e) {
           console.error(e);
         }
 
-        currentSystemTime = obj2.getAnimationTime();
+        // currentSystemTime = obj2.getAnimationTime();
 
         if (animation.onDraw) animation.onDraw(perc);
         for (let [key, handler] of animationHandlers) {

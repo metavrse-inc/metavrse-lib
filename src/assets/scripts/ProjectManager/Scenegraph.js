@@ -1328,9 +1328,11 @@ module.exports = () => {
       // physics
       case 'RigidBody':
         obj = Physics.add(payload);
+        addToZIPRow();
         break;
       case 'KinematicCharacterController':
         obj = Physics.add(payload);
+        addToZIPRow();
         break;
 
       case 'ZIPElement':
@@ -1645,6 +1647,8 @@ module.exports = () => {
         PM.objectControllers = Module.ProjectManager.objectControllers;
         PM.ZIPManager = ZIPManager;
         PM.SDK = (Module.ProjectManager.SDK) ? Module.ProjectManager.SDK : {}
+        PM.worldController = sceneprops.worldController;
+        PM.worldControllers = sceneprops.worldControllers;
 
         ZIPModule.ProjectManager = PM;
 
