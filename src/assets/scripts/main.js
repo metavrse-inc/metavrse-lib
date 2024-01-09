@@ -6,6 +6,25 @@ const scene = surface.getScene();
 
 var { mat4, vec3 } = Module.require('assets/gl-matrix.js'); // deprecating
 
+Module.audio = {};
+
+let initAudio = ()=> {
+  let AudioContext = window.AudioContext || window.webkitAudioContext;
+  let context = new AudioContext();
+  let listener = context.listener;
+
+  Module.audio['context'] = context;
+
+  listener.forwardX.value = 0;
+  listener.forwardY.value = 0;
+  listener.forwardZ.value = -1;
+  listener.upX.value = 0;
+  listener.upY.value = 1;
+  listener.upZ.value = 0;
+}
+
+initAudio();
+
 Module.animations = {
   ids : 1,
   fns : new Map(),
@@ -201,6 +220,19 @@ Module.render = function (t) {
 let xx =0;
 let _render = function (t) {
   // 'use strict';
+
+  if (Module.audio['context']){
+    try {
+      let listener = Module.audio['context'].listener;
+      listener.positionX.value = Module.controls.position[0];
+      listener.positionY.value = Module.controls.position[1];
+      listener.positionZ.value = Module.controls.position[2];
+
+      listener.forwardX.value = Module.controls.direction[0];
+      listener.forwardY.value = Module.controls.direction[1];
+      listener.forwardZ.value = Module.controls.direction[2];
+    } catch (error) {}
+  }
 
   if (Module.setFPS) {
     Module.setFPS(Module['fps']['maxFps']);
@@ -733,6 +765,12 @@ if (Module['canvas']) {
   };
 
   let onMouse = (type, e) => {
+    if (Module.audio['context']){
+      if (Module.audio['context'].state === "suspended") {
+        Module.audio['context'].resume();
+      }
+    }
+
     let xy = getXY(e);
     Module.onMouseEvent(type, e.button, xy[0], xy[1]);
     // if (document.activeElement !== c) {
@@ -876,6 +914,12 @@ if (Module['canvas']) {
   let identifiers = 0;
   let touches = {};
   let onTouch = (type, e) => {
+    if (Module.audio['context']){
+      if (Module.audio['context'].state === "suspended") {
+        Module.audio['context'].resume();
+      }
+    }
+
     let totalTouches = e.touches.length;
     if (type == 0) totalTouches += e.changedTouches.length;
     for (var t of e.changedTouches) {
