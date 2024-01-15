@@ -9,6 +9,12 @@ var { mat4, vec3 } = Module.require('assets/gl-matrix.js'); // deprecating
 Module.audio = {};
 
 let initAudio = ()=> {
+  if (Module.audio.context){
+    try {
+      Module.audio.context.close();      
+    } catch (error) {}
+  }
+
   let AudioContext = window.AudioContext || window.webkitAudioContext;
   let context = new AudioContext();
   let listener = context.listener;
@@ -24,6 +30,7 @@ let initAudio = ()=> {
 }
 
 initAudio();
+Module.audio['initAudio'] = initAudio;
 
 Module.animations = {
   ids : 1,

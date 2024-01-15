@@ -77,6 +77,10 @@ module.exports = () => {
       } catch (error) {}
 
       try {
+        Module.audio.initAudio();
+      } catch (error) {}
+
+      try {
         Scenegraph.reset();
       } catch (error) {}
 
