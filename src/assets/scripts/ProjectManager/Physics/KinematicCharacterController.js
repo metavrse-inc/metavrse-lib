@@ -26,6 +26,7 @@ module.exports = (payload) => {
     let body = null;
     let characterController = null;
     let characterGravity = -20;
+    let currentGravity = 0;
 
     let onUpdate = null;
     let updateHandlers = new Map();
@@ -280,7 +281,8 @@ module.exports = (payload) => {
         // characterController.setMaxJumpHeight(0.25)
         characterController.setMaxSlope(Math.PI / 3)
         characterGravity = characterController.getGravity();
-        characterController.setGravity(0);
+        currentGravity = characterGravity;
+        // characterController.setGravity(0);
 
         // btBroadphaseProxy.CollisionFilterGroups.CharacterFilter - 32
         // btBroadphaseProxy.CollisionFilterGroups.DefaultFilter  - 1
@@ -517,9 +519,15 @@ module.exports = (payload) => {
         rayResult = null;
 
         if (!onGround) {
+            currentGravity = characterGravity;
             characterController.setGravity(characterGravity);
-        } else {
-            characterController.setGravity(0);
+        } else if (currentGravity != 0) {
+            let scaleAvg = ((1/Module.fps.currentFps) * 60) * 0.1;
+            currentGravity = currentGravity + (scaleAvg * (-currentGravity))
+
+            if (currentGravity <= 0.001) currentGravity = 0;
+
+            characterController.setGravity(currentGravity);
         }
 
         let o = payload.parent;
