@@ -1643,6 +1643,11 @@ module.exports = () => {
           });
         }
 
+        Object.defineProperties(PM, {
+          disablePaint: { get: () => { return Module.ProjectManager.disablePaint; }, set: (v) => { Module.ProjectManager.disablePaint = v; }, },
+          isDirty: { get: () => { return Module.ProjectManager.isDirty; }, set: (v) => { Module.ProjectManager.isDirty = v; }, },
+        })
+
         PM.Physics = Physics;
         PM.objectControllers = Module.ProjectManager.objectControllers;
         PM.ZIPManager = ZIPManager;

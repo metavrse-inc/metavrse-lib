@@ -484,8 +484,19 @@ let _render = function (t) {
 Module.onDestroy = function () {
   // 'use strict';
   // console.log('Shutdown');
-  if (Module.Handlers && typeof Module.Handlers.onDestroy === 'function')
-    Module.Handlers.onDestroy();
+  var resp = true;
+  if (
+    Module.ProjectManager.projectRunning &&
+    Module.ProjectManager.worldController &&
+    typeof Module.ProjectManager.worldController.onDestroy === 'function'
+  )
+    resp = Module.ProjectManager.worldController.onDestroy();
+  else if (
+    !Module.ProjectManager.projectRunning &&
+    Module.Handlers &&
+    typeof Module.Handlers.onDestroy === 'function'
+  )
+    resp = Module.Handlers.onDestroy();
 
   Module.animations.fns.clear();
 };
