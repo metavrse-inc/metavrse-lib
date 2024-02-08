@@ -998,6 +998,7 @@ module.exports = () => {
             onDownloadProgress: (response)=> {
               if (URLLoader && URLLoader.zips && !item_.async) {
                 URLLoader.zips.set(item_.key, response.loaded/response.total)
+                if (URLLoader.onProgress) URLLoader.onProgress()
                 // URLLoader.percentage = response.loaded/response.total;
                 // URLLoader.close();
               }
