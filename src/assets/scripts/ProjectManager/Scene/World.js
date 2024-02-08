@@ -129,6 +129,11 @@ module.exports = (payload) => {
         ? [...d['shadow']['rotation']]
         : [0, 0, 0],
 
+    'shadow-darkness':
+      d['shadow'] && d['shadow']['darkness'] != undefined
+        ? d['shadow']['darkness']
+        : 0.25,
+
     controller: d['controller'] || '',
     dpr: d['dpr'] !== undefined ? d['dpr'] : 0.25,
     fps: d['fps'] !== undefined ? d['fps'] : 30,
@@ -332,7 +337,11 @@ module.exports = (payload) => {
           v = getLastValueInMap(getProperties(row.type));
           scene.setShadowsVolumeCenter(v[0], v[1], v[2]);
           break;
-
+        case 'shadow-darkness':
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setShadowsDarkening(v);
+          break;
+          
         case 'hudscale':
           v = getLastValueInMap(getProperties(row.type));
           Module.screen.hudscale = v;
@@ -460,6 +469,7 @@ module.exports = (payload) => {
   setProperty('shadow-follow', world['shadow-follow']);
   // setProperty('shadow-direction', world['shadow-direction']);
   setProperty('shadow-rotation', world['shadow-rotation']);
+  setProperty('shadow-darkness', world['shadow-darkness']);
 
   setProperty('color', world.color);
   setProperty('transparent', world.transparent);
@@ -617,6 +627,15 @@ module.exports = (payload) => {
       },
       set: (v) => {
         setProperty('shadow-rotation', v);
+      },
+    },
+
+    darkness: {
+      get: () => {
+        return getProperty('shadow-darkness')[1];
+      },
+      set: (v) => {
+        setProperty('shadow-darkness', v);
       },
     },
 

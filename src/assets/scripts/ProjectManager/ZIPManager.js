@@ -151,10 +151,19 @@
         }
 
     }
-
+    let auto_launch;
     let setAddZip = (fn)=> {
+        if (auto_launch) clearTimeout(auto_launch);
         zipAddQue.push(fn);
-        if (zipRunning) return;
+        if (zipRunning) {
+            auto_launch = setTimeout(() => {
+                if (zipRunning) return;
+
+                zipRunning = true;
+                zipCB();
+            }, 2000);
+            return;
+        }
 
         zipRunning = true;
         zipCB();

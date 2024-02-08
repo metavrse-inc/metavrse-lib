@@ -20,6 +20,7 @@ export type Shadow = {
   volume: Vector3;
   center: Vector3;
   follow: boolean;
+  darkness: number;
 };
 
 export type World = {

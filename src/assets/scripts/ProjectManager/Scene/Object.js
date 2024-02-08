@@ -1841,6 +1841,8 @@ module.exports = (payload) => {
       }
     },
 
+    removeFOV,
+
     remove: () => {
       // if (Physics.isResetting){
       //   removeFOV(); 

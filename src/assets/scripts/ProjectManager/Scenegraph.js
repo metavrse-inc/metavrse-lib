@@ -194,14 +194,14 @@ module.exports = () => {
     if (launch && !launched) {
       if (tmpRedraws == null) {
         tmpRedraws = new Map(local_redraws);
-        tmpOpts = JSON.stringify(JSON.stringify(opts));
+        tmpOpts = JSON.stringify(opts);
       }
       if (!objectsLoaded) {
         let qs = scene.getWorkerObjectQueueSize();
         if (qs == 0) {
           objectsLoaded = true;
           if (URLLoader) {
-            URLLoader.percentage = 0.1;
+            URLLoader.percentage = 0.5;
             // URLLoader.close()
           }
 
@@ -227,7 +227,15 @@ module.exports = () => {
 
           if (URLLoader) {
             let ratio = (queueSize - qs) / queueSize;
-            URLLoader.percentage = ratio / 10;
+            URLLoader.percentage = ratio / 2;
+          }
+
+          for (const [k, handler] of changeHandlers) {
+            try {
+              handler('loaded', URLLoader.percentage);
+            } catch (error) {
+              console.error(error)
+            }
           }
 
           return;
@@ -246,8 +254,16 @@ module.exports = () => {
           if (qs > queueSize) queueSize = qs;
 
           if (URLLoader) {
-            let ratio = (queueSize - qs) / queueSize - 0.1;
-            URLLoader.percentage = ratio + 0.1;
+            let ratio = (queueSize - qs) / queueSize;
+            URLLoader.percentage = (ratio/2) + 0.5;
+          }
+
+          for (const [k, handler] of changeHandlers) {
+            try {
+              handler('loaded', URLLoader.percentage);
+            } catch (error) {
+              console.error(error)
+            }
           }
 
           return;
@@ -298,6 +314,16 @@ module.exports = () => {
       }
 
       Physics.resetFOV();
+
+      for (const [k, handler] of changeHandlers) {
+        try {
+          handler('loaded', 1);
+        } catch (error) {
+          console.error(error)
+        }
+      }
+
+      // console.log('loaded')
     } else if (launchScene) {
       // init controllers
       if (launch) {
@@ -541,7 +567,9 @@ module.exports = () => {
       }
 
       if (obj.fov) ZIPManager.callbacks.fov.set(obj.item.key, addFN)
-      else ZIPManager.setAddZip(addFN)
+      else {
+        requestAnimationFrame(()=>{ZIPManager.setAddZip(addFN)});
+      }
     }
 
     if (is_async) ZIPManager.callbacks.add(o.data.url, cb)
