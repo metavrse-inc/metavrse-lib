@@ -20,7 +20,8 @@ export const worldDefaults: World = {
     center: [0, 0, 0],
     follow: false,
     rotation: [0,0,0],
-    direction: [0,0,0]
+    direction: [0,0,0],
+    darkness: 0.25,
   },
   controller: '',
   dpr: 0,
