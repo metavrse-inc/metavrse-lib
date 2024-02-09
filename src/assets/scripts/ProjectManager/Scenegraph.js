@@ -1185,88 +1185,88 @@ module.exports = () => {
         break;
       case 'object-hud':
       case 'object':
-        if (opt.setQue && opt.getReady()){
-          const pload = payload;
-          const _opt = opt;
-          const _data = data;
-          const _child = child;
-          let fn = ()=>{
-            // test if zip is being
-            let zipobj = sceneprops.sceneIndex.get(_opt.prefix);
-            if (!zipobj || zipobj.children.length < 2) return;
+        // if (opt.setQue && opt.getReady() && !launched){
+        //   const pload = payload;
+        //   const _opt = opt;
+        //   const _data = data;
+        //   const _child = child;
+        //   let fn = ()=>{
+        //     // test if zip is being
+        //     let zipobj = sceneprops.sceneIndex.get(_opt.prefix);
+        //     if (!zipobj || zipobj.children.length < 2) return;
 
-            let obj = ObjectModel(pload);
-            // addToZIPRow();
-            if ( pload && pload.data && pload.data['controller'] != undefined && pload.data['controller'] != '' && _opt.zip_id && Module.ProjectManager.projectRunning)
-            {
-                if (!objectControllerkeysZIP.has(_opt.prefix)) objectControllerkeysZIP.set(_opt.prefix, new Map());
-                let ziprow = objectControllerkeysZIP.get(_opt.prefix);
-                ziprow.set(_child.key, {controller: pload.data['controller'], data:_data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
-            }
+        //     let obj = ObjectModel(pload);
+        //     // addToZIPRow();
+        //     if ( pload && pload.data && pload.data['controller'] != undefined && pload.data['controller'] != '' && _opt.zip_id && Module.ProjectManager.projectRunning)
+        //     {
+        //         if (!objectControllerkeysZIP.has(_opt.prefix)) objectControllerkeysZIP.set(_opt.prefix, new Map());
+        //         let ziprow = objectControllerkeysZIP.get(_opt.prefix);
+        //         ziprow.set(_child.key, {controller: pload.data['controller'], data:_data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
+        //     }
 
-            if (obj) {
-              sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+        //     if (obj) {
+        //       sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
         
-              if (_child.children) {
-                for (let x = 0; x < _child.children.length; x++) {
-                  _addObject(_child.children[x], _data, obj, pload.key, _opt);
-                }
-              }
+        //       if (_child.children) {
+        //         for (let x = 0; x < _child.children.length; x++) {
+        //           _addObject(_child.children[x], _data, obj, pload.key, _opt);
+        //         }
+        //       }
         
-              if (obj.isLoading != undefined) {
-                obj.isLoading = false;
-              }
+        //       if (obj.isLoading != undefined) {
+        //         obj.isLoading = false;
+        //       }
         
-            }
-          }
-          opt.setQue(pload.child.key, fn)
-        } else {
-          if (opt.setReady) opt.setReady();
+        //     }
+        //   }
+        //   opt.setQue(pload.child.key, fn)
+        // } else {
+        //   if (opt.setReady) opt.setReady();
           obj = ObjectModel(payload);
           addToZIPRow();
-        }
+        // }
         break;
       case 'particle-generator':
-        if (opt.setQue && opt.getReady()){
-          const pload = payload;
-          const _opt = opt;
-          const _data = data;
-          const _child = child;
-          let fn = ()=>{
-            // test if zip is being
-            let zipobj = sceneprops.sceneIndex.get(_opt.prefix);
-            if (!zipobj || zipobj.children.length < 2) return;
+        // if (opt.setQue && opt.getReady()){
+        //   const pload = payload;
+        //   const _opt = opt;
+        //   const _data = data;
+        //   const _child = child;
+        //   let fn = ()=>{
+        //     // test if zip is being
+        //     let zipobj = sceneprops.sceneIndex.get(_opt.prefix);
+        //     if (!zipobj || zipobj.children.length < 2) return;
 
-            let obj = ParticleGenerator(pload);
-            // addToZIPRow();
-            if ( pload && pload.data && pload.data['controller'] != undefined && pload.data['controller'] != '' && _opt.zip_id && Module.ProjectManager.projectRunning)
-            {
-                if (!objectControllerkeysZIP.has(_opt.prefix)) objectControllerkeysZIP.set(_opt.prefix, new Map());
-                let ziprow = objectControllerkeysZIP.get(_opt.prefix);
-                ziprow.set(_child.key, {controller: pload.data['controller'], data:_data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
-            }
+        //     let obj = ParticleGenerator(pload);
+        //     // addToZIPRow();
+        //     if ( pload && pload.data && pload.data['controller'] != undefined && pload.data['controller'] != '' && _opt.zip_id && Module.ProjectManager.projectRunning)
+        //     {
+        //         if (!objectControllerkeysZIP.has(_opt.prefix)) objectControllerkeysZIP.set(_opt.prefix, new Map());
+        //         let ziprow = objectControllerkeysZIP.get(_opt.prefix);
+        //         ziprow.set(_child.key, {controller: pload.data['controller'], data:_data, originalKey, prefix: _opt.prefix, zip_id: _opt.zip_id});          
+        //     }
 
-            if (obj) {
-              sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
+        //     if (obj) {
+        //       sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
         
-              if (_child.children) {
-                for (let x = 0; x < _child.children.length; x++) {
-                  _addObject(_child.children[x], _data, obj, pload.key, _opt);
-                }
-              }
+        //       if (_child.children) {
+        //         for (let x = 0; x < _child.children.length; x++) {
+        //           _addObject(_child.children[x], _data, obj, pload.key, _opt);
+        //         }
+        //       }
         
-              if (obj.isLoading != undefined) {
-                obj.isLoading = false;
-              }
+        //       if (obj.isLoading != undefined) {
+        //         obj.isLoading = false;
+        //       }
         
-            }
-          }
-          opt.setQue(pload.child.key, fn)
-        } else {
-          if (opt.setReady) opt.setReady();
+        //     }
+        //   }
+        //   opt.setQue(pload.child.key, fn)
+        // } else {
+        //   if (opt.setReady) opt.setReady();
           obj = ParticleGenerator(payload);
           addToZIPRow();
-        }
+        // }
         break;
       case 'light':
         if (opt.zip_id) {          
