@@ -5,11 +5,13 @@ import { VideoEntity, World } from '../..';
 export const worldDefaults: World = {
   skybox: {
     key: '',
+    'key-env': '',
     show: true,
   },
   color: [0, 0, 0],
   transparent: false,
   skyboxRotation: [0, 0, 0],
+  skyboxEnvRotation: [0, 0, 0],
   shadow: {
     level: 2,
     enabled: false,
@@ -22,6 +24,7 @@ export const worldDefaults: World = {
     rotation: [0,0,0],
     direction: [0,0,0],
     darkness: 0.25,
+    bias: 0.005,
   },
   controller: '',
   dpr: 0,

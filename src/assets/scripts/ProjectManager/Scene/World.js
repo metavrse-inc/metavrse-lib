@@ -73,6 +73,7 @@ module.exports = (payload) => {
 
   let world = {
     'skybox-key': d['skybox'] && d['skybox']['key'] ? d['skybox']['key'] : '',
+    'skybox-key-env': d['skybox'] && d['skybox']['key-env'] ? d['skybox']['key-env'] : '',
     'skybox-show':
       d['skybox'] && d['skybox']['show'] != undefined
         ? d['skybox']['show']
@@ -82,6 +83,9 @@ module.exports = (payload) => {
     transparent: d['transparent'] != undefined ? d['transparent'] : false,
     skyboxRotation:
       d['skyboxRotation'] !== undefined ? [...d['skyboxRotation']] : [0, 0, 0],
+      
+    skyboxEnvRotation:
+      d['skyboxEnvRotation'] !== undefined ? [...d['skyboxEnvRotation']] : [0, 0, 0],
 
     'shadow-level':
       d['shadow'] && d['shadow']['level'] != undefined
@@ -133,6 +137,11 @@ module.exports = (payload) => {
       d['shadow'] && d['shadow']['darkness'] != undefined
         ? d['shadow']['darkness']
         : 0.25,
+
+    'shadow-bias':
+      d['shadow'] && d['shadow']['bias'] != undefined
+        ? d['shadow']['bias']
+        : 0.005,
 
     controller: d['controller'] || '',
     dpr: d['dpr'] !== undefined ? d['dpr'] : 0.25,
@@ -272,6 +281,13 @@ module.exports = (payload) => {
           else if (v.trim()!="") scene.loadSkybox(v);
           else scene.loadSkybox('');
           break;
+        case 'skybox-key-env':
+            v = getLastValueInMap(getProperties(row.type));
+            if (Module.ProjectManager.objPaths[v])
+              scene.loadSkyboxEnv(Module.ProjectManager.objPaths[v]);
+            else if (v.trim()!="") scene.loadSkyboxEnv(v);
+            else scene.loadSkyboxEnv('');
+            break;
         case 'fps':
           v = getLastValueInMap(getProperties(row.type));
           if (Module.ProjectManager.projectRunning) Module['fps']['maxFps'] = v;
@@ -341,6 +357,11 @@ module.exports = (payload) => {
           v = getLastValueInMap(getProperties(row.type));
           scene.setShadowsDarkening(v);
           break;
+
+        case 'shadow-bias':
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setShadowsBias(v);
+          break;
           
         case 'hudscale':
           v = getLastValueInMap(getProperties(row.type));
@@ -365,6 +386,16 @@ module.exports = (payload) => {
           mat4.rotate(skyboxMat, skyboxMat, v[2] * (Math.PI / 180), axisZ);
 
           scene.setSkyboxTransformMatrix(skyboxMat);
+          break;
+        case 'skyboxEnvRotation':
+          v = getLastValueInMap(getProperties(row.type));
+
+          skyboxMat = mat4.create();
+          mat4.rotate(skyboxMat, skyboxMat, v[0] * (Math.PI / 180), axisX);
+          mat4.rotate(skyboxMat, skyboxMat, v[1] * (Math.PI / 180), axisY);
+          mat4.rotate(skyboxMat, skyboxMat, v[2] * (Math.PI / 180), axisZ);
+
+          scene.setSkyboxEnvTransformMatrix(skyboxMat);
           break;
 
         case 'css':
@@ -457,6 +488,7 @@ module.exports = (payload) => {
   addToUpdated(object.item.key, 'added', { prop: 'item', value: object.item });
 
   setProperty('skybox-key', world['skybox-key']);
+  setProperty('skybox-key-env', world['skybox-key-env']);
   setProperty('skybox-show', world['skybox-show']);
 
   setProperty('shadow-level', world['shadow-level']);
@@ -470,10 +502,12 @@ module.exports = (payload) => {
   // setProperty('shadow-direction', world['shadow-direction']);
   setProperty('shadow-rotation', world['shadow-rotation']);
   setProperty('shadow-darkness', world['shadow-darkness']);
+  setProperty('shadow-bias', world['shadow-bias']);
 
   setProperty('color', world.color);
   setProperty('transparent', world.transparent);
   setProperty('skyboxRotation', world.skyboxRotation);
+  setProperty('skyboxEnvRotation', world.skyboxEnvRotation);
 
   setProperty('fps', world.fps);
   setProperty('dpr', world.dpr);
@@ -536,6 +570,15 @@ module.exports = (payload) => {
       },
       set: (v) => {
         setProperty('skybox-key', v);
+      },
+    },
+
+    "key-env": {
+      get: () => {
+        return getProperty('skybox-key-env')[1];
+      },
+      set: (v) => {
+        setProperty('skybox-key-env', v);
       },
     },
   });
@@ -639,6 +682,15 @@ module.exports = (payload) => {
       },
     },
 
+    bias: {
+      get: () => {
+        return getProperty('shadow-bias')[1];
+      },
+      set: (v) => {
+        setProperty('shadow-bias', v);
+      },
+    },
+
   });
 
   // Props and Methods
@@ -665,6 +717,14 @@ module.exports = (payload) => {
       },
       set: (v) => {
         setProperty('skyboxRotation', v);
+      },
+    },
+    skyboxEnvRotation: {
+      get: () => {
+        return getProperty('skyboxEnvRotation')[1];
+      },
+      set: (v) => {
+        setProperty('skyboxEnvRotation', v);
       },
     },
     skybox: {

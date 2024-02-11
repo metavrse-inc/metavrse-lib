@@ -6,6 +6,7 @@ export type TextureResolution = [number, number];
 
 export type Skybox = {
   key: CherryKey;
+  'key-env': CherryKey;
   show: boolean;
 };
 
@@ -21,6 +22,7 @@ export type Shadow = {
   center: Vector3;
   follow: boolean;
   darkness: number;
+  bias: number;
 };
 
 export type World = {
@@ -28,6 +30,7 @@ export type World = {
   color: RGB;
   transparent: boolean;
   skyboxRotation: Vector3;
+  skyboxEnvRotation: Vector3;
   shadow: Shadow;
   controller: CherryKey;
   dpr: number;
