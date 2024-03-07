@@ -70,6 +70,7 @@ module.exports = (payload) => {
         object_position: (_d['object_position'] !== undefined) ? [..._d['object_position']] : [0, 0, 0],
         object_rotate: (_d['object_rotate'] !== undefined) ? [..._d['object_rotate']] : [0, 0, 0, 1],
         object_scale: (_d['object_scale'] !== undefined) ? [..._d['object_scale']] : [1, 1, 1],
+        controller: (_d['controller'] !== undefined) ? _d['controller'] : [],        
     };
 
     // console.log(params)
@@ -678,6 +679,8 @@ module.exports = (payload) => {
         props: { get: () => { return propdata; }, set: (v) => { } },
         controller: { get: () => { return characterController; }, set: (v) => { } },
         onUpdate: { get: () => { return onUpdate; }, set: (v) => { onUpdate = v} },
+        code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); }, },
+        controller: { get: () => { return getProperty('controller')[1]; }, set: (v) => { setProperty('controller', v); } },
     })
 
     Object.assign(object, {

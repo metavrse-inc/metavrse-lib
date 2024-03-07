@@ -67,6 +67,7 @@
         object_position: (_d['object_position'] !== undefined) ? [..._d['object_position']] : [0, 0, 0],
         object_rotate: (_d['object_rotate'] !== undefined) ? [..._d['object_rotate']] : [0, 0, 0, 1],
         object_scale: (_d['object_scale'] !== undefined) ? [..._d['object_scale']] : [1, 1, 1],
+        controller: (_d['controller'] !== undefined) ? _d['controller'] : [],        
     };
 
     let props = {};
@@ -624,7 +625,8 @@
         RigidBody: { get: () => { return body; }, set: (v) => {} },
         object: { get: () => { return Object3d; }, set: (v) => {} },
         props: { get: () => { return propdata; }, set: (v) => { } },
-   
+        code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); }, },
+        controller: { get: () => { return getProperty('controller')[1]; }, set: (v) => { setProperty('controller', v); } },
     })
     
     Object.assign(object, {
