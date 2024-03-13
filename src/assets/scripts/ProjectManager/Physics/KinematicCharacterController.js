@@ -680,7 +680,7 @@ module.exports = (payload) => {
         controller: { get: () => { return characterController; }, set: (v) => { } },
         onUpdate: { get: () => { return onUpdate; }, set: (v) => { onUpdate = v} },
         code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); }, },
-        controller: { get: () => { return getProperty('controller')[1]; }, set: (v) => { setProperty('controller', v); } },
+        // controller: { get: () => { return getProperty('controller')[1]; }, set: (v) => { setProperty('controller', v); } },
     })
 
     Object.assign(object, {
