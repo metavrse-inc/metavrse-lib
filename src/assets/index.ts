@@ -60,6 +60,7 @@ import FOVMesh from './scripts/ProjectManager/Physics/FOVMesh';
 import PhysicsHelpers from './scripts/ProjectManager/Physics/helpers';
 import KinematicCharacterController from './scripts/ProjectManager/Physics/KinematicCharacterController';
 import RigidBody from './scripts/ProjectManager/Physics/RigidBody';
+import RaycastVehicle from './scripts/ProjectManager/Physics/RaycastVehicle';
 
 const MAIN_PATH = 'assets';
 const PROJECT_MANAGER = `${MAIN_PATH}/ProjectManager`;
@@ -136,6 +137,7 @@ export const scripts = {
   [`${PHYSICS}/helpers.js`]: PhysicsHelpers,
   [`${PHYSICS}/KinematicCharacterController.js`]: KinematicCharacterController,
   [`${PHYSICS}/RigidBody.js`]: RigidBody,
+  [`${PHYSICS}/RaycastVehicle.js`]: RaycastVehicle,
   [`${PHYSICS}/ZIPBox.js`]: ZIPBox,
   [`${PHYSICS}/ZIPMesh.js`]: ZIPMesh,
 

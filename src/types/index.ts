@@ -62,6 +62,7 @@ export * from './entities/ObjectGroupEntity';
 export * from './entities/ObjectHudEntity';
 export * from './entities/VideoEntity';
 export * from './entities/RigidBodyEntity';
+export * from './entities/RaycastVehicleEntity';
 export * from './entities/KinematicCharacterControllerEntity';
 export * from './entities/ConfigurationEntity';
 export * from './entities/ZIPElementEntity';

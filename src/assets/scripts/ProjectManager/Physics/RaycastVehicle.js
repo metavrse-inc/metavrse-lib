@@ -24,6 +24,14 @@
 
     let renderList = [];
     let body = null;
+    let vehicle = null;
+    let onUpdate = null;
+
+    // gravit y
+    let rayTo = new Ammo.btVector3(0,-1,0);
+    let btGravity = new Ammo.btVector3(0,-9.8,0);
+    let characterGravity = new Ammo.btVector3(0,-9.8,0);
+    let currentGravity = 0;
 
     let updateHandlers = new Map();
 
@@ -70,6 +78,38 @@
         controller: (_d['controller'] !== undefined) ? _d['controller'] : [],        
     };
 
+    // Vehicle contants
+    var vScale = 1;
+    var vOffset = 0.25;
+    var chassisWidth = 1.8 / vScale;
+    var chassisHeight = .6 / vScale;
+    var chassisLength = 3 / vScale;
+    var massVehicle = 1200 / vScale;
+
+    var wheelAxisPositionBack = -1 / vScale;
+    var wheelRadiusBack = .4 / vScale;
+    var wheelWidthBack = .3 / vScale;
+    var wheelHalfTrackBack = (1 / vScale) - vOffset;
+    var wheelAxisHeightBack = (.3 / vScale) - vOffset;
+
+    var wheelAxisFrontPosition = 1.7 / vScale;
+    var wheelHalfTrackFront = (1 / vScale) - vOffset;
+    var wheelAxisHeightFront = (.3 / vScale) - vOffset;
+    var wheelRadiusFront = .35 / vScale;
+    var wheelWidthFront = .2 / vScale;
+
+    var friction = 100;
+    var suspensionStiffness = 20.0 / vScale;
+    var suspensionDamping = 2.3 / vScale;
+    var suspensionCompression = 4.4 / vScale;
+    var suspensionRestLength = 0.6 / vScale;
+    var rollInfluence = 0.0 / vScale;
+
+    var steeringIncrement = .04;
+    var steeringClamp = .5;
+    var maxEngineForce = 2000;
+    var maxBreakingForce = 100;
+
     let props = {};
 
     if (_d.props) {
@@ -113,6 +153,7 @@
         updateHandlers.clear();
         if (parent) parent.children.delete(child.key);
         Physics.removeUpdate(child.key);
+        onUpdate = null;
 
         // if (Physics.isResetting){
             // Physics.addFn(deleteBody);        
@@ -150,7 +191,7 @@
                 },
                 setTransformMatrix: (transform)=> {
                     for (let [key, child] of o.children) {
-                        if (!(child.type == "RigidBody" || child.type == "KinematicCharacterController")) child.render({transform});
+                        if (!(child.type == "RigidBody" || child.type == "KinematicCharacterController" || child.type == "RaycastVehicle")) child.render({transform});
                     }
                 }
             }
@@ -158,8 +199,8 @@
 
         _object = so;
         var ghost = Boolean(params.ghost || false)
-        var mass = params.mass;
-        var friction = Number(args.friction || 0)
+        var mass = massVehicle;
+        // var friction = Number(args.friction || 0)
   
         extents = so.getParameterVec3("extent");
         center = so.getParameterVec3("center");
@@ -247,13 +288,13 @@
 
             case 'bounding-box':
             default:
-                geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
+                geometry = new Ammo.btBoxShape(new Ammo.btVector3(chassisWidth * .5, chassisHeight * .5, chassisLength * .5));
+                // geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
                 break;
         }
         
         vec3.multiply(scales, scales, params.scale);
         geometry.setLocalScaling(new Ammo.btVector3(...scales));
-        geometry.setMargin(0.1);
 
         // rigidbody transformation
         let q2 = quat.create();
@@ -270,11 +311,18 @@
   
         var localInertia = new Ammo.btVector3(0, 0, 0);
         geometry.calculateLocalInertia(mass, localInertia);
+        
+        const compound = new Ammo.btCompoundShape()
+        var localTransform = new Ammo.btTransform();
+        localTransform.setIdentity();
+        localTransform.setOrigin(new Ammo.btVector3(0, -vOffset, 0));
+        compound.addChildShape(localTransform, geometry);
   
-        var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, geometry, localInertia);
+        var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, compound, localInertia);
         body = new Ammo.btRigidBody(rbInfo);
-  
-        body.setFriction(friction);
+        body.setActivationState(4);
+        body.setFriction(0);
+        
         if (ghost) {
             // body.setCollisionFlags(4)
             body.setCollisionFlags(body.getCollisionFlags() | 4);
@@ -293,6 +341,57 @@
 
         if (ghost) PhysicsWorld.addRigidBody(body, 16, -1);
         else PhysicsWorld.addRigidBody(body);
+        let bodyGravityDefault = body.getGravity();
+        characterGravity.setValue(bodyGravityDefault.x(), bodyGravityDefault.y(), bodyGravityDefault.z())
+
+        currentGravity = bodyGravityDefault.y();
+
+        // body.setContactProcessingThreshold(10)
+
+         // Raycast Vehicle
+         var engineForce = 0;
+         var vehicleSteering = 0;
+         var breakingForce = 0;
+         var tuning = new Ammo.btVehicleTuning();
+         var rayCaster = new Ammo.btDefaultVehicleRaycaster(PhysicsWorld);
+         vehicle = new Ammo.btRaycastVehicle(tuning, body, rayCaster);
+         vehicle.setCoordinateSystem(0, 1, 2);
+         PhysicsWorld.addAction(vehicle);
+
+         // Wheels
+         var FRONT_LEFT = 0;
+         var FRONT_RIGHT = 1;
+         var BACK_LEFT = 2;
+         var BACK_RIGHT = 3;
+         var wheelMeshes = [];
+         var wheelDirectionCS0 = new Ammo.btVector3(0, -1, 0);
+         var wheelAxleCS = new Ammo.btVector3(-1, 0, 0);
+     
+         function addWheel(isFront, pos, radius, width, index) {
+     
+             var wheelInfo = vehicle.addWheel(
+                     pos,
+                     wheelDirectionCS0,
+                     wheelAxleCS,
+                     suspensionRestLength,
+                     radius,
+                     tuning,
+                     isFront);
+     
+             wheelInfo.set_m_suspensionStiffness(suspensionStiffness);
+             wheelInfo.set_m_wheelsDampingRelaxation(suspensionDamping);
+             wheelInfo.set_m_wheelsDampingCompression(suspensionCompression);
+             wheelInfo.set_m_frictionSlip(friction);
+             wheelInfo.set_m_rollInfluence(rollInfluence);
+     
+            //  wheelMeshes[index] = createWheelMesh(radius, width);
+         }
+     
+         addWheel(true, new Ammo.btVector3(wheelHalfTrackFront, wheelAxisHeightFront, wheelAxisFrontPosition), wheelRadiusFront, wheelWidthFront, FRONT_LEFT);
+         addWheel(true, new Ammo.btVector3(-wheelHalfTrackFront, wheelAxisHeightFront, wheelAxisFrontPosition), wheelRadiusFront, wheelWidthFront, FRONT_RIGHT);
+         addWheel(false, new Ammo.btVector3(-wheelHalfTrackBack, wheelAxisHeightBack, wheelAxisPositionBack), wheelRadiusBack, wheelWidthBack, BACK_LEFT);
+         addWheel(false, new Ammo.btVector3(wheelHalfTrackBack, wheelAxisHeightBack, wheelAxisPositionBack), wheelRadiusBack, wheelWidthBack, BACK_RIGHT);
+     
   
      }
 
@@ -395,7 +494,7 @@
             }
 
             renderList = [];
-            if ((opts.transform || renderTransform) && (!Module.ProjectManager.projectRunning || (Module.ProjectManager.projectRunning && params.mass == 0))) {
+            if ((opts.transform || renderTransform) && (!Module.ProjectManager.projectRunning || (Module.ProjectManager.projectRunning && massVehicle == 0))) {
                 let o = payload.parent;
                 let scales = updateMath.scales;
                 mat4.getScaling(scales, o.parentOpts.transform)
@@ -468,20 +567,81 @@
             
         }
     }
+    
     const _update = (forced)=> {
         forced = forced || false;
         if (!isLoaded || !body) return;
 
-        if (forced && params.mass == 0){
+        if (forced && massVehicle == 0){
             // go in
         }
-        else if (params.mass <= 0) return;
+        else if (massVehicle <= 0) return;
 
         let o = payload.parent;
 
+        var tm, p, q, i;
+        var n = vehicle.getNumWheels();
+        for (i = 0; i < n; i++) {
+            vehicle.updateWheelTransform(i, true);
+            // tm = vehicle.getWheelTransformWS(i);
+            // p = tm.getOrigin();
+            // q = tm.getRotation();
+            // wheelMeshes[i].position.set(p.x(), p.y(), p.z());
+            // wheelMeshes[i].quaternion.set(q.x(), q.y(), q.z(), q.w());
+        }
+
         let TRANSFORM_AUX = body.getWorldTransform();
+        // let TRANSFORM_AUX = vehicle.getChassisWorldTransform();
         var p = TRANSFORM_AUX.getOrigin();
         var q = TRANSFORM_AUX.getRotation();
+
+        // gravity
+        /*
+        rayTo.setValue(p.x(), p.y()-0.2, p.z())
+        
+        let rayResult = new Ammo.ClosestRayResultCallback(p, rayTo);
+        rayResult.m_collisionFilterMask = 2; // only static objects
+        
+        PhysicsWorld.rayTest(p, rayTo, rayResult);
+        let hasHit = rayResult.hasHit();
+        let isGhost = false;
+
+        let onGround = false;
+        if (hasHit) {
+            let c_obj = rayResult.m_collisionObject;
+            let normal = rayResult.m_hitNormalWorld;
+            let uid = c_obj.getUserIndex();
+            let uob = Physics.get(uid);
+            isGhost = uob.ghost;
+
+            var angle = Math.acos(normal.y())
+            
+            onGround = !isGhost && angle < 0.1;
+        }
+
+        Ammo.destroy(rayResult)
+
+        rayResult = null;
+
+        if (!onGround) {
+            currentGravity = characterGravity.y();
+            body.setGravity(characterGravity);
+        } else if (currentGravity != 0) {
+            let scaleAvg = ((1/Module.fps.currentFps) * 60) * 0.1;
+            currentGravity = currentGravity + (scaleAvg * (-currentGravity))
+
+            if (currentGravity <= 0.001) currentGravity = 0;
+
+            btGravity.setValue(0, currentGravity, 0)
+
+
+            body.setGravity(btGravity);
+
+        }
+        */
+
+        // console.log(currentGravity)
+        //
 
         var _p = updateMath._p;
         vec3.set(_p, p.x(), p.y(), p.z())
@@ -535,7 +695,9 @@
             }
     
         }
-        
+
+        if (onUpdate) onUpdate(m4);
+
         for (var [k, funcUp] of updateHandlers) {
             try {
                 funcUp();
@@ -611,6 +773,7 @@
     let Object3d = {}
     Object.defineProperties(Object3d, {
         rotate: { get: () => { return getProperty('object_rotate'); }, set: (v) => { setProperty('object_rotate', v, ""); } },
+        onUpdate: { get: () => { return onUpdate; }, set: (v) => { onUpdate = v} },
     })
 
     // Props and Methods
@@ -624,6 +787,7 @@
         shape_file: { get: () => { return getProperty('shape_file'); }, set: (v) => { setProperty('shape_file', v, "readd"); } },
         ghost: { get: () => { return getProperty('ghost'); }, set: (v) => { setProperty('ghost', v, "ghost"); } },
         RigidBody: { get: () => { return body; }, set: (v) => {} },
+        RaycastVehicle: { get: () => { return vehicle; }, set: (v) => {} },
         object: { get: () => { return Object3d; }, set: (v) => {} },
         props: { get: () => { return propdata; }, set: (v) => { } },
         code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); }, },

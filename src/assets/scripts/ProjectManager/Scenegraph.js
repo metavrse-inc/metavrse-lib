@@ -732,7 +732,15 @@ module.exports = () => {
           )
             objectControllerkeys.set(child.key, payload.data['controller']);
           break;
-
+        case 'RaycastVehicle':
+          obj = Physics.add(payload);
+          if (
+            payload.data['controller'] != undefined &&
+            payload.data['controller'] != ''
+          )
+            objectControllerkeys.set(child.key, payload.data['controller']);
+          break;
+  
         case 'KinematicCharacterController':
           obj = Physics.add(payload);
           if (
@@ -1365,6 +1373,10 @@ module.exports = () => {
 
       // physics
       case 'RigidBody':
+        obj = Physics.add(payload);
+        addToZIPRow();
+        break;
+      case 'RaycastVehicle':
         obj = Physics.add(payload);
         addToZIPRow();
         break;

@@ -11,6 +11,7 @@ import { worldDefaults } from './entities/worldDefaults';
 import { ZIPElementDefaults } from './entities/ZIPElementDefaults';
 import { RigidBodyDefaults } from './entities/RigidBodyDefaults';
 import { KinematicCharacterControllerDefaults } from './entities/KinematicCharacterControllerDefaults';
+import { RaycastVehicleDefaults } from './entities/RaycastVehicleDefaults';
 
 export * from './nodeTypes';
 export * from './htmlHud';
@@ -33,5 +34,6 @@ export const DEFAULTS = {
   worldDefaults,
   ZIPElementDefaults,
   RigidBodyDefaults,
+  RaycastVehicleDefaults,
   KinematicCharacterControllerDefaults,
 } as const;

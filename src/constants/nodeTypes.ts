@@ -26,5 +26,6 @@ export const NODE_TYPES = {
 
   RigidBody: 'RigidBody',
   KinematicCharacterController: 'KinematicCharacterController',
+  RaycastVehicle: 'RaycastVehicle',
 
 } as const;

@@ -13,6 +13,7 @@
    const KinematicCharacterController = Module.require('assets/ProjectManager/Physics/KinematicCharacterController.js');
    const FOVMesh = Module.require('assets/ProjectManager/Physics/FOVMesh.js');
    const FOVBox = Module.require('assets/ProjectManager/Physics/FOVBox.js');
+   const RaycastVehicle = Module.require('assets/ProjectManager/Physics/RaycastVehicle.js');
    
    const ZIPBox = Module.require('assets/ProjectManager/Physics/ZIPBox.js');
    const ZIPMesh = Module.require('assets/ProjectManager/Physics/ZIPMesh.js');
@@ -497,6 +498,7 @@
       switch (type){
          
          case 'RigidBody':  obj = RigidBody(args); break;
+         case 'RaycastVehicle':  obj = RaycastVehicle(args); break;
          case 'KinematicCharacterController':  obj = KinematicCharacterController(args); break;
          case 'FOVMesh':  obj = FOVMesh(args); break;
          case 'FOVMeshObject':  obj = FOVMesh(args); break;

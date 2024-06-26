@@ -6,6 +6,7 @@ export type TreeNodeType =
   | 'object-group'
   | 'video'
   | 'RigidBody'
+  | 'RaycastVehicle'
   | 'KinematicCharacterController'
   | 'ZIPElement'
   | 'configuration'

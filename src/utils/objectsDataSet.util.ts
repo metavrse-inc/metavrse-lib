@@ -121,6 +121,12 @@ export const objectsDataSet = (
         newNode: { ...newNode, type: NODE_TYPES.RigidBody },
         newEntity: { ...DEFAULTS.RigidBodyDefaults, key },
       };
+    case NODE_TYPES.RaycastVehicle:
+      return {
+        ...initData,
+        newNode: { ...newNode, type: NODE_TYPES.RaycastVehicle },
+        newEntity: { ...DEFAULTS.RaycastVehicleDefaults, key },
+      };
     case NODE_TYPES.KinematicCharacterController:
       return {
         ...initData,
