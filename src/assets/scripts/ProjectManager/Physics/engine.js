@@ -133,6 +133,18 @@
       }
 
       Ammo = await _Ammo(getOptions());
+
+      // let m_axis_sweep = new Ammo.btAxisSweep3(new Ammo.btVector3(-1000, -1000, -1000), new Ammo.btVector3(1000, 1000, 1000));
+      // collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
+      // dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
+      // solver = new Ammo.btSequentialImpulseConstraintSolver();
+      // physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, m_axis_sweep, solver, collisionConfiguration);
+      // physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
+      // let s = physicsWorld.getSolverInfo()
+      // s.m_numIterations = 4;
+      // s.m_splitImpulse = true;
+      // s.m_splitImpulsePenetrationThreshold = -0.00001;
+      
       collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
       dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
       broadphase = new Ammo.btDbvtBroadphase();
@@ -140,11 +152,10 @@
       physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
       physicsWorld.setGravity(new Ammo.btVector3(0, Number(gravity), 0));
       physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
-      // let s = physicsWorld.getSolverInfo()
-      // s.m_numIterations = 1;
-      // s.m_splitImpulse = false;
-      // s.m_splitImpulsePenetrationThreshold = -5;
-      // s.m_splitImpulsePenetrationThreshold = -0.04;
+      let s = physicsWorld.getSolverInfo()
+      s.m_numIterations = 4;
+      s.m_splitImpulse = true;
+      s.m_splitImpulsePenetrationThreshold = -0.00001;
 
       // resusable
       // TRANSFORM_AUX = new Ammo.btTransform();

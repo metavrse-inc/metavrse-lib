@@ -84,7 +84,7 @@
     var chassisWidth = 1.8 / vScale;
     var chassisHeight = .6 / vScale;
     var chassisLength = 3 / vScale;
-    var massVehicle = 1200 / vScale;
+    var massVehicle = (1200 / 3) / vScale;
 
     var wheelAxisPositionBack = -1 / vScale;
     var wheelRadiusBack = .4 / vScale;
@@ -320,7 +320,7 @@
   
         var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, compound, localInertia);
         body = new Ammo.btRigidBody(rbInfo);
-        body.setActivationState(4);
+        // body.setActivationState(4);
         body.setFriction(0);
         
         if (ghost) {

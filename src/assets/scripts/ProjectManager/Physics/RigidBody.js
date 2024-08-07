@@ -253,7 +253,7 @@
         
         vec3.multiply(scales, scales, params.scale);
         geometry.setLocalScaling(new Ammo.btVector3(...scales));
-        geometry.setMargin(0.1);
+        // geometry.setMargin(0.1);
 
         // rigidbody transformation
         let q2 = quat.create();
@@ -291,7 +291,7 @@
             applyParam({type: 'set', prop, value: props[prop]})
         })
 
-        if (ghost) PhysicsWorld.addRigidBody(body, 16, -1);
+        if (ghost) PhysicsWorld.addRigidBody(body, 2, -1);
         else PhysicsWorld.addRigidBody(body);
   
      }
