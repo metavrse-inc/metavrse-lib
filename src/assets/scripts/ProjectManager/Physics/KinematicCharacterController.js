@@ -150,6 +150,7 @@ module.exports = (payload) => {
                     else if (type == "center") return {f1: 1, f2: 1, f3: 1};
                 },
                 setTransformMatrix: (transform)=> {
+                    parent.parentOpts.transform = transform;
                     for (let [key, child] of o.children) {
                         if (!(child.type == "RigidBody" || child.type == "KinematicCharacterController")) child.render({transform});
                     }
