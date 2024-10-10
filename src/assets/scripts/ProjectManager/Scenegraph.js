@@ -1395,7 +1395,11 @@ module.exports = () => {
         break;
         
       default:
-        obj = GenericObjectModel(payload);
+        if (child.CustomClass){
+          obj = child.CustomClass(payload);
+        }else {
+          obj = GenericObjectModel(payload);
+        }
         break;
     }
 
@@ -1704,6 +1708,7 @@ module.exports = () => {
         PM.SDK = (Module.ProjectManager.SDK) ? Module.ProjectManager.SDK : {}
         PM.worldController = sceneprops.worldController;
         PM.worldControllers = sceneprops.worldControllers;
+        PM.objects = Module.ProjectManager.objects;
 
         ZIPModule.ProjectManager = PM;
 
