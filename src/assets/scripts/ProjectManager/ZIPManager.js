@@ -75,34 +75,41 @@
                 }
     
                 zips.set(url, zip_object);
-            } else {
-                resolve();
-            }
-            URLLoader.fetchData(full_url, "", options, async (fullpath, status) => {
-                if (!fullpath) {
-                    console.error('No data found!');
-                    reject();
-                    return;
-                }
+
+                URLLoader.fetchData(full_url, "", options, async (fullpath, status) => {
+                    if (!fullpath) {
+                        console.error('No data found!');
+                        reject();
+                        return;
+                    }
+        
+                    let zip_object = zips.get(url);
     
-                let zip_object = zips.get(url);
-
-                if (zip_object.ready && status == "304"){
+                    if (zip_object.ready && status == "304"){
+                        if (options.onFinished) await options.onFinished(zip_object);
+                        resolve(zip_object)
+                        return;
+                    }
+    
+                    zip_object.ready = true;
+    
+                    if (zip_object.archive == undefined) zip_object.archive = new Module.zip();
+                    // zip_object.archive.close();
+                    zip_object.archive.open(fullpath);
+                    scene.setFSZip(url, zip_object.archive);
+    
                     if (options.onFinished) await options.onFinished(zip_object);
-                    resolve(zip_object)
-                    return;
+                    resolve(zip_object);
+                })
+            } else {
+                let alreadyExists = async ()=>{
+                    let zip_object = zips.get(url);
+                    if (options.onFinished) await options.onFinished(zip_object);
+                    resolve();
                 }
-
-                zip_object.ready = true;
-
-                if (zip_object.archive == undefined) zip_object.archive = new Module.zip();
-                // zip_object.archive.close();
-                zip_object.archive.open(fullpath);
-                scene.setFSZip(url, zip_object.archive);
-
-                if (options.onFinished) await options.onFinished(zip_object);
-                resolve(zip_object);
-            })
+                alreadyExists();
+            }
+            
         
         });
     }
@@ -128,25 +135,39 @@
                 // console.log("loading zip", lpID)
                 value({
                     onLoaded: ()=>{
-                        if (!loadingMap.get(lpID)) return;
-                        if (skipNext) clearTimeout(skipNext);
-                        loadingMap.set(lpID, false)
-                        setTimeout(() => {
-                            requestAnimationFrame(zipCB)                
-                        }, 250);
+                        // slow load
+                        if (!Module.ProjectManager.fastLoad){
+                            if (!loadingMap.get(lpID)) return;
+                            console.log('slow load 1')
+                            if (skipNext) clearTimeout(skipNext);
+                            loadingMap.set(lpID, false)
+                            setTimeout(() => {
+                                requestAnimationFrame(zipCB)                
+                            }, 250);
+                        }else{
+                            // fast load
+                            console.log('fast load 1')
+                            zipCB();
+                            requestAnimationFrame(zipCB);
+                        }
+
                     }
                 })
             } catch (error) {    
                 console.log(error)            
             }
 
-            skipNext = setTimeout(()=>{
-                if (!loadingMap.get(lpID)) return; // race condition
-
-                loadingMap.set(lpID, false)
-
-                requestAnimationFrame(zipCB)                
-            }, isIOS ? 1500 : 500);
+            // slow load
+            if (!Module.ProjectManager.fastLoad){
+                skipNext = setTimeout(()=>{
+                    if (!loadingMap.get(lpID)) return; // race condition
+                    console.log('slow load 2')
+    
+                    loadingMap.set(lpID, false)
+    
+                    requestAnimationFrame(zipCB)                
+                }, isIOS ? 1500 : 500);
+            }
 
         }
 
@@ -179,6 +200,6 @@
     return Object.assign(manager, {
         addZip,
         mergeConfigurationsIntoTree: URLLoader.mergeConfigurationsIntoTree,
-        setAddZip
+        setAddZip,
     });
 }

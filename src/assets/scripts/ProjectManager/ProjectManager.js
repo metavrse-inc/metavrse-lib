@@ -24,8 +24,11 @@ module.exports = () => {
   let disablePaint = false;
 
   let disableVideos = false;
+  let fastLoad = false;
 
   let published_url =  location.protocol + '//' + location.host;
+  let published_url_stream =  location.protocol + '//' + location.host;
+  
   let published_postfix =  "";
   let getHeaders = ()=> {return {}};
 
@@ -365,6 +368,15 @@ module.exports = () => {
       },
     },
 
+    published_url_stream: {
+      get: () => {
+        return published_url_stream;
+      },
+      set: (v) => {
+        published_url_stream = v;
+      },
+    },
+
     published_postfix: {
       get: () => {
         return published_postfix;
@@ -433,6 +445,24 @@ module.exports = () => {
       },
       set: (v) => {
         disablePaint = v;
+      },
+    },
+
+    streamLoader: {
+      get: () => {
+        return Scenegraph.streamLoader;
+      },
+      set: (v) => {
+        Scenegraph.streamLoader = v;
+      },
+    },
+
+    fastLoad: {
+      get: () => {
+        return fastLoad;
+      },
+      set: (v) => {
+        fastLoad = v;
       },
     },
   });

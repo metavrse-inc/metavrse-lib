@@ -105,6 +105,127 @@ module.exports = (opt) => {
 
     if (options.onProjectLoadingStart) options.onProjectLoadingStart();
 
+    function concatenate(uint8arrays) {
+      const totalLength = uint8arrays.reduce(
+        (total, uint8array) => total + uint8array.byteLength,
+        0
+      );
+    
+      const result = new Uint8Array(totalLength);
+    
+      let offset = 0;
+      uint8arrays.forEach((uint8array) => {
+        result.set(uint8array, offset);
+        offset += uint8array.byteLength;
+      });
+    
+      return result;
+    }
+
+    const internalFetch1 = async (internalHeaders) => {
+      let urlO = new URL(url);
+
+
+      const response = await fetch(urlO, {
+        headers: internalHeaders
+      });
+
+      if (response.status === 404) {
+        options.onProjectNotFound && options.onProjectNotFound();
+      }
+
+      if (response.status === 401) {
+        options.onIncorrectPassword &&
+          options.onIncorrectPassword(password);
+      }
+
+      if (response.status === 403) {
+        options.onLimitsExceeded && options.onLimitsExceeded();
+      }
+
+      if (response.status === 304) {
+        let loadLocal = async (fullpath, status)=>{
+          try {
+            let zip = await idb.getItem(fullpath);
+            const data = new Uint8Array(zip);
+            Module.FS.writeFile(
+              fullpath,
+              data
+            );
+
+            options.onProjectLoadingStart && options.onProjectLoadingStart();
+
+            options.onDownloadProgress &&
+              options.onDownloadProgress({
+                total: 100,
+                loaded: 100,
+              });
+
+            callback(fullpath, status);
+          } catch (e) {
+            internalFetch1({
+              ...internalHeaders,
+              'If-Modified-Since': undefined,
+            });
+          }
+        }
+
+        await loadLocal(fullpath + 'project.zip', response.status);
+      }
+
+      if (response.status === 200) {
+        const contentLength = +response.headers.get('content-length');
+        const lastModified = response.headers.get('last-modified');
+        let receivedLength = 0;
+        // console.log(contentLength)
+        // console.log(...response.headers)
+  
+        const reader = response.body.getReader();
+  
+        let data = new Uint8Array(contentLength);
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          let _data = new Uint8Array(value);
+          
+          if (contentLength == 0){
+            data = concatenate([data,_data]);
+          } else {
+            data.set(_data, receivedLength);
+          }
+  
+          receivedLength += _data.byteLength;
+  
+          options.onDownloadProgress &&
+                                  options.onDownloadProgress({
+                                    total: (contentLength > 0) ? contentLength : receivedLength,
+                                    loaded: receivedLength,
+                                  });
+          // console.log(`${receivedLength}/${contentLength}`);
+        
+          if (done) {
+            // console.log("Stream complete", data);
+            break;
+          }
+        }
+  
+        if (!isIOS && lastModified != undefined) localStorage.setItem(lsKey, lastModified);
+  
+        Module.FS.writeFile(
+          fullpath + 'project.zip',
+          data
+        );
+          
+        if (!isIOS) idb.setItem(fullpath + 'project.zip', data);
+  
+        callback(fullpath + 'project.zip', response.status);
+
+      }
+
+
+
+    }
+
     const internalFetch = (internalHeaders) => {
       let config = {
         responseType: 'arraybuffer',
@@ -193,7 +314,7 @@ module.exports = (opt) => {
         });
     };
 
-    internalFetch(headers);
+    internalFetch1(headers);
   };
 
   const mergeConfigurationsIntoTree = (tree, configurations) => {

@@ -49,6 +49,7 @@ export type CherryProjectManager = {
   project?: any;
   archive: any;
   published_url: string;
+  published_url_stream: string;
   published_postfix: string;
   getHeaders: Function;
   WorldController: any;
@@ -65,4 +66,6 @@ export type CherryProjectManager = {
   URLLoader: any;
   disableVideos: boolean;
   disablePaint: boolean;
+  streamLoader: boolean;
+  fastLoad: boolean;
 };
