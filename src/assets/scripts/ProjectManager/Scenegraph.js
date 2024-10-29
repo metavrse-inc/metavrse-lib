@@ -891,7 +891,7 @@ module.exports = () => {
       }
     }
 
-    ZIPManager.addZip(leaf.url, cb_local);
+    ZIPManager.addZip(leaf, cb_local);
   }
 
   let assets_texture = new Map();
@@ -950,8 +950,8 @@ module.exports = () => {
             }
           }
 
-          if (leaf.async) ZIPManager.addZip(item.url, cb);
-          else await ZIPManager.addZip(item.url, cb);
+          if (leaf.async) ZIPManager.addZip(item, cb);
+          else await ZIPManager.addZip(item, cb);
 
         } catch (error) {
           
@@ -1040,8 +1040,11 @@ module.exports = () => {
           if (streamLoader){
             zipstoload.push({url:leaf.url, key: item.key, leaf})
           }else{
-            if (leaf.async) ZIPManager.addZip(item.url, cb);
-            else await ZIPManager.addZip(item.url, cb);
+            if (leaf.async) ZIPManager.addZip(item, cb);
+            else {
+              syncedzips.set(item.url, true)
+              ZIPManager.addZip(item, cb);
+            }
           }
 
 
@@ -1412,7 +1415,7 @@ module.exports = () => {
     if (obj) {
       sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
 
-      if (obj.item.type == "ZIPElement"){
+      if (obj.item.type == "ZIPElement" && child.CustomClass == undefined){
         addZip(obj, false);
       }
 
@@ -1580,6 +1583,7 @@ module.exports = () => {
   }
 
   var zipstoload = [];
+  var syncedzips = new Map();
   const generate = async (fullpath, p) => {
     sceneprops.path = fullpath;
     sceneprops.project = p;
@@ -1593,6 +1597,21 @@ module.exports = () => {
     zipstoload = [];
 
     await loadPaths(sceneprops.project.data['assets'].tree);
+
+    
+    while (true) {
+      await sleep(50);
+      // console.log('waiting')
+      let ready = true;
+      for (var [_k, _zip] of syncedzips){
+        let zip = ZIPManager.zips.get(_k);
+        if (!zip) ready = false;
+        else if (!zip.ready) ready = false;
+        // if (!zip.ready) ready = false;
+      }
+
+      if (ready) break;
+    }
 
     // test new list of zips
     // TODO: clean up and move to Loader

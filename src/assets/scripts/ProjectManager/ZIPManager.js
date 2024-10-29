@@ -61,7 +61,9 @@
         fov: new Map()
     }
 
-    const addZip = (url, options)=> {
+    const addZip = (item, options)=> {
+        let url = item.url;
+
         return new Promise((resolve, reject) => {
             // if not url use base published url
             let full_url = (isURL(url)) ? url : Module.ProjectManager.published_url + "/" + url + Module.ProjectManager.published_postfix;
@@ -138,7 +140,7 @@
                         // slow load
                         if (!Module.ProjectManager.fastLoad){
                             if (!loadingMap.get(lpID)) return;
-                            console.log('slow load 1')
+                            // console.log('slow load 1')
                             if (skipNext) clearTimeout(skipNext);
                             loadingMap.set(lpID, false)
                             setTimeout(() => {
@@ -146,7 +148,7 @@
                             }, 250);
                         }else{
                             // fast load
-                            console.log('fast load 1')
+                            // console.log('fast load 1')
                             zipCB();
                             requestAnimationFrame(zipCB);
                         }
@@ -161,7 +163,7 @@
             if (!Module.ProjectManager.fastLoad){
                 skipNext = setTimeout(()=>{
                     if (!loadingMap.get(lpID)) return; // race condition
-                    console.log('slow load 2')
+                    // console.log('slow load 2')
     
                     loadingMap.set(lpID, false)
     
