@@ -50,34 +50,40 @@ module.exports = () => {
       projectRunning = false;
 
       // Module['fps'] = {
-      //   maxFps: 30,
+      //   maxFps: 30, 
       //   currentFps: 30,
       //   startTime: null,
       //   frame: -1,
       // };
 
-      Module['fps']['maxFps'] = 30;
-      
-      Module.screen.hudscale = 1;
+      try {
+        Module['fps']['maxFps'] = 30;
+        
+        Module.screen.hudscale = 1;
+  
+        let dpr =
+          typeof devicePixelRatio !== 'undefined' && devicePixelRatio
+            ? devicePixelRatio
+            : 1;
+        Module['pixelDensity'] = 1 + (dpr - 1) * 0.5;
+  
+        Module.animations.fns.clear();
+        
+      } catch (error) {
+      }
 
-      let dpr =
-        typeof devicePixelRatio !== 'undefined' && devicePixelRatio
-          ? devicePixelRatio
-          : 1;
-      Module['pixelDensity'] = 1 + (dpr - 1) * 0.5;
-
-      Module.animations.fns.clear();
 
       for (let [key, media] of Module.videoids) {
         try {
           if (media.destroy !== undefined) media.destroy();
         } catch (error) {}
       }
-      Module.videoids.clear();
-
+      
       try {
         Module.clearAllSockets();
-      } catch (error) {}
+        Module.videoids.clear();
+      } catch (error) {
+      }
 
       try {
         Module.audio.initAudio();
@@ -87,32 +93,57 @@ module.exports = () => {
         Scenegraph.reset();
       } catch (error) {}
 
-      scene.clear();
-      scene.enableShadows(false);
-      scene.showRulerGrid(false);
-      scene.setGridAnchor(0, 0, 0);
-      scene.setGridExtent(1, 1, 1);
-      scene.clearWebworkers();
+      try {
+        scene.clear();
+        scene.enableShadows(false);
+        scene.showRulerGrid(false);
+        scene.setGridAnchor(0, 0, 0);
+        scene.setGridExtent(1, 1, 1);
+        scene.clearWebworkers();
+  
+        Module.resetCamera();
+  
+        // URLLoader.visible = false;
+  
+        if (archive !== null) archive.close();
+  
+        scene.setFSZip(); // pass nothing, will reset archive pointer
+  
+        Module.clearEventListeners();        
+      } catch (error) {
+      }
 
-      Module.resetCamera();
-
-      // URLLoader.visible = false;
-
-      if (archive !== null) archive.close();
-
-      scene.setFSZip(); // pass nothing, will reset archive pointer
-
-      Module.clearEventListeners();
-
-      if (Module.canvas) {
+      if (Module.canvas && Module.canvas.parentElement) {
         Module.canvas.parentElement
           .querySelectorAll('[id^="key_"], style')
           .forEach((e) => e.remove());
       }
 
+      try {
+        let rmdir = async (path)=>{
+          let accepted = ['.','..'];
+          let files = Module.FS.readdir(path);
+          for (var name of files){
+            if (accepted.includes(name)) continue;
+            Module.FS.unlink(path + "/" + name);
+          }
+          Module.FS.rmdir(path);
+        }
+
+        let accepted = ['.','..','tmp','home','dev','proc','assets','files'];
+        let files = Module.FS.readdir('./');
+        for (var name of files){
+          if (accepted.includes(name)) continue;
+          rmdir(name);
+        }
+        
+      } catch (error) {
+        // console.log(error)
+      }
+
       isDirty = true;
     } catch (error) {
-      // console.log(error.message);
+      // console.log(error);
     }
   };
 

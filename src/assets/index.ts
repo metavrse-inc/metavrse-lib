@@ -16,6 +16,7 @@ import poweredBy from './scripts/poweredby.png'
 
 import socketio from './scripts/socketio';
 
+import KalmanFilter from './scripts/Components/KalmanFilter';
 import LoadingBar from './scripts/Components/LoadingBar.js';
 import LoadingBarWeb from './scripts/Components/LoadingBarWeb';
 
@@ -94,6 +95,7 @@ export const scripts = {
   [`${MAIN_PATH}/square.c3b`]: squarec3b,
 
   [`${COMPONENTS}/`]: null, // Folder to create
+  [`${COMPONENTS}/KalmanFilter.js`]: KalmanFilter,
   [`${COMPONENTS}/LoadingBar.js`]: LoadingBar,
   [`${COMPONENTS}/LoadingBarWeb.js`]: LoadingBarWeb,
 

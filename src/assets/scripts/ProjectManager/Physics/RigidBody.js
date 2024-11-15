@@ -276,12 +276,16 @@
         body = new Ammo.btRigidBody(rbInfo);
   
         body.setFriction(friction);
+        let group = 1;
         if (ghost) {
             // body.setCollisionFlags(4)
+            group = 16;
             body.setCollisionFlags(body.getCollisionFlags() | 4);
         } else if (mass == 0) {
+            group = 2;
             body.setCollisionFlags(body.getCollisionFlags() | 1)
         } else {
+            group = 4;
             // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT)
         }
 
@@ -292,8 +296,8 @@
             applyParam({type: 'set', prop, value: props[prop]})
         })
 
-        if (ghost) PhysicsWorld.addRigidBody(body, 2, -1);
-        else PhysicsWorld.addRigidBody(body);
+        if (ghost) PhysicsWorld.addRigidBody(body, group, -1);
+        else PhysicsWorld.addRigidBody(body, group, -1);
   
      }
 

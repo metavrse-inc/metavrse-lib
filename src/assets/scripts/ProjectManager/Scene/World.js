@@ -145,6 +145,8 @@ module.exports = (payload) => {
 
     controller: d['controller'] || '',
     dpr: d['dpr'] !== undefined ? d['dpr'] : 0.25,
+    dprFixed: d['dprFixed'] !== undefined ? d['dprFixed'] : false,
+    resolution: d['resolution'] !== undefined ? d['resolution'] : 1080,
     fps: d['fps'] !== undefined ? d['fps'] : 30,
     fxaa: d['fxaa'] !== undefined ? d['fxaa'] : 1,
     // "camera": ""
@@ -301,7 +303,8 @@ module.exports = (payload) => {
             typeof devicePixelRatio !== 'undefined' && devicePixelRatio
               ? devicePixelRatio
               : 1;
-          Module['pixelDensity'] = 1 + (dpr - 1) * v;
+          if (world.dprFixed) Module['pixelDensity'] = v;
+          else Module['pixelDensity'] = 1 + (dpr - 1) * v;
           break;
         case 'fxaa':
           v = getLastValueInMap(getProperties(row.type));
@@ -756,6 +759,25 @@ module.exports = (payload) => {
         setProperty('dpr', v);
       },
     },
+
+    dprFixed: {
+      get: () => {
+        return world.dprFixed;
+      },
+      set: (v) => {
+        world.dprFixed = v;
+      },
+    },
+
+    resolution: {
+      get: () => {
+        return world.resolution;
+      },
+      set: (v) => {
+        world.resolution = v;
+      },
+    },
+    
 
     fxaa: {
       get: () => {

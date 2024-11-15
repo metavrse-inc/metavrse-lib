@@ -41,4 +41,6 @@ export const worldDefaults: World = {
   lod_enabled: false,
   zip_size: [1000,1000,1000], 
   zip_enabled: false,
+  dprFixed: false,
+  resolution: 1080,
 };

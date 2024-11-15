@@ -6,6 +6,9 @@ const scene = surface.getScene();
 
 var { mat4, vec3 } = Module.require('assets/gl-matrix.js'); // deprecating
 
+const KalmanFilter = Module.require('assets/Components/KalmanFilter.js');
+// let Kalman = new KalmanFilter({R: 0.008, Q: 2, B: 1});
+
 Module.audio = {};
 
 let initAudio = ()=> {
@@ -57,7 +60,17 @@ Module.screen = {
   width: 1920,
   height: 1080,
   hudscale: 1,
+  lastMesh: null
 };
+
+let dpr = (p)=>{
+  // let trueHeight = Module.canvas.clientHeight * devicePixelRatio;
+  // let final = (p / (trueHeight) ) * devicePixelRatio
+  // if (trueHeight * devicePixelRatio < 1700){
+  let final = (p / 1920) * devicePixelRatio
+  // }
+  return final;
+}
 
 Module.videoids = new Map();
 
@@ -106,10 +119,12 @@ Module.resetCamera = function (trackball) {
     distance: 3.5,
     onTap: (button, x, y) => {
       if (Module.ProjectManager.projectRunning) {
+        Module.screen.lastMesh = null;
         requestAnimationFrame(() => {
           try {
             const p = scene.getObjectByPixel(parseInt(x), parseInt(y));
             if (p && p.object && p.object.object_ptr() != null) {
+              Module.screen.lastMesh = p;
               const nodeptr =
                 Module.ProjectManager.objects[p.object.object_ptr().$$.ptr];
               if (
@@ -245,21 +260,22 @@ let _render = function (t) {
     Module.setFPS(Module['fps']['maxFps']);
   }
 
-  const now = performance.now();
+  const now = t;
   if (Module['fps']['then'] == 0){
     Module['fps']['then'] = now;
     // requestAnimationFrame(_render);
     return; 
   }
-  Module['fps']['delta'] = now - Module['fps']['then'];
 
   let frames = (Module['fps']['maxFps'] > 30) ? 1 : 2;
   xx++;
+  let shouldRender = true;
   if (xx >= frames) xx = 0;
   if (xx != 0){
-    // requestAnimationFrame(_render);
-    return;
+    shouldRender = false;
   }
+
+  Module['fps']['delta'] = now - Module['fps']['then'];
 
   let local_redraws = new Map(Module.animations.fns);
   Module.animations.fns.clear();
@@ -285,8 +301,8 @@ let _render = function (t) {
 
     // check if forced landscape
     const World = Module.ProjectManager.getObject('world');
-    const devicePixelRatio = Module.pixelDensity;
-
+    let devicePixelRatio = Module.pixelDensity;
+    
     if (
       World != undefined &&
       World.orientation != undefined &&
@@ -340,6 +356,14 @@ let _render = function (t) {
         canvas.parentElement.style.transform = '';
         canvas.parentElement.style.transformOrigin = '';
         canvas.parentElement.parentElement.style.display = '';
+      }
+    }
+
+    if (World != undefined && World.dprFixed){
+      let resolution_dpr = dpr(World.resolution);
+      if (resolution_dpr != World.dpr){
+        World.dpr = resolution_dpr;
+        devicePixelRatio = resolution_dpr;
       }
     }
 
@@ -426,7 +450,7 @@ let _render = function (t) {
       if (!World.transparent || !Module['canvas']) {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-        if (!Module.ProjectManager.disablePaint) surface.render_clear(
+        if (!Module.ProjectManager.disablePaint && shouldRender) surface.render_clear(
           World.color[0] / 255,
           World.color[1] / 255,
           World.color[2] / 255,
@@ -435,12 +459,12 @@ let _render = function (t) {
       } else {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
-          if (!Module.ProjectManager.disablePaint) surface.render();
+          if (!Module.ProjectManager.disablePaint && shouldRender) surface.render();
       }
     } else {
       if (Module['canvas'])
         Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-        if (!Module.ProjectManager.disablePaint) surface.render_clear(0, 0, 0, 1);
+        if (!Module.ProjectManager.disablePaint && shouldRender) surface.render_clear(0, 0, 0, 1);
     }
 
     Module.ProjectManager.Physics.debugDraw();
@@ -454,7 +478,7 @@ let _render = function (t) {
         if (!World.transparent || !Module['canvas']) {
           if (Module['canvas'])
             Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-            if (!Module.ProjectManager.disablePaint) surface.render_clear(
+            if (!Module.ProjectManager.disablePaint && shouldRender) surface.render_clear(
             World.color[0] / 255,
             World.color[1] / 255,
             World.color[2] / 255,
@@ -463,12 +487,12 @@ let _render = function (t) {
         } else {
           if (Module['canvas'])
             Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
-            if (!Module.ProjectManager.disablePaint) surface.render();
+            if (!Module.ProjectManager.disablePaint && shouldRender) surface.render();
         }
       } else {
         if (Module['canvas'])
           Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-          if (!Module.ProjectManager.disablePaint) surface.render_clear(0, 0, 0, 1);
+          if (!Module.ProjectManager.disablePaint && shouldRender) surface.render_clear(0, 0, 0, 1);
       }
       renderCount++;
 
@@ -586,11 +610,18 @@ Module.onSurfaceChanged = function (rotation, width, height) {
     try {
       const World = Module.ProjectManager.getObject('world');
       if (World) {
-        let dpr =
-          typeof devicePixelRatio !== 'undefined' && devicePixelRatio
-            ? devicePixelRatio
-            : 1;
-        Module['pixelDensity'] = 1 + (dpr - 1) * World.dpr;
+        if (World.dprFixed){
+          let resolution_dpr = dpr(World.resolution);
+          if (resolution_dpr != devicePixelRatio){
+            World.dpr = resolution_dpr;
+          }
+        }else{
+          let dpr =
+            typeof devicePixelRatio !== 'undefined' && devicePixelRatio
+              ? devicePixelRatio
+              : 1;
+          Module['pixelDensity'] = 1 + (dpr - 1) * World.dpr;
+        }
       }
     } catch (error) {
       if (Module.canvas) {

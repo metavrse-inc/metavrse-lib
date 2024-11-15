@@ -36,6 +36,8 @@ export type World = {
   dpr: number;
   fps: number;
   fxaa: number;
+  dprFixed: boolean;
+  resolution: number;
   texture_level: number;
   orientation: number;
   hudscale: number;

@@ -216,6 +216,8 @@ export type CherryProjectManagerObject = {
   dpr: number;
   fps: number;
   fxaa: number;
+  dprFixed: boolean;
+  resolution: number;
   orientation: number;
   css: CherryKey;
   rerenderCss: () => void;
