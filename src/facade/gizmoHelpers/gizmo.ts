@@ -94,6 +94,7 @@ export const createGizmoObject = (
       }
 
       // loaded
+      gizmo?.setParameter('use_pbr', false);
       gizmo?.setParameter('visible', false);
       gizmo?.setParameter('gizmo', true);
       let meshes = null

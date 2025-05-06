@@ -23,6 +23,7 @@ export type Shadow = {
   follow: boolean;
   darkness: number;
   bias: number;
+  filter: number;
 };
 
 export type World = {

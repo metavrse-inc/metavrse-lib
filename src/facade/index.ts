@@ -91,22 +91,22 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
   const loadAssetsAndRun = async (assetsFiles: {
     [key: string]: string;
   }): Promise<void> => {
-    const files = Object.keys(assetsFiles);
-    for (const path of files) {
-      if (path == "CherryGL.wasm") continue;
-      const content = assetsFiles[path];
-      if (content) {
-        const lastSlash = path.lastIndexOf('/') + 1;
-        const fullpath = path.substring(0, lastSlash);
+    // const files = Object.keys(assetsFiles);
+    // for (const path of files) {
+    //   if (path == "CherryGL.wasm") continue;
+    //   const content = assetsFiles[path];
+    //   if (content) {
+    //     const lastSlash = path.lastIndexOf('/') + 1;
+    //     const fullpath = path.substring(0, lastSlash);
 
-        cherryViewer.FS.createPath('/', fullpath);
+    //     cherryViewer.FS.createPath('/', fullpath);
 
-        if (typeof content == "string") cherryViewer.FS.writeFile(path, new TextEncoder().encode(content));
-        else cherryViewer.FS.writeFile(path, new Uint8Array(content));
-      }
-    }
+    //     if (typeof content == "string") cherryViewer.FS.writeFile(path, new TextEncoder().encode(content));
+    //     else cherryViewer.FS.writeFile(path, new Uint8Array(content));
+    //   }
+    // }
 
-    cherryViewer._main();
+    // cherryViewer._main();
 
     const scopedEval = (script : string, options: any) => {
       let scene = cherryViewer.getSurface().getScene();

@@ -210,7 +210,7 @@
 
                     let om = scene.getObjectGeometry(shapePath + "@" + o.zip_id);
 
-                    let mesh = new Ammo.btTriangleMesh(false, false);
+                    let mesh = new Ammo.btTriangleMesh(true, true);
                     let triangles = om.triangles;
                     let verts = om.vertices;
                     
@@ -222,19 +222,20 @@
                             let i2 = triangles.get(i + 1);
                             let i3 = triangles.get(i + 2);
                             
-                            let t1 = [verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3]
-                            let t2 = [verts.get(i2).p1, verts.get(i2).p2, verts.get(i2).p3]
-                            let t3 = [verts.get(i3).p1, verts.get(i3).p2, verts.get(i3).p3]
-    
-                            mesh.addTriangle(
-                                new Ammo.btVector3(...t1),
-                                new Ammo.btVector3(...t2),
-                                new Ammo.btVector3(...t3),
-                                true
-                            );
+                            const v0 = new Ammo.btVector3(verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3);
+                            const v1 = new Ammo.btVector3(verts.get(i2).p1, verts.get(i2).p2, verts.get(i2).p3);
+                            const v2 = new Ammo.btVector3(verts.get(i3).p1, verts.get(i3).p2, verts.get(i3).p3);
+
+                            // Add triangle to mesh (true = remove duplicate vertices)
+                            mesh.addTriangle(v0, v1, v2, true);
+
+                            // Cleanup vectors
+                            Ammo.destroy(v0);
+                            Ammo.destroy(v1);
+                            Ammo.destroy(v2);
                         }
     
-                        geometry = new Ammo.btBvhTriangleMeshShape(mesh);
+                        geometry = new Ammo.btBvhTriangleMeshShape(mesh, true, true);
                         // Ammo.destroy(mesh);
                         mesh = null;            
                      
@@ -455,6 +456,9 @@
     let physics_transformation = {
         position: vec3.create(),
         rotation: quat.create(),
+        vel: vec3.create(),
+        angVel: vec3.create(),
+
         m4: mat4.create(),
     }
 
@@ -473,6 +477,49 @@
             
         }
     }
+    function smoothDampPose(pos, vel, rot, angVel,targetPos, targetRot,tau, dt) {
+        const ω  = 4.6 / tau;
+        const k1 = 2 * ω;
+        const k2 = ω * ω;
+        
+        /* linear */
+        const deltaPos = vec3.sub(vec3.create(), pos, targetPos);
+        const accel = vec3.scale(vec3.create(), vel, k1);
+        vec3.add(accel, accel, vec3.scale(vec3.create(), deltaPos, k2));
+        vec3.negate(accel, accel);
+        
+        vec3.scaleAndAdd(vel, vel, accel, dt);
+        vec3.scaleAndAdd(pos, pos, vel, dt);
+        
+        /* angular */
+        const dq = quat.multiply(quat.create(), targetRot, quat.invert(quat.create(), rot));
+        if (dq[3] < 0) quat.scale(dq, dq, -1);
+        
+        const angle = 2 * Math.acos(Math.max(-1, Math.min(1, dq[3])));
+        let axis = vec3.fromValues(1, 0, 0);
+        const s = Math.sqrt(1 - dq[3] * dq[3]);
+        if (s >= 1e-6) axis = vec3.fromValues(dq[0] / s, dq[1] / s, dq[2] / s);
+        
+        const deltaRotVec = vec3.scale(vec3.create(), axis, angle);
+        
+        const angAccel = vec3.scale(vec3.create(), angVel, k1);
+        vec3.add(angAccel, angAccel, vec3.scale(vec3.create(), deltaRotVec, k2));
+        vec3.negate(angAccel, angAccel);
+        
+        vec3.scaleAndAdd(angVel, angVel, angAccel, dt);
+        
+        const angMag = vec3.length(angVel) * dt;
+        let dQ = quat.create();
+        if (angMag > 1e-8) {
+            const axisNorm = vec3.normalize(vec3.create(), angVel);
+            quat.setAxisAngle(dQ, axisNorm, angMag);
+        } else {
+            quat.identity(dQ);
+        }
+        quat.normalize(rot, quat.multiply(rot, dQ, rot));
+    }
+
+    var firstFrame = true;
     const _update = (forced)=> {
         forced = forced || false;
         if (!isLoaded || !body) return;
@@ -503,8 +550,15 @@
         let m4 = physics_transformation.m4;
         
         if (mp || mr){
-            vec3.set(physics_transformation.position, ..._p);
-            quat.set(physics_transformation.rotation, ..._q);
+            // if (firstFrame){
+                vec3.set(physics_transformation.position, ..._p);
+                quat.set(physics_transformation.rotation, ..._q);
+                // firstFrame = false;
+            // } else {
+            //     // smoothDampPose(physics_transformation.position, physics_transformation.vel, physics_transformation.rotation, physics_transformation.angVel,_p, _q,0.0015, Physics.rawDelta);
+            //     vec3.lerp(physics_transformation.position, physics_transformation.position, _p, 0.015);
+            //     quat.slerp(physics_transformation.rotation, physics_transformation.rotation, _q, 0.015);
+            // }
             
             let scales = updateMath.scales;
             mat4.getScaling(scales, o.parentOpts.transform)

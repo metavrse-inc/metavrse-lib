@@ -6,7 +6,7 @@ const scene = surface.getScene();
 
 var { mat4, vec3 } = Module.require('assets/gl-matrix.js'); // deprecating
 
-const KalmanFilter = Module.require('assets/Components/KalmanFilter.js');
+// const KalmanFilter = Module.require('assets/Components/KalmanFilter.js');
 // let Kalman = new KalmanFilter({R: 0.008, Q: 2, B: 1});
 
 Module.audio = {};
@@ -94,6 +94,8 @@ Module.clearEventListeners = () => {
 };
 
 Module.resetCamera = function (trackball) {
+  if (Module.controls.target != undefined) return;
+  
   let camera_opts = {
     fov: Math.PI / 4,
     near: 0.1,
@@ -216,14 +218,14 @@ Module.init = function () {
 let renderCount = 0;
 
 Module['fps'] = {
-  maxFps: 30,
-  currentFps: 30,
+  maxFps: 60,
+  currentFps: 60,
   delta: 0,
   startTime: null,
   frame: -1,
 
   then: 0,
-  interval : 1000 / 30,
+  interval : 1000 / 60,
   tolerance: 0,
 };
 
@@ -236,13 +238,17 @@ Module.render = function (t) {
     renderLaunch = true;
     // requestAnimationFrame(_render);
   }
-  _render(t);
+  return _render(t);
 }
 
 let xx =0;
+let _counter = 0;
 let _render = function (t) {
   // 'use strict';
 
+  _counter += t;
+
+  // t = performance.now();
   if (Module.audio['context']){
     try {
       let listener = Module.audio['context'].listener;
@@ -260,12 +266,11 @@ let _render = function (t) {
     Module.setFPS(Module['fps']['maxFps']);
   }
 
-  const now = t;
-  if (Module['fps']['then'] == 0){
-    Module['fps']['then'] = now;
-    // requestAnimationFrame(_render);
-    return; 
-  }
+  // if (Module['fps']['then'] == 0){
+  //   Module['fps']['then'] = now;
+  //   // requestAnimationFrame(_render);
+  //   return; 
+  // }
 
   let frames = (Module['fps']['maxFps'] > 30) ? 1 : 2;
   xx++;
@@ -275,25 +280,25 @@ let _render = function (t) {
     shouldRender = false;
   }
 
-  Module['fps']['delta'] = now - Module['fps']['then'];
+  Module['fps']['delta'] = t;//now - Module['fps']['then'];
 
   let local_redraws = new Map(Module.animations.fns);
   Module.animations.fns.clear();
 
   for (var [aid, fn] of local_redraws){
     try {
-      fn(now);
+      fn(_counter);
     } catch (error) {
-      
+      console.log(error)
     }
   }
 
   let currentFps = 1000/Module['fps']['delta'];
-  let lastFps = Module['fps']['currentFps'];
+  // let lastFps = Module['fps']['currentFps'];
 
   Module['fps']['currentFps'] = currentFps;
   // Module['fps']['currentFps'] = lastFps + (currentFps - lastFps) * 0.98;
-  Module['fps']['then'] = now;
+  Module['fps']['then'] = _counter;
 
   if (Module['canvas']) {
     // means we are in a web browser;
@@ -373,10 +378,11 @@ let _render = function (t) {
       canvas.width = width;
       canvas.height = height;
       requestAnimationFrame(()=>{
+        Module.onSurfaceChanged(0, width, height);
         surface.onSurfaceChanged(width, height);
       })
     }
-  } else if (Module.setFixedSize) {
+  } else if (Module.setFixedSize && false) {
     const World = Module.ProjectManager.getObject('world');
 
     if (World != undefined && World.orientation != undefined) {
@@ -417,20 +423,32 @@ let _render = function (t) {
 
   if (!res) {
     // requestAnimationFrame(_render);
-    return;
+    return shouldRender;
   }
 
   // Render Scenegraph
   Module.ProjectManager.render();
 
+  return shouldRender && !Module.ProjectManager.disablePaint;
+  // Module.ProjectManager.disablePaint
+
   // orbital
-  const isDirty = Module.controls.update();
-  Module.controls.copyInto(
-    Module.camera.position,
-    Module.camera.direction,
-    Module.camera.up
-  );
-  Module.camera.update();
+  // const isDirty = Module.controls.update();
+  // Module.controls.copyInto(
+  //   Module.camera.position,
+  //   Module.camera.direction,
+  //   Module.camera.up
+  // );
+  // Module.camera.update();
+
+  // if (camera == undefined) camera = Module.getSurface().getCamera();
+
+  // camera.setPosition(...Module.controls.position);
+  // camera.setTarget(...Module.controls.target);
+  // camera.setDirection(...Module.controls.direction);
+  // camera.setDistance(Module.controls.distance);
+  
+/*
   scene.setProjectionMatrix(Module.camera.projection);
   scene.setCameraMatrix(Module.camera.view);
 
@@ -501,6 +519,7 @@ let _render = function (t) {
   }
 
   Module.ProjectManager.isDirty = false;
+*/
 
   // requestAnimationFrame(_render);
 };

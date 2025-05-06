@@ -102,11 +102,16 @@ module.exports = (payload) => {
     'shadow-texture':
       d['shadow'] && d['shadow']['texture'] != undefined
         ? [...d['shadow']['texture']]
-        : [2048, 2048],
+        : [1024, 1024],
     'shadow-fov':
       d['shadow'] && d['shadow']['fov'] != undefined
         ? d['shadow']['fov']
         : false,
+
+    'shadow-filter':
+      d['shadow'] && d['shadow']['filter'] != undefined
+        ? d['shadow']['filter']
+        : 0,
         
     'shadow-volume':
       d['shadow'] && d['shadow']['volume'] != undefined
@@ -136,12 +141,12 @@ module.exports = (payload) => {
     'shadow-darkness':
       d['shadow'] && d['shadow']['darkness'] != undefined
         ? d['shadow']['darkness']
-        : 0.25,
+        : 0.75,
 
     'shadow-bias':
       d['shadow'] && d['shadow']['bias'] != undefined
         ? d['shadow']['bias']
-        : 0.005,
+        : 0.0005,
 
     controller: d['controller'] || '',
     dpr: d['dpr'] !== undefined ? d['dpr'] : 0.25,
@@ -365,6 +370,10 @@ module.exports = (payload) => {
           v = getLastValueInMap(getProperties(row.type));
           scene.setShadowsBias(v);
           break;
+        case 'shadow-filter':
+            v = getLastValueInMap(getProperties(row.type));
+            scene.setShadowsTexturePrecision(v);
+            break;
           
         case 'hudscale':
           v = getLastValueInMap(getProperties(row.type));
@@ -506,6 +515,7 @@ module.exports = (payload) => {
   setProperty('shadow-rotation', world['shadow-rotation']);
   setProperty('shadow-darkness', world['shadow-darkness']);
   setProperty('shadow-bias', world['shadow-bias']);
+  setProperty('shadow-filter', world['shadow-filter']);
 
   setProperty('color', world.color);
   setProperty('transparent', world.transparent);
@@ -691,6 +701,15 @@ module.exports = (payload) => {
       },
       set: (v) => {
         setProperty('shadow-bias', v);
+      },
+    },
+
+    filter: {
+      get: () => {
+        return getProperty('shadow-filter')[1];
+      },
+      set: (v) => {
+        setProperty('shadow-filter', v);
       },
     },
 

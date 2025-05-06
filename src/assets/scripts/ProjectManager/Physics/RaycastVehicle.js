@@ -250,7 +250,7 @@
 
                     let om = scene.getObjectGeometry(shapePath + "@" + o.zip_id);
 
-                    let mesh = new Ammo.btTriangleMesh(false, false);
+                    let mesh = new Ammo.btTriangleMesh(true, true);
                     let triangles = om.triangles;
                     let verts = om.vertices;
                     
@@ -262,19 +262,20 @@
                             let i2 = triangles.get(i + 1);
                             let i3 = triangles.get(i + 2);
                             
-                            let t1 = [verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3]
-                            let t2 = [verts.get(i2).p1, verts.get(i2).p2, verts.get(i2).p3]
-                            let t3 = [verts.get(i3).p1, verts.get(i3).p2, verts.get(i3).p3]
-    
-                            mesh.addTriangle(
-                                new Ammo.btVector3(...t1),
-                                new Ammo.btVector3(...t2),
-                                new Ammo.btVector3(...t3),
-                                true
-                            );
+                            const v0 = new Ammo.btVector3(verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3);
+                            const v1 = new Ammo.btVector3(verts.get(i2).p1, verts.get(i2).p2, verts.get(i2).p3);
+                            const v2 = new Ammo.btVector3(verts.get(i3).p1, verts.get(i3).p2, verts.get(i3).p3);
+
+                            // Add triangle to mesh (true = remove duplicate vertices)
+                            mesh.addTriangle(v0, v1, v2, true);
+
+                            // Cleanup vectors
+                            Ammo.destroy(v0);
+                            Ammo.destroy(v1);
+                            Ammo.destroy(v2);
                         }
     
-                        geometry = new Ammo.btBvhTriangleMeshShape(mesh);
+                        geometry = new Ammo.btBvhTriangleMeshShape(mesh, true, true);
                         // Ammo.destroy(mesh);
                         mesh = null;            
                      
@@ -567,6 +568,7 @@
             
         }
     }
+    var firstFrame = true;
     
     const _update = (forced)=> {
         forced = forced || false;
@@ -658,8 +660,14 @@
         let m4 = physics_transformation.m4;
         
         if (mp || mr){
-            vec3.set(physics_transformation.position, ..._p);
-            quat.set(physics_transformation.rotation, ..._q);
+            // if (firstFrame){
+                vec3.set(physics_transformation.position, ..._p);
+                quat.set(physics_transformation.rotation, ..._q);
+                // firstFrame = false;
+            // } else {
+            //     vec3.lerp(physics_transformation.position, physics_transformation.position, _p, 0.015);
+            //     quat.slerp(physics_transformation.rotation, physics_transformation.rotation, _q, 0.015);
+            // }
             
             let scales = updateMath.scales;
             mat4.getScaling(scales, o.parentOpts.transform)

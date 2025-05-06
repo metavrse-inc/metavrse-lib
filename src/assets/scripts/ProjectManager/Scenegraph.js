@@ -197,6 +197,7 @@ module.exports = () => {
         tmpRedraws = new Map(local_redraws);
         tmpOpts = JSON.stringify(opts);
       }
+      /*
       if (!objectsLoaded) {
         let qs = scene.getWorkerObjectQueueSize();
         if (qs == 0) {
@@ -257,6 +258,64 @@ module.exports = () => {
           if (URLLoader) {
             let ratio = (queueSize - qs) / queueSize;
             URLLoader.percentage = (ratio/2) + 0.5;
+          }
+
+          for (const [k, handler] of changeHandlers) {
+            try {
+              handler('loaded', URLLoader.percentage);
+            } catch (error) {
+              console.error(error)
+            }
+          }
+
+          return;
+        }
+      }*/
+
+      if (!texturesLoaded) {
+        if (tmpRedraws != null) {
+          for (const [key, value] of tmpRedraws) {
+            let pass = true;
+            if (value.item.type == "object"){
+              let obj = scene.getObject(value.item.key);
+              if (!obj || obj.getStatus() == 0){
+                if (obj) redraws.set(key, value);
+                pass = false;
+              }
+            }
+
+            if (pass){
+              if (tmpOpts && tmpOpts[key]) {
+                if (tmpOpts[key]['parentMat'])
+                  tmpOpts[key]['transform'] = tmpOpts[key]['parentMat'];
+                value.render(tmpOpts[key]);
+              } else {
+                value.render(tmpOpts);
+              }
+            }
+          }
+
+          tmpRedraws.clear();
+          tmpRedraws = null;
+          tmpOpts = null;
+        }
+
+        let qs = scene.getTextureQueue() + scene.getWorkerObjectQueueSize();
+        if (qs == 0) {
+          texturesLoaded = true;
+          if (URLLoader) {
+            URLLoader.percentage = 1.0;
+            // URLLoader.close();
+          }
+
+          if (Module.canvas) Module.canvas.style.visibility = 'initial';
+          return;
+        } else if (qs > 0) {
+          if (qs > queueSize) queueSize = qs;
+
+          if (URLLoader) {
+            let ratio = (queueSize - qs) / queueSize;
+            URLLoader.percentage = ratio;
           }
 
           for (const [k, handler] of changeHandlers) {
@@ -904,17 +963,17 @@ module.exports = () => {
         if (item.type == 'image'){
           let path = sceneprops.objPaths[prefix + "_" + item.key];
 
-          if (parent == undefined || parent.type !='image'){
-            let texture = scene.addTexture(path + "@" + prefix);
-            assets_texture.set(prefix + "_" + item.key, {
-              texture,
-              paths: [path + "@" + prefix]
-            });
-          } else if (parent && parent.type == 'image') {
-            let asset = assets_texture.get(prefix + "_" + parent.key);
-            asset.texture.addLOD(path + "@" + prefix, asset.paths.length)
-            asset.paths.push(path + "@" + prefix)
-          }
+          // if (parent == undefined || parent.type !='image'){
+          //   let texture = scene.addTexture(path + "@" + prefix);
+          //   assets_texture.set(prefix + "_" + item.key, {
+          //     texture,
+          //     paths: [path + "@" + prefix]
+          //   });
+          // } else if (parent && parent.type == 'image') {
+          //   let asset = assets_texture.get(prefix + "_" + parent.key);
+          //   asset.texture.addLOD(path + "@" + prefix, asset.paths.length)
+          //   asset.paths.push(path + "@" + prefix)
+          // }
         }
       }
 
@@ -979,17 +1038,17 @@ module.exports = () => {
         if (item.type == 'image'){
           let path = sceneprops.objPaths[item.key];
 
-          if (parent == undefined || parent.type !='image'){
-            let texture = scene.addTexture(path);
-            assets_texture.set(item.key, {
-              texture,
-              paths: [path]
-            });
-          } else if (parent && parent.type == 'image') {
-            let asset = assets_texture.get(parent.key);
-            asset.texture.addLOD(path, asset.paths.length)
-            asset.paths.push(path)
-          }
+          // if (parent == undefined || parent.type !='image'){
+          //   let texture = scene.addTexture(path);
+          //   assets_texture.set(item.key, {
+          //     texture,
+          //     paths: [path]
+          //   });
+          // } else if (parent && parent.type == 'image') {
+          //   let asset = assets_texture.get(parent.key);
+          //   asset.texture.addLOD(path, asset.paths.length)
+          //   asset.paths.push(path)
+          // }
         }
       }
 
@@ -1600,7 +1659,6 @@ module.exports = () => {
 
     
     while (true) {
-      await sleep(50);
       // console.log('waiting')
       let ready = true;
       for (var [_k, _zip] of syncedzips){
@@ -1611,6 +1669,8 @@ module.exports = () => {
       }
 
       if (ready) break;
+      await sleep(50);
+
     }
 
     // test new list of zips
@@ -2143,7 +2203,12 @@ module.exports = () => {
       }
       sceneprops.sceneIndex.clear();
       sceneList = [];
-      Physics.reset();
+      try {
+        Physics.reset();
+    
+      } catch (error) {
+        
+      }
       queueSize = 0;
       redraws.clear();
       sceneprops.redraw = {};

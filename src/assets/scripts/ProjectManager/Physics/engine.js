@@ -29,6 +29,55 @@
    var debugDrawer;
    var debugEnabled = false;
 
+   // removal que
+   let removalQueue = [];
+   let removalDestroyQueue = [];
+   
+   // Queue collision objects for removal
+   function scheduleCollisionObjectRemoval(object) {
+      removalQueue.push({object, ts: Date.now()});
+   }
+
+   // Queue destroy only for removal
+   function scheduleDestroyRemoval(object) {
+      removalDestroyQueue.push({object, ts: Date.now()});
+   }
+
+   // After stepSimulation, process the queue
+   function processRemovals() {
+      const now = Date.now();
+
+      for (let i = removalQueue.length - 1; i >= 0; i--) {
+         if (now - removalQueue[i].ts > 10000) {
+            // console.log('removing object')
+
+            try {
+               physicsWorld.removeCollisionObject(removalQueue[i].object);
+            } catch (error) {}
+
+            removalDestroyQueue.push({object:removalQueue[i].object, ts: Date.now()});
+            // scheduleDestroyRemoval(removalQueue[i].object);
+            removalQueue.splice(i, 1);  // Remove expired entry
+         }
+      }
+
+      for (let i = removalDestroyQueue.length - 1; i >= 0; i--) {
+         if (now - removalDestroyQueue[i].ts > 20000) {
+            // console.log('destroying object')
+
+            if (removalDestroyQueue[i].object == undefined){
+               removalDestroyQueue.splice(i, 1);  // Remove expired entry
+               continue;
+            }
+
+            try {
+               Ammo.destroy(removalDestroyQueue[i].object); // Explicitly destroy if necessary
+            } catch (error) {}
+            removalDestroyQueue.splice(i, 1);  // Remove expired entry
+         }
+      }
+   }
+
    // numbers
    var gravity = -9.8;
    var scaleT = 0.1; // Scale to match our world
@@ -151,7 +200,7 @@
       solver = new Ammo.btSequentialImpulseConstraintSolver();
       physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
       physicsWorld.setGravity(new Ammo.btVector3(0, Number(gravity), 0));
-      physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
+      // physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
       let s = physicsWorld.getSolverInfo()
       s.m_numIterations = 4;
       s.m_splitImpulse = true;
@@ -163,13 +212,13 @@
       // var fp = Ammo.Runtime.addFunction(detectCollision);
       // physicsWorld.setInternalTickCallback(fp);
 
-      if (Module.canvas){
+      if (Module.canvas && false){
 
          try {
             gl = Module.canvas.getContext('webgl2', {});
             if (!gl) gl = Module.canvas.getContext('webgl', {}); 
         }catch(ex){
-            // console.log(ex)
+            console.log(ex)
         }
 
          var createShader =(gl, sourceCode, type)=> {
@@ -310,15 +359,19 @@
    }
 
    let onGround = true;
-
+   let fixedFPS = 1 / 60;
+   let alpha = 1;
+   let rawDelta = 1 / 60;
+   let accumulator = 0;
+   let prevTime=performance.now() * 1e-3;
    const render = (t) => {
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
       
-      let currentFps = 1 / Module.fps.currentFps;
-      if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1 / Module.fps.maxFps;
+      // let currentFps = 1 / Module.fps.currentFps;
+      // if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1 / Module.fps.maxFps;
       try {
-         physicsWorld.stepSimulation(currentFps, 0);         
+         physicsWorld.stepSimulation(rawDelta, 0, fixedFPS);         
       } catch (error) {
          console.error(error)
       }
@@ -330,6 +383,8 @@
             console.error(error)
          }
       }
+
+      processRemovals();
 
    }
 
@@ -649,6 +704,7 @@
 
       fovs: { get: () => { return fov_objects; }, set: (v) => {} },
       zips: { get: () => { return zip_objects; }, set: (v) => {} },
+      rawDelta: { get: () => { return rawDelta; }, set: (v) => {rawDelta=v;} },
 
    })
 
@@ -677,5 +733,8 @@
       reset,
       debugDraw,
       isReady : ()=> {return (ammoInitalised)},
+
+      scheduleCollisionObjectRemoval,
+      scheduleDestroyRemoval
    })
 }

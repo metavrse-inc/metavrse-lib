@@ -84,7 +84,7 @@ export const zoomFacade = (
     sceneObject: CherrySurfaceSceneObject,
     objectByPixel: CherryObjectByPixel
   ) => {
-    const DISTANCE_FROM_OBJECT = 0.1;
+    const DISTANCE_FROM_OBJECT = 0.5;
 
     const { x, y, z } = objectByPixel;
     const objectPtrKey = pm.objects[sceneObject.$$.ptr].key;

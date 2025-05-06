@@ -13,7 +13,7 @@ export const worldDefaults: World = {
   skyboxRotation: [0, 0, 0],
   skyboxEnvRotation: [0, 0, 0],
   shadow: {
-    level: 2,
+    level: 0,
     enabled: false,
     position: [0, 0, 0],
     fov: false,
@@ -25,6 +25,7 @@ export const worldDefaults: World = {
     direction: [0,0,0],
     darkness: 0.25,
     bias: 0.005,
+    filter: 0,
   },
   controller: '',
   dpr: 0,

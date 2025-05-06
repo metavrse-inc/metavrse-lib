@@ -49,6 +49,7 @@ export const setInitialMeshes = (
   initialMeshes: MoveMesh[]
 ): void => {
   initialMeshes.forEach((item) => {
+    gizmo.setParameter(meshes[item.name], 'use_pbr', false);
     gizmo.setParameter(meshes[item.name], 'ambient_ratio', ...item.values);
   });
 };
@@ -72,6 +73,7 @@ export const setGizmoRotateInitialMeshes = (
   ];
 
   GIZMO_ROTATE_INITIAL_MESHES.forEach((item) => {
+    gizmo.setParameter(item.mesh_id, 'use_pbr', false);
     gizmo.setParameter(item.mesh_id, 'ambient_ratio', ...item.values);
   });
 };

@@ -70,36 +70,49 @@ module.exports = () => {
         Module.animations.fns.clear();
         
       } catch (error) {
+      console.log(error)
+
       }
 
 
       for (let [key, media] of Module.videoids) {
         try {
           if (media.destroy !== undefined) media.destroy();
-        } catch (error) {}
+        } catch (error) {
+      console.log(error)
+
+        }
       }
       
       try {
         Module.clearAllSockets();
         Module.videoids.clear();
       } catch (error) {
+      console.log(error)
+
       }
 
       try {
         Module.audio.initAudio();
-      } catch (error) {}
+      } catch (error) {
+      console.log(error)
+
+      }
 
       try {
         Scenegraph.reset();
-      } catch (error) {}
+      } catch (error) {
+      console.log(error)
+
+      }
 
       try {
-        scene.clear();
-        scene.enableShadows(false);
-        scene.showRulerGrid(false);
-        scene.setGridAnchor(0, 0, 0);
-        scene.setGridExtent(1, 1, 1);
-        scene.clearWebworkers();
+        // scene.clear();
+        // scene.enableShadows(false);
+        // scene.showRulerGrid(false);
+        // scene.setGridAnchor(0, 0, 0);
+        // scene.setGridExtent(1, 1, 1);
+        // scene.clearWebworkers();
   
         Module.resetCamera();
   
@@ -107,10 +120,12 @@ module.exports = () => {
   
         if (archive !== null) archive.close();
   
-        scene.setFSZip(); // pass nothing, will reset archive pointer
+        // scene.setFSZip(); // pass nothing, will reset archive pointer
   
         Module.clearEventListeners();        
       } catch (error) {
+        console.log(error)
+
       }
 
       if (Module.canvas && Module.canvas.parentElement) {
@@ -138,12 +153,12 @@ module.exports = () => {
         }
         
       } catch (error) {
-        // console.log(error)
+        console.log(error)
       }
 
       isDirty = true;
     } catch (error) {
-      // console.log(error);
+      console.log(error);
     }
   };
 

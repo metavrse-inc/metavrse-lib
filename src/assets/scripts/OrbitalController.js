@@ -8,6 +8,8 @@ var Y_UP = [0, 1, 0]
 var EPSILON = Math.pow(2, -23)
 var tmpVec3 = [0, 0, 0]
 
+let camera = Module.getSurface().getCamera();
+
 // helper methods
 var Animations = Module.require("assets/Animations.js")();	// built in animation helper
 const getDiffVec3 = (perc, a1, a2) => {
@@ -54,11 +56,11 @@ function createOrbitControls(opt) {
     copyInto: copyInto,
 
     // position: [0, 1, 2],
-    direction: [0, 0, -1],
+    // direction: [0, 0, -1],
     up: opt.up ? opt.up.slice() : [0, 1, 0],
 
     // target: opt.target ? opt.target.slice() : [0, 0, 0],
-    distance: opt.distance || 5,
+    // distance: opt.distance || 5,
     // for no damp
     // damping: opt.damping || 0.225,
     // rotateSpeed: opt.rotateSpeed || 0.8,
@@ -96,26 +98,61 @@ function createOrbitControls(opt) {
     clickEnabled: true,
   }
 
-  let _target = opt.target ? opt.target.slice() : [0, 0, 0]
-  let _position = [0, 1, 2]
+  let _target = opt.target ? opt.target.slice() : [0, 0, 0];
+  let _position = [0, 1, 2];
+
+  let _distance = opt.distance || 5;
+  let _direction = [0, 0, -1];
+
   Object.defineProperties(controls, {
-    target : { get: function () { return _target }, set: function (v) { 
-      try {
-        if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
-        _target = v 
-      } catch (error) {
-        console.log(error)
-      }
+    target : { get: function () { 
+      let t = camera.getTarget();
+      return [t.f1,t.f2,t.f3];
+    }, set: function (v) {
+      if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
+      camera.setTarget(...v);
     } },
 
-    position : { get: function () { return _position }, set: function (v) { 
-      try {
-        if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
-        _position = v 
-      } catch (error) {
-        console.log(error)
-      }
+    position : { get: function () { 
+      let t = camera.getPosition();
+      return [t.f1,t.f2,t.f3];
+    }, set: function (v) {
+      if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
+      camera.setPosition(...v);
     } },
+
+    direction : { get: function () { 
+      let t = camera.getDirection();
+      return [t.f1,t.f2,t.f3];
+    }, set: function (v) {
+      if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
+      camera.setDirection(...v);
+    } },
+
+    distance : { get: function () { 
+      return camera.getDistance();
+    }, set: function (v) {
+      if (isNaN(v)) return;
+      camera.setDistance(v);
+    } },
+
+    // target : { get: function () { return _target }, set: function (v) { 
+    //   try {
+    //     if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
+    //     _target = v 
+    //   } catch (error) {
+    //     console.log(error)
+    //   }
+    // } },
+
+    // position : { get: function () { return _position }, set: function (v) { 
+    //   try {
+    //     if (isNaN(v[0]) || isNaN(v[1]) || isNaN(v[2])) return;
+    //     _position = v 
+    //   } catch (error) {
+    //     console.log(error)
+    //   }
+    // } },
   })
 
   // camera animation
@@ -260,6 +297,9 @@ function createOrbitControls(opt) {
 
   let mouseEngaged = 0; // nothing 1 - move - 2 pan
   function onMouseEvent(event, button, x, y) {
+    camera.onMouseEvent(event, button, x, y);
+    // return;
+    // console.log(event, button ,x, y);
     var width = controls.camera.viewport[2];
     var height = controls.camera.viewport[3];
 
@@ -446,6 +486,7 @@ function createOrbitControls(opt) {
 
   function inputZoom(delta) {
     if (!controls.zoomEnabled) return;
+    camera.onScroll(delta);
 
     var d = controls.distance / controls.distanceBounds[1];
     var damp = EasingFunctions.easeOutCubic(d) * 10;
@@ -454,6 +495,7 @@ function createOrbitControls(opt) {
 
   function inputPinch(delta) {
     if (!controls.zoomEnabled) return;
+    camera.onScroll(delta);
     
     var d = controls.distance / controls.distanceBounds[1];
     var damp = EasingFunctions.easeOutCubic(d) * 10;

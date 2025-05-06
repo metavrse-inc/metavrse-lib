@@ -75,7 +75,7 @@ import squarec3b from './scripts/square.c3b';
 import CherryGLWasm from '../cherry/CherryGL.wasm';
 
 
-export const scripts = {
+export const scripts : any = {
   [`${MAIN_PATH}/`]: null, // Folder to create
   [`${MAIN_PATH}/ARObjectController.js`]: ARObjectController,
   [`${MAIN_PATH}/Animations.js`]: Animations,

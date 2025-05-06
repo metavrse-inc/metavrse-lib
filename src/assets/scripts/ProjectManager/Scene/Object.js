@@ -391,7 +391,7 @@ module.exports = (payload) => {
   const axisZ = vec3.fromValues(0, 0, 1);
 
   var fieldTypes = {
-    use_pbr: 'boolen',
+    use_pbr: 'boolean',
     ao_ratio: 'float',
     ao_texture: 'string',
     ao_texture_channel: 'string',
@@ -1056,14 +1056,14 @@ module.exports = (payload) => {
       
     }
   }
-
+  let _obj = undefined;
   const _render = (opts) => {
     opts = opts || {};
     // loop renderlist and draw out
-    let obj = scene.getObject(child.key);
+    // let obj = scene.getObject(child.key);
+    let obj;
     let isLoaded = true;
-    if (!obj) {
-
+    if (!_obj) {
       try {
         
         const path = !isNaN(child.id) && zip_id == "default"
@@ -1073,40 +1073,41 @@ module.exports = (payload) => {
         object_lod_paths = [];
         object_lod_paths.push(path);
 
-        if (World.lod_enabled) {
-          try {            
-            let id = (zip_id != "default") ? zip_id + "_" + String(child.id) : String(child.id);
-            let asset = Module.ProjectManager.getAsset(id);
-            if (Module.ProjectManager.projectRunning && asset.children){
-              let x=0;
-              for (var a of asset.children){
-                x++;
-                const pathLOD = !isNaN(a.key) && zip_id == "default"
-                ? Module.ProjectManager.objPaths[String(a.key)]
-                : (!isNaN(a.key) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(a.key)]: String(a.key);
+        // if (World.lod_enabled) {
+        //   try {            
+        //     let id = (zip_id != "default") ? zip_id + "_" + String(child.id) : String(child.id);
+        //     let asset = Module.ProjectManager.getAsset(id);
+        //     if (Module.ProjectManager.projectRunning && asset.children){
+        //       let x=0;
+        //       for (var a of asset.children){
+        //         x++;
+        //         const pathLOD = !isNaN(a.key) && zip_id == "default"
+        //         ? Module.ProjectManager.objPaths[String(a.key)]
+        //         : (!isNaN(a.key) && zip_id != "default") ? Module.ProjectManager.objPaths[zip_id + "_" + String(a.key)]: String(a.key);
     
-                object_lod_paths.push(pathLOD);
-              }
-            }
+        //         object_lod_paths.push(pathLOD);
+        //       }
+        //     }
 
-          } catch (error) {
-            console.log(error)
-          }
+        //   } catch (error) {
+        //     console.log(error)
+        //   }
   
-          for (var lx = object_lod_paths.length - 1; lx >= 0; lx--){
-            if (lx == object_lod_paths.length - 1){
-              obj = scene.addObject(String(child.key), object_lod_paths[lx] + "@" + zip_id, lx);
-            } else {
-              obj.addGeometryLOD(object_lod_paths[lx] + "@" + zip_id, lx)
-            }
-          }
+        //   for (var lx = object_lod_paths.length - 1; lx >= 0; lx--){
+        //     if (lx == object_lod_paths.length - 1){
+        //       obj = scene.addObject(String(child.key), object_lod_paths[lx] + "@" + zip_id, lx);
+        //     } else {
+        //       obj.addGeometryLOD(object_lod_paths[lx] + "@" + zip_id, lx)
+        //     }
+        //   }
 
-        } else{
+        // } else{
           obj = scene.addObject(String(child.key), path + "@" + zip_id);
-        }
+        // }
 
         isLoading = 1;
       } catch (error) {
+        // console.log(error)
         if (opt && opt.ZIPElement){
           if (loadingTimeout) clearTimeout(loadingTimeout)
           opt.ZIPElement.setQueItem(child.key, false)
@@ -1116,6 +1117,7 @@ module.exports = (payload) => {
       }
 
       if (!obj) {
+        // console.log('nooo', child)
         if (opt && opt.ZIPElement){
           if (loadingTimeout) clearTimeout(loadingTimeout)
           opt.ZIPElement.setQueItem(child.key, false)
@@ -1124,9 +1126,17 @@ module.exports = (payload) => {
         return;
       }
 
+      _obj = obj;
+
       obj.setParameter('visible', false);
       isLoaded = false;
       Module.ProjectManager.objects[String(obj.$$.ptr)] = { key: child.key };
+      
+      if (Module.ProjectManager.launched) pendingRenderList.push(...renderList);
+
+      return;
+    } else {
+      obj = _obj;
     }
 
     if (obj.getStatus() == 0) {
