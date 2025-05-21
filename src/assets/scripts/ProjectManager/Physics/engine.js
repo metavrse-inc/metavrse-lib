@@ -359,26 +359,50 @@
    }
 
    let onGround = true;
-   let fixedFPS = 1 / 60;
+   const FIXED_DT = 1 / 60;
+   const MAX_ACCUM = 0.25;
    let alpha = 1;
    let rawDelta = 1 / 60;
    let accumulator = 0;
-   let prevTime=performance.now() * 1e-3;
+   let prevTime=performance.now() * 0.001;
    const render = (t) => {
+      let now = performance.now() * 0.001;
+
+      let delta = now - prevTime;
+      prevTime = now;
       // console.log('Rendering Physics')
       if (!ammoInitalised) return;
+
+      for (var [key, _u] of renderList) {
+         try {
+            _u.preUpdate();            
+         } catch (error) {
+            // console.error(error)
+         }
+      }
       
       // let currentFps = 1 / Module.fps.currentFps;
       // if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1 / Module.fps.maxFps;
-      try {
-         physicsWorld.stepSimulation(rawDelta, 0, fixedFPS);         
-      } catch (error) {
-         console.error(error)
+      // try {
+      //    physicsWorld.stepSimulation(rawDelta, 0, fixedFPS);         
+      // } catch (error) {
+      //    console.error(error)
+      // }
+      accumulator += rawDelta;
+      if (accumulator > MAX_ACCUM) accumulator = MAX_ACCUM;
+
+      let simulated = false;
+      while (accumulator >= FIXED_DT)
+      {
+         physicsWorld.stepSimulation(FIXED_DT, 0);   
+         accumulator -= FIXED_DT;               
+         simulated = true;
       }
       
+      let a = accumulator / FIXED_DT;
       for (var [key, _u] of renderList) {
          try {
-            _u.update();            
+            _u.update(a, simulated);            
          } catch (error) {
             console.error(error)
          }

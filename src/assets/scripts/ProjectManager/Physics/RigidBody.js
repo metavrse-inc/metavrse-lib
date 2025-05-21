@@ -26,6 +26,7 @@
     let body = null;
 
     let updateHandlers = new Map();
+    let preupdateHandlers = new Map();
 
     let requestAnimationFrame = Module.animations['requestAnimationFrame'];
 
@@ -470,11 +471,21 @@
         return false;
     }
 
-    const update = (forced)=> {
+    let isSimulated = true;
+    const preUpdate = ()=>{
+        for (var [k, funcUp] of preupdateHandlers) {
+            try {
+                funcUp(isSimulated);
+            } catch (error) {
+            }
+        }
+    }
+
+    const update = (acc, simulated)=> {
         try {
-            _update(forced);
+            _update(acc, simulated);
         } catch (error) {
-            
+            console.log(error)
         }
     }
     function smoothDampPose(pos, vel, rot, angVel,targetPos, targetRot,tau, dt) {
@@ -520,14 +531,12 @@
     }
 
     var firstFrame = true;
-    const _update = (forced)=> {
-        forced = forced || false;
+    var history = [];
+    const _update = (accum, simulated)=> {
+        // forced = forced || false;
         if (!isLoaded || !body) return;
 
-        if (forced && params.mass == 0){
-            // go in
-        }
-        else if (params.mass <= 0) return;
+        if (params.mass <= 0) return;
 
         let o = payload.parent;
 
@@ -541,33 +550,51 @@
         var _q = updateMath._q;
         quat.set(_q, q.x(), q.y(), q.z(), q.w())
 
-        let mp = false;
-        let mr = false;
+        isSimulated = simulated;
 
-        if (!vec3.equals(physics_transformation.position, _p)) mp = true;   // approx using epsilon
-        if (!quat.equals(physics_transformation.rotation, _q)) mr = true;   // approx using epsilon
+        if (!simulated && history.length > 0){
+            history[history.length-1].a = accum;
+        } else {
+            history.push({a: accum, position: [p.x(), p.y(), p.z()], rotation: [q.x(), q.y(), q.z(), q.w()] })
+        }
+        if (history.length > 3) history.shift();   // keep last 3
+        if (history.length < 3) return;
+
+        const prev = history[1];
+        const latest = history[2];
+
+        let mp = true;
+        let mr = true;
+
+        // if (!vec3.equals(physics_transformation.position, _p)) mp = true;   // approx using epsilon
+        // if (!quat.equals(physics_transformation.rotation, _q)) mr = true;   // approx using epsilon
 
         let m4 = physics_transformation.m4;
         
         if (mp || mr){
+            // const interPos = physics_transformation.position = latest.position;
+            // const interRot = physics_transformation.rotation = latest.rotation;
             // if (firstFrame){
-                vec3.set(physics_transformation.position, ..._p);
-                quat.set(physics_transformation.rotation, ..._q);
+                // vec3.set(physics_transformation.position, ..._p);
+                // quat.set(physics_transformation.rotation, ..._q);
                 // firstFrame = false;
             // } else {
             //     // smoothDampPose(physics_transformation.position, physics_transformation.vel, physics_transformation.rotation, physics_transformation.angVel,_p, _q,0.0015, Physics.rawDelta);
             //     vec3.lerp(physics_transformation.position, physics_transformation.position, _p, 0.015);
             //     quat.slerp(physics_transformation.rotation, physics_transformation.rotation, _q, 0.015);
             // }
+
+            const interPos = vec3.lerp(physics_transformation.position, prev.position, latest.position, latest.a);
+            const interRot = quat.slerp(physics_transformation.rotation, prev.rotation, latest.rotation, latest.a);
             
             let scales = updateMath.scales;
             mat4.getScaling(scales, o.parentOpts.transform)
 
             let finalRotation = updateMath.finalRotation;
             quat.set(finalRotation, ...params.object_rotate);
-            quat.multiply(finalRotation, _q, finalRotation);
+            quat.multiply(finalRotation, interRot, finalRotation);
             // physics
-            mat4.fromRotationTranslationScale(m4, finalRotation, _p, scales);
+            mat4.fromRotationTranslationScale(m4, finalRotation, interPos, scales);
 
             // physics transformation
             let q2 = updateMath.q2;
@@ -595,12 +622,15 @@
     
         }
         
-        for (var [k, funcUp] of updateHandlers) {
-            try {
-                funcUp();
-            } catch (error) {
+        // if (simulated)
+        // {
+            for (var [k, funcUp] of updateHandlers) {
+                try {
+                    funcUp();
+                } catch (error) {
+                }
             }
-        }
+        // }
     }
 
     // add to physics world
@@ -615,6 +645,14 @@
 
     let removeUpdateHandler = (func)=> {
         updateHandlers.delete(func);
+    }
+
+    let addPreUpdateHandler = (func)=> {
+        preupdateHandlers.set(func, func);
+    }
+
+    let removePreUpdateHandler = (func)=> {
+        preupdateHandlers.delete(func);
     }
 
     // add to parent
@@ -695,6 +733,10 @@
         update,
         addUpdateHandler,
         removeUpdateHandler,
+
+        preUpdate,
+        addPreUpdateHandler,
+        removePreUpdateHandler
     })
 
     return object;

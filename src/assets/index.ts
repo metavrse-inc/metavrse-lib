@@ -52,6 +52,8 @@ import CherryWW from './scripts/lib/CherryWW';
 import AmmoWASM from './scripts/lib/ammo.wasm.wasm';
 import ThreeNebula from './scripts/lib/three-nebula.min';
 
+import AmmoWorker from './scripts/lib/ammo.worker.js';
+
 // Physics
 import PhysicsEngine from './scripts/ProjectManager/Physics/engine';
 import ZIPBox from './scripts/ProjectManager/Physics/ZIPBox';
@@ -130,6 +132,7 @@ export const scripts : any = {
   [`${LIBS}/CherryWW.js`]: CherryWW,
 
   [`${LIBS}/ammo.wasm.wasm`]: AmmoWASM,
+  [`${LIBS}/ammo.worker.js`]: AmmoWorker,
   [`${LIBS}/three-nebula.min.js`]: ThreeNebula,
 
   [`${PHYSICS}/`]: null, // Folder to create
