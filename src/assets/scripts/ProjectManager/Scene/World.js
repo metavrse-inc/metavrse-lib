@@ -384,9 +384,11 @@ module.exports = (payload) => {
               o.item.type=="object-hud") && o.addToRedraw) o.addToRedraw('hudscale');
           }
           break;
-        // case "color":
+        case "texture_level":
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setTextureLOD(v);
 
-        //     break;
+            break;
         // case "transparent":
         //     break;
         case 'skyboxRotation':
@@ -546,6 +548,7 @@ module.exports = (payload) => {
 
   addToRedraw('fxaa');
   addToRedraw('hudscale');
+  addToRedraw('texture_level');
   addToRedraw('css');
 
   addToRedraw('physics_debug_level');
@@ -812,7 +815,7 @@ module.exports = (payload) => {
         return getProperty('texture_level')[1];
       },
       set: (v) => {
-        skipRedraw.set('texture_level', true);
+        // skipRedraw.set('texture_level', true);
         setProperty('texture_level', v);
       },
     },

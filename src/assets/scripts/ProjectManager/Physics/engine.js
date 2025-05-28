@@ -201,11 +201,10 @@
       physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
       physicsWorld.setGravity(new Ammo.btVector3(0, Number(gravity), 0));
       // physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
-      let s = physicsWorld.getSolverInfo()
-      s.m_numIterations = 4;
-      s.m_splitImpulse = true;
-      s.m_splitImpulsePenetrationThreshold = -0.00001;
-
+      // let s = physicsWorld.getSolverInfo()
+      // s.m_numIterations = 4;
+      // s.m_splitImpulse = true;
+      // s.m_splitImpulsePenetrationThreshold = -0.00001;
       // resusable
       // TRANSFORM_AUX = new Ammo.btTransform();
 
@@ -375,7 +374,7 @@
 
       for (var [key, _u] of renderList) {
          try {
-            _u.preUpdate();            
+            _u.preUpdate(1);            
          } catch (error) {
             // console.error(error)
          }

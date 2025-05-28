@@ -104,7 +104,7 @@ module.exports = (payload) => {
     var suspensionDamping = 2.3 / vScale;
     var suspensionCompression = 4.4 / vScale;
     var suspensionRestLength = 0.6 / vScale;
-    var rollInfluence = 0.015 / vScale;
+    var rollInfluence = 0 / vScale;
 
     var steeringIncrement = .04;
     var steeringClamp = .5;
