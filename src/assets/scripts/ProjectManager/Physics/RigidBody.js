@@ -2,11 +2,10 @@
  * Object Scenegraph Component
  * @param {object} opt 
  */
- module.exports = (payload) => {
+module.exports = (payload) => {
     const Physics = payload.Physics;
-    const Ammo = Physics.Ammo;
-    const PhysicsWorld = Physics.PhysicsWorld;
-    const CollisionFlags = Physics.CollisionFlags;
+    // const Ammo = Physics.Ammo;
+    const HavokSystem = Physics.Havok;
 
     let child = payload.child;
     let parent = payload.parent;
@@ -25,8 +24,11 @@
     let renderList = [];
     let body = null;
 
+    //havok
+    let havokBody = null;
+    let havokShape = null;
+
     let updateHandlers = new Map();
-    let preupdateHandlers = new Map();
 
     let requestAnimationFrame = Module.animations['requestAnimationFrame'];
 
@@ -93,16 +95,18 @@
 
     const deleteBody = ()=> {
         try {
-            if (body){
-                PhysicsWorld.removeRigidBody(body);
-                Ammo.destroy(body);
-                body = null;
-            }
+            Physics.havok.HP_World_RemoveBody(RB.body)
+            Physics.havok.HP_Body_Release(RB.body);
+            // if (body){
+            //     PhysicsWorld.removeRigidBody(body);
+            //     Ammo.destroy(body);
+            //     body = null;
+            // }
 
-            if (geometry) Ammo.destroy(geometry); geometry = null;
-            if (TRANSFORM_AUX) Ammo.destroy(TRANSFORM_AUX); TRANSFORM_AUX = null;
-            if (updateMath.btScales) Ammo.destroy(updateMath.btScales); updateMath.btScales = null;
-            if (updateMath.btTransform) Ammo.destroy(updateMath.btTransform); updateMath.btTransform = null;
+            // if (geometry) Ammo.destroy(geometry); geometry = null;
+            // if (TRANSFORM_AUX) Ammo.destroy(TRANSFORM_AUX); TRANSFORM_AUX = null;
+            // if (updateMath.btScales) Ammo.destroy(updateMath.btScales); updateMath.btScales = null;
+            // if (updateMath.btTransform) Ammo.destroy(updateMath.btTransform); updateMath.btTransform = null;
 
             
         } catch (error) {
@@ -114,12 +118,12 @@
         updateHandlers.clear();
         if (parent) parent.children.delete(child.key);
         Physics.removeUpdate(child.key);
-
+        deleteBody();
         // if (Physics.isResetting){
             // Physics.addFn(deleteBody);        
         // }else{
         //     setTimeout(()=>{
-            requestAnimationFrame(deleteBody);        
+            // requestAnimationFrame(deleteBody);        
         //     });
         // }
 
@@ -161,7 +165,7 @@
         _object = so;
         var ghost = Boolean(params.ghost || false)
         var mass = params.mass;
-        var friction = Number(args.friction || 0)
+        var friction = Number(args.friction || 0.1)
   
         extents = so.getParameterVec3("extent");
         center = so.getParameterVec3("center");
@@ -187,16 +191,17 @@
 
         let currentShape = false;
         let shapePath = "";
+        var buffer = [];
         // geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
         switch (params.shape_type) {            
             case 'cylinder':
-                geometry = new Ammo.btCylinderShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
+                // geometry = new Ammo.btCylinderShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
                 break;
             case 'capsule':
-                geometry = new Ammo.btCapsuleShape(size[0] * 0.5, size[1]);
+                // geometry = new Ammo.btCapsuleShape(size[0] * 0.5, size[1]);
                 break;
             case 'sphere':
-                geometry = new Ammo.btSphereShape( size[1] * 0.5);
+                // geometry = new Ammo.btSphereShape( size[1] * 0.5);
                 break;
             case 'current-shape':
                 currentShape = true;
@@ -211,33 +216,32 @@
 
                     let om = scene.getObjectGeometry(shapePath + "@" + o.zip_id);
 
-                    let mesh = new Ammo.btTriangleMesh(true, true);
+                    // let mesh = new Ammo.btTriangleMesh(true, true);
                     let triangles = om.triangles;
                     let verts = om.vertices;
                     
                     let tris = triangles.size();
                     // console.log(tris)
                     if (tris > 0){
+                        buffer = new Float32Array(tris * 3);
+                        let pos = 0;
+                        let push = (...args)=>
+                        {
+                            for (let arg of args){
+                                buffer[pos++] = arg;
+                            }
+                        }
+
                         for (let i = 0; i < tris; i+=3){
                             let i1 = triangles.get(i);
                             let i2 = triangles.get(i + 1);
                             let i3 = triangles.get(i + 2);
-                            
-                            const v0 = new Ammo.btVector3(verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3);
-                            const v1 = new Ammo.btVector3(verts.get(i2).p1, verts.get(i2).p2, verts.get(i2).p3);
-                            const v2 = new Ammo.btVector3(verts.get(i3).p1, verts.get(i3).p2, verts.get(i3).p3);
 
-                            // Add triangle to mesh (true = remove duplicate vertices)
-                            mesh.addTriangle(v0, v1, v2, true);
-
-                            // Cleanup vectors
-                            Ammo.destroy(v0);
-                            Ammo.destroy(v1);
-                            Ammo.destroy(v2);
+                            push(verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3);
+                            push(verts.get(i2).p1, verts.get(i2).p2, verts.get(i2).p3);
+                            push(verts.get(i3).p1, verts.get(i3).p2, verts.get(i3).p3);
                         }
     
-                        geometry = new Ammo.btBvhTriangleMeshShape(mesh, true, true);
-                        // Ammo.destroy(mesh);
                         mesh = null;            
                      
                         // don't break on error, run default
@@ -245,17 +249,18 @@
                     }
 
                 } catch (error) {
-                    
+                    buffer = [];
                 }
 
             case 'bounding-box':
             default:
-                geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
+                params.shape_type = 'bounding-box';
+                // geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
                 break;
         }
         
         vec3.multiply(scales, scales, params.scale);
-        geometry.setLocalScaling(new Ammo.btVector3(...scales));
+        // geometry.setLocalScaling(new Ammo.btVector3(...scales));
         // geometry.setMargin(0.1);
 
         // rigidbody transformation
@@ -266,42 +271,416 @@
 
         mat4.multiply(m4, m4, m42);
   
-        var transform = new Ammo.btTransform();
-        transform.setFromOpenGLMatrix(m4);
+        // var transform = new Ammo.btTransform();
+        // transform.setFromOpenGLMatrix(m4);
 
-        var motionState = new Ammo.btDefaultMotionState(transform);
+        // var motionState = new Ammo.btDefaultMotionState(transform);
   
-        var localInertia = new Ammo.btVector3(0, 0, 0);
-        geometry.calculateLocalInertia(mass, localInertia);
+        // var localInertia = new Ammo.btVector3(0, 0, 0);
+        // geometry.calculateLocalInertia(mass, localInertia);
   
-        var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, geometry, localInertia);
-        body = new Ammo.btRigidBody(rbInfo);
+        // var rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, geometry, localInertia);
+        // body = new Ammo.btRigidBody(rbInfo);
+        body = true;
   
-        body.setFriction(friction);
-        let group = 1;
-        if (ghost) {
-            // body.setCollisionFlags(4)
-            group = 16;
-            body.setCollisionFlags(body.getCollisionFlags() | 4);
-        } else if (mass == 0) {
-            group = 2;
-            body.setCollisionFlags(body.getCollisionFlags() | 1)
-        } else {
-            group = 4;
-            // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT)
+        // body.setFriction(friction);
+        // let group = 1;
+        // if (ghost) {
+        //     // body.setCollisionFlags(4)
+        //     group = 16;
+        //     body.setCollisionFlags(body.getCollisionFlags() | 4);
+        // } else if (mass == 0) {
+        //     group = 2;
+        //     body.setCollisionFlags(body.getCollisionFlags() | 1)
+        // } else {
+        //     group = 4;
+        //     // body.setCollisionFlags(body.getCollisionFlags() | CollisionFlags.CF_DISABLE_VISUALIZE_OBJECT)
+        // }
+
+        // body.setUserIndex(object.idx);
+
+        // // apply all params
+        // Object.keys(props).map((prop) => {
+        //     applyParam({type: 'set', prop, value: props[prop]})
+        // })
+
+        // if (ghost) PhysicsWorld.addRigidBody(body, group, -1);
+        // else PhysicsWorld.addRigidBody(body, group, -1);
+
+        let options = {
+            key: object.idx,
+            type: params.shape_type,
+            size: size,
+            scale: scales,
+            matrix: m4,
+            mass,
+            ghost,
+            friction,
         }
 
-        body.setUserIndex(object.idx);
-
-        // apply all params
-        Object.keys(props).map((prop) => {
-            applyParam({type: 'set', prop, value: props[prop]})
-        })
-
-        if (ghost) PhysicsWorld.addRigidBody(body, group, -1);
-        else PhysicsWorld.addRigidBody(body, group, -1);
-  
+        createBody(options, buffer);
      }
+
+     function wrapShapeWithScale(shapeId, scale) {
+        // 1) Create an empty container:
+        const [resC, containerId] = HavokSystem.havok.HP_Shape_CreateContainer();
+        if (resC !== HavokSystem.havok.Result.RESULT_OK) {
+          console.error("HP_Shape_CreateContainer failed", resC);
+          return null;
+        }
+      
+        // 2) Build a QSTransform: [ translation, rotation, scale ]
+        //    We only want scale, so translation = [0,0,0]; rotation = identity = [0,0,0,1]
+        const qsTransform = [
+          [0, 0, 0],     // no offset
+          [0, 0, 0, 1],  // no rotation
+          scale          // your desired scale
+        ];
+      
+        // 3) Add the original shape as a child of the container, with that scale
+        const resA = HavokSystem.havok.HP_Shape_AddChild(containerId, shapeId, qsTransform);
+        if (resA !== HavokSystem.havok.Result.RESULT_OK) {
+          console.error("HP_Shape_AddChild failed", resA);
+          return null;
+        }
+      
+        // 4) Return the container — use this wherever you would have used the mesh shapeId
+        return containerId;
+    }
+
+    const onEvent = (event)=>
+    {
+        if (eventHandler.size == 0) return;
+
+        let bodyAkey = HavokSystem.ids.get(event.bodyA);
+        let bodyBkey = HavokSystem.ids.get(event.bodyB);
+
+        let type = -1;
+
+        switch (event.type) {
+            case 8:
+                type = "TRIGGER_ENTERED"
+                break;
+            case 16:
+                type = "TRIGGER_EXITED"
+            default:
+                break;
+        }
+
+        
+        for (var [,handler] of eventHandler)
+        {
+            handler({type, keyA: bodyAkey, keyB: bodyBkey , rawEvent: event});
+        }
+    }
+
+    const createBody = (options, buffer)=>
+    {
+        const HavokModule = HavokSystem.havok;
+        const worldId = HavokSystem.world;
+        const {
+            key,
+            type,
+            size,      // [sx, sy, sz]
+            scale,     // [scx, scy, scz]
+            matrix,    // Float32Array(16), column-major
+            mass,
+            ghost,
+            friction,
+        } = options;
+        
+        // 1) DECOMPOSE matrix → translation + quaternion
+        const pos   = [ matrix[12], matrix[13], matrix[14] ];
+        const quat  = [ 0, 0, 0, 1 ];
+        {
+            // Compute quaternion from 3×3 submatrix:
+            const m00 = matrix[0],  m01 = matrix[4],  m02 = matrix[8];
+            const m10 = matrix[1],  m11 = matrix[5],  m12 = matrix[9];
+            const m20 = matrix[2],  m21 = matrix[6],  m22 = matrix[10];
+            let trace = m00 + m11 + m22;
+            if (trace > 0) {
+            let s = 0.5 / Math.sqrt(trace + 1.0);
+            quat[3] = 0.25 / s;
+            quat[0] = (m21 - m12) * s;
+            quat[1] = (m02 - m20) * s;
+            quat[2] = (m10 - m01) * s;
+            } else {
+            if (m00 > m11 && m00 > m22) {
+                let s = 2.0 * Math.sqrt(1.0 + m00 - m11 - m22);
+                quat[3] = (m21 - m12) / s;
+                quat[0] = 0.25 * s;
+                quat[1] = (m01 + m10) / s;
+                quat[2] = (m02 + m20) / s;
+            } else if (m11 > m22) {
+                let s = 2.0 * Math.sqrt(1.0 + m11 - m00 - m22);
+                quat[3] = (m02 - m20) / s;
+                quat[0] = (m01 + m10) / s;
+                quat[1] = 0.25 * s;
+                quat[2] = (m12 + m21) / s;
+            } else {
+                let s = 2.0 * Math.sqrt(1.0 + m22 - m00 - m11);
+                quat[3] = (m10 - m01) / s;
+                quat[0] = (m02 + m20) / s;
+                quat[1] = (m12 + m21) / s;
+                quat[2] = 0.25 * s;
+            }
+            }
+        }
+        
+        // 2) CREATE THE HAVOK SHAPE
+        let shapeId = null;
+        
+        switch (type) {
+            case 'box': 
+            case 'bounding-box': {
+            // HP_Shape_CreateBox(center: Vector3, rotation: Quaternion, extents: Vector3)
+            const center   = [0,0,0];
+            const rotation = [0,0,0,1];               // use world quaternion
+            // const extents = [size[0] * 0.5, size[1] * 0.5, size[2] * 0.5];
+            const extents  = size;
+            const [res, id] = HavokModule.HP_Shape_CreateBox(center, rotation, extents);
+            if (res !== HavokModule.Result.RESULT_OK) {
+                console.error("HP_Shape_CreateBox failed:", res);
+                return;
+            }
+            shapeId = id;
+            break;
+            }
+        
+            case 'sphere': {
+            // HP_Shape_CreateSphere(center: Vector3, radius: number)
+            const center = [0,0,0];
+            // assume size[0]==size[1]==size[2], so radius = (diameter * scale)/2
+            const radius = size[0] * 0.5;
+            const [res, id] = HavokModule.HP_Shape_CreateSphere(center, radius);
+            if (res !== HavokModule.Result.RESULT_OK) {
+                console.error("HP_Shape_CreateSphere failed:", res);
+                return;
+            }
+            shapeId = id;
+            break;
+            }
+        
+            case 'cylinder': {
+            // HP_Shape_CreateCylinder(pointA: Vector3, pointB: Vector3, radius: number)
+            // We define a cylinder aligned along the local Y-axis: 
+            //   pointA = [0, +halfHeight, 0], pointB = [0, -halfHeight, 0] in shape space.
+            // The body’s world transform (pos+quat) will place/orient it correctly.
+            const halfHeight = size[1] * 0.5;
+            const radius     = size[0] * 0.5;
+            //   const halfHeight = (size[1] * scale[1]) * 0.5;
+            //   const radius     = (size[0] * scale[0]) * 0.5; 
+            const pointA = [ 0, +halfHeight, 0 ];
+            const pointB = [ 0, -halfHeight, 0 ];
+            const [res, id] = HavokModule.HP_Shape_CreateCylinder(pointA, pointB, radius);
+            if (res !== HavokModule.Result.RESULT_OK) {
+                console.error("HP_Shape_CreateCylinder failed:", res);
+                return;
+            }
+            shapeId = id;
+            break;
+            }
+        
+            case 'capsule': {
+            // HP_Shape_CreateCapsule(pointA: Vector3, pointB: Vector3, radius: number)
+            // Define a capsule along local Y-axis: same pattern as cylinder.
+            const halfHeight = size[1] * 0.5;
+            const radius     = size[0] * 0.5;
+            const pointA = [ 0, +halfHeight - radius * 0.5 - 0.1 , 0 ];
+            const pointB = [ 0, -(halfHeight - radius * 0.5 - 0.1), 0 ];
+            const [res, id] = HavokModule.HP_Shape_CreateCapsule(pointA, pointB, radius);
+            if (res !== HavokModule.Result.RESULT_OK) {
+                console.error("HP_Shape_CreateCapsule failed:", res);
+                return;
+            }
+            shapeId = id;
+            break;
+            }
+        
+            case 'current-shape':
+            case 'custom-mesh': {
+            if (!buffer) {
+                console.warn("No buffer provided for custom-mesh; falling back to box.");
+                // Fallback to a unit box if no buffer:
+                const center   = [0,0,0];
+                const rotation = [0,0,0,1];
+                // const extents = [size[0] * 0.5, size[1] * 0.5, size[2] * 0.5];
+                const extents  = size;
+                const [res, id] = HavokModule.HP_Shape_CreateBox(center, rotation, extents);
+                if (res !== HavokModule.Result.RESULT_OK) {
+                console.error("HP_Shape_CreateBox fallback failed:", res);
+                return;
+                }
+                shapeId = id;
+                break;
+            }
+        
+            // Build a TRIANGLE MESH shape:
+            //   • vertices: Float32Array buffer of length 3 * numVertices
+            //   • triangles: we must pass an indices array of ints, length 3 * numTriangles.
+            // Assume `buffer` is a Float32Array of xyz triplets.  
+            // If you already have an index buffer, adapt accordingly.  
+            // Here, we assume buffer is “raw vertex xyz data with no index”, so we must
+            //   generate a trivial index array [0,1,2, 3,4,5, …]. But Havok expects triangles
+            //   as triples of **vertex indices**. If buffer is already “flat vertex list per triangle”
+            //   (i.e. each consecutive 3 floats is one vertex, and each group-of-3 vertices is a separate triangle),
+            //   then numVertices = buffer.length/3, and numTriangles = numVertices/3.
+            // We will treat buffer as (xyz)(xyz)(xyz) per triangle, so:
+            const f32 = (buffer instanceof ArrayBuffer) ? new Float32Array(buffer) : new Float32Array(buffer);
+            const numFloats   = f32.length;          // should be 9 * numTriangles
+            const numVertices = numFloats / 3;       // each 3 floats is 1 vertex
+            const numTriangles = numVertices / 3;    // each 3 vertices is 1 triangle
+        
+            //  a) Allocate WASM memory for vertices:
+            const vertsByteSize = numFloats * Float32Array.BYTES_PER_ELEMENT;
+            const vertsPtr = HavokModule._malloc(vertsByteSize);
+            HavokModule.HEAPF32.set(f32, vertsPtr / 4);
+        
+            //  b) Build an index array [0,1,2, 3,4,5, ... , numVertices-3, numVertices-2, numVertices-1]
+            const indices = new Uint32Array(numVertices);
+            for (let i = 0; i < numVertices; ++i) {
+                indices[i] = i;
+            }
+            const idxByteSize = indices.length * Uint32Array.BYTES_PER_ELEMENT;
+            const idxPtr = HavokModule._malloc(idxByteSize);
+            HavokModule.HEAPU32.set(indices, idxPtr / 4);
+        
+            //  c) Call HP_Shape_CreateMesh(verticesPtr, numVertices, trianglesPtr, numTriangles)
+            const [res, id] = HavokModule.HP_Shape_CreateMesh(
+                vertsPtr, numVertices,
+                idxPtr,   numTriangles
+            );
+            if (res !== HavokModule.Result.RESULT_OK) {
+                console.error("HP_Shape_CreateMesh failed:", res);
+                HavokModule._free(vertsPtr);
+                HavokModule._free(idxPtr);
+                break;
+            }
+            shapeId = id;
+        
+            // Free the buffers now that shape is created:
+            HavokModule._free(vertsPtr);
+            HavokModule._free(idxPtr);
+            break;
+            }
+        
+            default: {
+            // Fallback to box if unknown type:
+            const center   = [0,0,0];
+            const rotation = [0,0,0,1];
+            // const extents = [size[0] * 0.5, size[1] * 0.5, size[2] * 0.5];
+        const extents  = size;
+            const [res, id] = HavokModule.HP_Shape_CreateBox(center, rotation, extents);
+            if (res !== HavokModule.Result.RESULT_OK) {
+                console.error("HP_Shape_CreateBox fallback failed:", res);
+                return;
+            }
+            shapeId = id;
+            break;
+            }
+        }
+
+        const scaledShapeId = wrapShapeWithScale(shapeId, scale);
+    
+        
+        // 3) ASSIGN A SIMPLE PhysicsMaterial TO THE SHAPE (for friction)
+        // PhysicsMaterial = [ staticFriction, dynamicFriction, restitution, combineMode1, combineMode2 ]
+        // We will ignore restitution here and set combine modes to GEOMETRIC_MEAN.
+        {
+            const pm = [
+            friction,         // static friction
+            friction,         // dynamic friction
+            0.0,              // restitution = 0
+            HavokModule.MaterialCombine.GEOMETRIC_MEAN,
+            HavokModule.MaterialCombine.GEOMETRIC_MEAN
+            ];
+            HavokModule.HP_Shape_SetMaterial(shapeId, pm);
+        }
+        
+        // 4) CREATE & CONFIGURE THE BODY
+        const [resB, bodyId] = HavokModule.HP_Body_Create();
+        if (resB !== HavokModule.Result.RESULT_OK) {
+            console.error("HP_Body_Create failed:", resB);
+            return;
+        }
+        
+        // Attach the shape:
+        HavokModule.HP_Body_SetShape(bodyId, scaledShapeId);
+        
+        // Set motion type:
+        if (ghost) {
+            // HavokModule.HP_Body_SetMotionType(bodyId, HavokModule.MotionType.KINEMATIC);
+            // If you want trigger-only, also do:
+            HavokModule.HP_Shape_SetTrigger(shapeId, true);
+            const mask = HavokModule.EventType.TRIGGER_ENTERED 
+                    | HavokModule.EventType.TRIGGER_EXITED;
+            HavokModule.HP_Body_SetEventMask(bodyId, mask);
+        }
+        else if (mass === 0) {
+            HavokModule.HP_Body_SetMotionType(bodyId, HavokModule.MotionType.STATIC);
+        }
+        else {
+            HavokModule.HP_Body_SetMotionType(bodyId, HavokModule.MotionType.DYNAMIC);
+        }
+        
+        // Assign initial transform: HP_Body_SetQTransform(bodyId, QTransform)
+        // QTransform = [ translation: Vector3, rotation: Quaternion ]
+        HavokModule.HP_Body_SetQTransform(bodyId, [ pos, quat ]);
+        
+        // 5) MASS PROPERTIES (for dynamic bodies)
+        if (mass > 0) {
+            // Build default mass properties from the shape (density=1.0):
+            const [resMP, mp] = HavokModule.HP_Shape_BuildMassProperties(shapeId);
+            if (resMP !== HavokModule.Result.RESULT_OK) {
+            console.error("HP_Shape_BuildMassProperties failed:", resMP);
+            } else {
+            // mp = [ centerOfMass: Vector3, massValue: number, inertia: Vector3, inertiaOrient: Quaternion ]
+            // Overwrite mp[1] with our desired mass; scale inertia accordingly:
+            const originalMass = mp[1];
+            if (originalMass > 0) {
+                const scaleFactor = mass / originalMass;
+                mp[1] = mass;
+                // Scale inertia vector by same factor:
+                mp[2][0] *= scaleFactor;
+                mp[2][1] *= scaleFactor;
+                mp[2][2] *= scaleFactor;
+            } else {
+                mp[1] = mass;
+            }
+            // Now apply to the body:
+            HavokModule.HP_Body_SetMassProperties(bodyId, mp);
+            }
+        }
+        
+        // 6) ADD BODY TO THE WORLD (startAsleep = false)
+        HavokModule.HP_World_AddBody(worldId, bodyId, /*startAsleep=*/ false);
+
+        HavokSystem.eventHandler.set(bodyId[0],onEvent);
+
+        
+        // // 7) STORE & NOTIFY
+        // physics_objects.set(key, {
+        //     type,
+        //     size,
+        //     scale,
+        //     matrix,
+        //     mass,
+        //     ghost,
+        //     friction,
+        //     body: bodyId,
+        //     shapeId : scaledShapeId
+        // });
+        // if (mass > 0) {
+        //     dynamic_objects.set(key, key);
+        // }
+
+        havokBody = bodyId;
+
+        Physics.SetID(bodyId, key);
+        // havokShape = 
+        
+        
+    }
 
     var isLoaded = false;
     let TRANSFORM_AUX = null;
@@ -328,25 +707,25 @@
     }
 
     var applyParam = (opts)=> {
-        try {
-            if (Reflect.has(body, opts.prop)){       
-                let fnArgs = getParamNames(Reflect.get(body, opts.prop));
-                let fnValues = JSON.parse("[" + opts.value + "]");
+        // try {
+        //     if (Reflect.has(body, opts.prop)){       
+        //         let fnArgs = getParamNames(Reflect.get(body, opts.prop));
+        //         let fnValues = JSON.parse("[" + opts.value + "]");
                 
-                if (fnArgs.length != fnValues.length) throw(`[${opts.prop}] Wrong number of arguments, expected ${fnArgs.length} but received ${fnValues.length}`)
+        //         if (fnArgs.length != fnValues.length) throw(`[${opts.prop}] Wrong number of arguments, expected ${fnArgs.length} but received ${fnValues.length}`)
 
-                let finalValues = [];
+        //         let finalValues = [];
 
-                for (var v of fnValues) {
-                    if (Array.isArray(v) && v.length == 3) finalValues.push(new Ammo.btVector3(...v))
-                    else finalValues.push(v);
-                }
+        //         for (var v of fnValues) {
+        //             if (Array.isArray(v) && v.length == 3) finalValues.push(new Ammo.btVector3(...v))
+        //             else finalValues.push(v);
+        //         }
 
-                body[opts.prop](...finalValues);
-            }            
-        } catch (error) {
-            // console.log(error)
-        }
+        //         body[opts.prop](...finalValues);
+        //     }            
+        // } catch (error) {
+        //     // console.log(error)
+        // }
     }
 
     let updateMath = {
@@ -370,9 +749,9 @@
 
         if (!isLoaded){
             isLoaded = true;
-            TRANSFORM_AUX = new Ammo.btTransform();
-            updateMath.btScales = new Ammo.btVector3();
-            updateMath.btTransform = new Ammo.btTransform();
+            // TRANSFORM_AUX = new Ammo.btTransform();
+            // updateMath.btScales = new Ammo.btVector3();
+            // updateMath.btTransform = new Ammo.btTransform();
 
             // if (Physics.isResetting){
                 addObject(payload)
@@ -434,8 +813,19 @@
 
                 mat4.multiply(m4, m4, m42);
 
-                var transform = updateMath.btTransform;
+                let newPosition = mat4.getTranslation([0,0,0], m4);
+                let newRotation = mat4.getRotation([0,0,0, 0], m4);
 
+                RB.set([
+                    {
+                        prop: "warp",
+                        value: [newPosition, newRotation]
+                    }
+                ])
+
+                
+                /*
+                var transform = updateMath.btTransform;
                 let ms = body.getMotionState();
 
                 vec3.multiply(scales, scales, params.scale);
@@ -448,6 +838,7 @@
                 ms.setWorldTransform(transform);
 
                 body.setMotionState(ms);
+                */
                 Module.ProjectManager.isDirty = true;
 
             }
@@ -457,180 +848,127 @@
     let physics_transformation = {
         position: vec3.create(),
         rotation: quat.create(),
-        vel: vec3.create(),
-        angVel: vec3.create(),
-
+        linear: vec3.create(),
+        angular: vec3.create(),
+        alpha:0,
         m4: mat4.create(),
     }
 
-    let isArrayDifferent = (a1, a2)=> {
-        for (var x=0; x < a1.length; x++){
-            if (a1[x] != a2[x]) return true;
-        }
+    let previousState = null;
+    let currentState = null;
 
-        return false;
-    }
-
-    let isSimulated = true;
-    const preUpdate = ()=>{
-        for (var [k, funcUp] of preupdateHandlers) {
-            try {
-                funcUp(isSimulated);
-            } catch (error) {
-            }
-        }
-    }
-
-    const update = (acc, simulated)=> {
-        try {
-            _update(acc, simulated);
-        } catch (error) {
-            console.log(error)
-        }
-    }
-    function smoothDampPose(pos, vel, rot, angVel,targetPos, targetRot,tau, dt) {
-        const ω  = 4.6 / tau;
-        const k1 = 2 * ω;
-        const k2 = ω * ω;
-        
-        /* linear */
-        const deltaPos = vec3.sub(vec3.create(), pos, targetPos);
-        const accel = vec3.scale(vec3.create(), vel, k1);
-        vec3.add(accel, accel, vec3.scale(vec3.create(), deltaPos, k2));
-        vec3.negate(accel, accel);
-        
-        vec3.scaleAndAdd(vel, vel, accel, dt);
-        vec3.scaleAndAdd(pos, pos, vel, dt);
-        
-        /* angular */
-        const dq = quat.multiply(quat.create(), targetRot, quat.invert(quat.create(), rot));
-        if (dq[3] < 0) quat.scale(dq, dq, -1);
-        
-        const angle = 2 * Math.acos(Math.max(-1, Math.min(1, dq[3])));
-        let axis = vec3.fromValues(1, 0, 0);
-        const s = Math.sqrt(1 - dq[3] * dq[3]);
-        if (s >= 1e-6) axis = vec3.fromValues(dq[0] / s, dq[1] / s, dq[2] / s);
-        
-        const deltaRotVec = vec3.scale(vec3.create(), axis, angle);
-        
-        const angAccel = vec3.scale(vec3.create(), angVel, k1);
-        vec3.add(angAccel, angAccel, vec3.scale(vec3.create(), deltaRotVec, k2));
-        vec3.negate(angAccel, angAccel);
-        
-        vec3.scaleAndAdd(angVel, angVel, angAccel, dt);
-        
-        const angMag = vec3.length(angVel) * dt;
-        let dQ = quat.create();
-        if (angMag > 1e-8) {
-            const axisNorm = vec3.normalize(vec3.create(), angVel);
-            quat.setAxisAngle(dQ, axisNorm, angMag);
-        } else {
-            quat.identity(dQ);
-        }
-        quat.normalize(rot, quat.multiply(rot, dQ, rot));
-    }
-
-    var firstFrame = true;
-    var history = [];
-    const _update = (accum, simulated)=> {
-        // forced = forced || false;
+    const update = (forced)=> 
+    {
         if (!isLoaded || !body) return;
-
-        if (params.mass <= 0) return;
-
+       
         let o = payload.parent;
-
-        let TRANSFORM_AUX = body.getWorldTransform();
-        var p = TRANSFORM_AUX.getOrigin();
-        var q = TRANSFORM_AUX.getRotation();
-
-        var _p = updateMath._p;
-        vec3.set(_p, p.x(), p.y(), p.z())
-
-        var _q = updateMath._q;
-        quat.set(_q, q.x(), q.y(), q.z(), q.w())
-
-        isSimulated = simulated;
-
-        if (!simulated && history.length > 0){
-            history[history.length-1].a = accum;
-        } else {
-            history.push({a: accum, position: [p.x(), p.y(), p.z()], rotation: [q.x(), q.y(), q.z(), q.w()] })
-        }
-        if (history.length > 3) history.shift();   // keep last 3
-        if (history.length < 3) return;
-
-        const prev = history[1];
-        const latest = history[2];
-
-        let mp = true;
-        let mr = true;
-
-        // if (!vec3.equals(physics_transformation.position, _p)) mp = true;   // approx using epsilon
-        // if (!quat.equals(physics_transformation.rotation, _q)) mr = true;   // approx using epsilon
-
         let m4 = physics_transformation.m4;
-        
-        if (mp || mr){
-            // const interPos = physics_transformation.position = latest.position;
-            // const interRot = physics_transformation.rotation = latest.rotation;
-            // if (firstFrame){
-                // vec3.set(physics_transformation.position, ..._p);
-                // quat.set(physics_transformation.rotation, ..._q);
-                // firstFrame = false;
-            // } else {
-            //     // smoothDampPose(physics_transformation.position, physics_transformation.vel, physics_transformation.rotation, physics_transformation.angVel,_p, _q,0.0015, Physics.rawDelta);
-            //     vec3.lerp(physics_transformation.position, physics_transformation.position, _p, 0.015);
-            //     quat.slerp(physics_transformation.rotation, physics_transformation.rotation, _q, 0.015);
-            // }
 
-            const interPos = vec3.lerp(physics_transformation.position, prev.position, latest.position, latest.a);
-            const interRot = quat.slerp(physics_transformation.rotation, prev.rotation, latest.rotation, latest.a);
-            
-            let scales = updateMath.scales;
-            mat4.getScaling(scales, o.parentOpts.transform)
+        // interpolate
+        if (currentState == null || previousState == null) return;
 
-            let finalRotation = updateMath.finalRotation;
-            quat.set(finalRotation, ...params.object_rotate);
-            quat.multiply(finalRotation, interRot, finalRotation);
-            // physics
-            mat4.fromRotationTranslationScale(m4, finalRotation, interPos, scales);
+        const prev = previousState;
+        const latest = currentState;
 
-            // physics transformation
-            let q2 = updateMath.q2;
-            quat.fromEuler(q2, ...params.rotate);
-            let m42 = updateMath.m42;
-            mat4.fromRotationTranslation(m42, q2, params.position);
-            mat4.invert(m42, m42)
+        // LATEST
+        // interpPos = [...latest.position];
+        // interpRot = [...latest.rotation];
+        let interpPos = vec3.lerp([0,0,0], prev.position, latest.position, latest.alpha);
+        let interpRot = quat.slerp([0,0,0], prev.rotation, latest.rotation, latest.alpha);
 
-            mat4.multiply(m4, m42, m4);
+        // let mp = false;
+        // let mr = false;
+        // if (vec3.equals(physics_transformation.position, interpPos)) mp = true;   // approx using epsilon
+        // if (quat.equals(physics_transformation.rotation, interpRot)) mr = true;   // approx using epsilon
 
-            // adjust matrix directly
-            _object.setTransformMatrix(m4);
+        // if (mp && mr) return;
 
-            Module.ProjectManager.isDirty = true;
+        physics_transformation.position = interpPos;
+        physics_transformation.rotation = interpRot;
 
-            try {
-                let FOVMeshes = o.FOVMeshes;
-                for (var m of FOVMeshes) {
-                    m.render({transform: m4})
-                }
-    
-            } catch (error) {
-                
+        // vec3.lerp(physics_transformation.position, physics_transformation.position, interpPos, 0.9);
+        // quat.slerp(physics_transformation.rotation, physics_transformation.rotation, interpRot, 0.9);
+
+        let scales = updateMath.scales;
+        mat4.getScaling(scales, o.parentOpts.transform)
+
+        let finalRotation = updateMath.finalRotation;
+        quat.set(finalRotation, ...params.object_rotate);
+        quat.multiply(finalRotation, physics_transformation.rotation, finalRotation);
+        // physics
+        mat4.fromRotationTranslationScale(m4, finalRotation, physics_transformation.position, scales);
+
+        // physics transformation
+        let q2 = updateMath.q2;
+        quat.fromEuler(q2, ...params.rotate);
+        let m42 = updateMath.m42;
+        mat4.fromRotationTranslation(m42, q2, params.position);
+        mat4.invert(m42, m42)
+
+        mat4.multiply(m4, m42, m4);
+
+        // adjust matrix directly
+        _object.setTransformMatrix(m4);
+
+        Module.ProjectManager.isDirty = true;
+
+        try {
+            let FOVMeshes = o.FOVMeshes;
+            for (var m of FOVMeshes) {
+                m.render({transform: m4})
             }
-    
+
+        } catch (error) {
+            
         }
-        
-        // if (simulated)
-        // {
+    }
+
+    const updateState = (alpha, simulated)=>
+    {
+        if (!isLoaded || !havokBody || params.mass == 0) return;
+
+        const [,p] = HavokSystem.havok.HP_Body_GetPosition(havokBody);
+        const [,q] = HavokSystem.havok.HP_Body_GetOrientation(havokBody);
+        const [,lv] = HavokSystem.havok.HP_Body_GetLinearVelocity(havokBody);
+        const [,av] = HavokSystem.havok.HP_Body_GetAngularVelocity(havokBody);
+
+        var state = {
+            position: p,
+            rotation: q,
+            linear: lv,
+            angular: av,
+            alpha,
+        }
+
+        vec3.set(physics_transformation.linear, ...state.linear);
+        vec3.set(physics_transformation.angular, ...state.angular);
+
+        physics_transformation.alpha = 0;
+
+        if (simulated)
+        {
+            previousState = currentState;
+            currentState = { alpha: state.alpha, position: state.position, rotation: state.rotation, angular: state.angular };
+        } else {
+            if (currentState) currentState.alpha = alpha;
+        }
+
+
+        update();
+
+        // setTimeout(()=>{
             for (var [k, funcUp] of updateHandlers) {
                 try {
-                    funcUp();
+                    funcUp(state.alpha);
                 } catch (error) {
                 }
             }
-        // }
+        // })
+
+        // pushPrevFromCurr();
+
+        // vec3.set(currPos, ...state.position);
+        // quat.set(currRot, ...state.rotation);
     }
 
     // add to physics world
@@ -645,14 +983,6 @@
 
     let removeUpdateHandler = (func)=> {
         updateHandlers.delete(func);
-    }
-
-    let addPreUpdateHandler = (func)=> {
-        preupdateHandlers.set(func, func);
-    }
-
-    let removePreUpdateHandler = (func)=> {
-        preupdateHandlers.delete(func);
     }
 
     // add to parent
@@ -705,6 +1035,133 @@
         }
     }
 
+    const eventHandler = new Map();
+
+    const RB = {
+        addEventHandler: (handler)=>{
+            eventHandler.set(handler, handler);
+        },
+
+        removeEventHandler: (handler)=>{
+            eventHandler.delete(handler);
+        },
+        set: (options)=>{
+            // AmmoWorker.postMessage({
+            //     type: 'SET',
+            //     key: object.idx,
+            //     options
+            // })         
+            try {
+                for (var opts of options)
+                {
+                    // if (opts.prop != "setLinearVelocity")
+                    //     console.log(opts.prop, opts.value)
+        
+                    if (opts.prop == "setLinearVelocity"){
+                        HavokSystem.havok.HP_Body_SetLinearVelocity(havokBody, opts.value);
+                    }else if (opts.prop == "setAngularVelocity"){
+                        HavokSystem.havok.HP_Body_SetAngularVelocity(havokBody, opts.value);
+                    }else if (opts.prop == "setGravity"){
+                        HavokSystem.havok.HP_Body_SetGravityFactor(havokBody, opts.value);
+                    }else if (opts.prop == "setMassProperties"){
+                        // 1) Get the body’s shape ID (we assume a single shape per body)
+                        const shapeId = HavokSystem.havok.HP_Body_GetShape(havokBody)[1];
+        
+                        // 2) Build the default (density=1) mass properties from that shape:
+                        //    [ centerOfMass: Vector3, massValue: number, inertia: Vector3, inertiaOrient: Quaternion ]
+                        const [resMP, massProps] = HavokSystem.havok.HP_Shape_BuildMassProperties(shapeId);
+                        if (resMP !== HavokSystem.havok.Result.RESULT_OK) {
+                            console.error("Failed to build mass properties:", resMP);
+                            continue;
+                        }
+        
+                        // 3) Extract the original mass and inertia vector:
+                        const originalMass    = massProps[1];
+                        const originalInertia = massProps[2]; // [ ix, iy, iz ]
+        
+                        const newMass = opts.value[0];
+                        const inertia = opts.value[1];
+        
+                        // 4) Compute scale factor to adjust inertia for new mass:
+                        let inertiaScale = 1;
+                        if (originalMass > 0) {
+                            inertiaScale = newMass / originalMass;
+                        }
+        
+                        // 5) Overwrite massValue and scale the inertia vector:
+                        massProps[1]   = newMass;
+                        massProps[2][0] = originalInertia[0] * inertiaScale * inertia;
+                        massProps[2][1] = originalInertia[1] * inertiaScale * inertia;
+                        massProps[2][2] = originalInertia[2] * inertiaScale * inertia;
+                        // massProps[3] (inertia orientation) remains unchanged
+        
+                        // 6) Reapply to the body:
+                        const resSet = HavokSystem.havok.HP_Body_SetMassProperties(havokBody, massProps);
+                        if (resSet !== HavokSystem.havok.Result.RESULT_OK) {
+                            console.error("Failed to set mass properties:", resSet);
+                        }
+        
+                    }else if (opts.prop == "setDamping"){
+                        HavokSystem.havok.HP_Body_SetLinearDamping(havokBody, opts.value[0]);
+                        HavokSystem.havok.HP_Body_SetAngularDamping(havokBody, opts.value[1]);
+                    }else if (opts.prop == "warp"){
+                        // 1) Build a QTransform: [ translation: Vector3, rotation: Quaternion ]
+                        const qTransform = [ opts.value[0], opts.value[1] ];
+        
+                        // 2) Set the new transform immediately:
+                        HavokSystem.havok.HP_Body_SetQTransform(havokBody, qTransform);
+        
+                        // 3) Zero out any existing linear/angular velocity so it doesn't “fly off”:
+                        HavokSystem.havok.HP_Body_SetLinearVelocity(havokBody, [0, 0, 0]);
+                        HavokSystem.havok.HP_Body_SetAngularVelocity(havokBody, [0, 0, 0]);
+        
+                        // 4) If this body was asleep or deactivated, wake it up so the solver sees the change:
+                        HavokSystem.havok.HP_Body_SetActivationState(havokBody, HavokSystem.havok.ActivationState.ACTIVE);
+                       
+                    }else if(opts.prop == "applyCentralForce" ){
+                        HavokSystem.havok.HP_Body_ApplyImpulse(
+                            havokBody,
+                            [0, 0, 0],   // apply at center of mass
+                            opts.value,       // [fx, fy, fz]
+                          );
+        
+                        HavokSystem.havok.HP_Body_SetActivationState(havokBody, HavokSystem.havok.ActivationState.ACTIVE);
+        
+                    // }else if (Reflect.has(body, opts.prop)){       
+                    //     let fnArgs = getParamNames(Reflect.get(body, opts.prop));
+                    //     let fnValues = opts.value;
+                    //     // let fnValues = JSON.parse("[" + opts.value + "]");
+                        
+                    //     if (fnArgs.length != fnValues.length) throw(`[${opts.prop}] Wrong number of arguments, expected ${fnArgs.length} but received ${fnValues.length}`)
+            
+                    //     let finalValues = [];
+            
+                    //     for (var v of fnValues) {
+                    //         if (Array.isArray(v) && v.length == 3) finalValues.push(new Ammo.btVector3(...v))
+                    //         else finalValues.push(v);
+                    //     }
+            
+                    //     body[opts.prop](...finalValues);
+        
+                    //     // body[opts.prop].apply(null, finalValues)
+                    }
+                }
+            } catch (error) {
+                console.log(error)
+            }
+            
+        },
+        getMotionState: ()=>{
+            return physics_transformation;
+        }
+    }
+
+    Object.defineProperties(RB, {
+        body: { get: () => { return havokBody; }, set: (v) => { } },
+    })
+
+    var isReady = false;
+
     let Object3d = {}
     Object.defineProperties(Object3d, {
         rotate: { get: () => { return getProperty('object_rotate'); }, set: (v) => { setProperty('object_rotate', v, ""); } },
@@ -720,7 +1177,8 @@
         shape_type: { get: () => { return getProperty('shape_type'); }, set: (v) => { setProperty('shape_type', v, "readd"); } },
         shape_file: { get: () => { return getProperty('shape_file'); }, set: (v) => { setProperty('shape_file', v, "readd"); } },
         ghost: { get: () => { return getProperty('ghost'); }, set: (v) => { setProperty('ghost', v, "ghost"); } },
-        RigidBody: { get: () => { return body; }, set: (v) => {} },
+        RigidBody: { get: () => { return RB; }, set: (v) => {} },
+        isReady: { get: () => { return isReady; }, set: (v) => { isReady = v} },
         object: { get: () => { return Object3d; }, set: (v) => {} },
         props: { get: () => { return propdata; }, set: (v) => { } },
         code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); }, },
@@ -734,9 +1192,7 @@
         addUpdateHandler,
         removeUpdateHandler,
 
-        preUpdate,
-        addPreUpdateHandler,
-        removePreUpdateHandler
+        updateState,
     })
 
     return object;

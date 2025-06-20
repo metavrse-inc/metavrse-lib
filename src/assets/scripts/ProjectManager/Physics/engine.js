@@ -1,22 +1,33 @@
 /**
  * Physics Engine Module
  */
- module.exports = () => {
+module.exports = () => {
    const scene = Module.getSurface().getScene();
 
    const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
-   const _Ammo = Module.require('assets/lib/ammo.js');
+   // const _Ammo = Module.require('assets/lib/ammo.js');
 
    let _physics = {};
 
    const RigidBody = Module.require('assets/ProjectManager/Physics/RigidBody.js');
-   const KinematicCharacterController = Module.require('assets/ProjectManager/Physics/KinematicCharacterController.js');
+   const _HavokDebugger = Module.require('assets/ProjectManager/Physics/KinematicCharacterController.js');
+   var HavokDebugger;
+
    const FOVMesh = Module.require('assets/ProjectManager/Physics/FOVMesh.js');
    const FOVBox = Module.require('assets/ProjectManager/Physics/FOVBox.js');
    const RaycastVehicle = Module.require('assets/ProjectManager/Physics/RaycastVehicle.js');
    
    const ZIPBox = Module.require('assets/ProjectManager/Physics/ZIPBox.js');
    const ZIPMesh = Module.require('assets/ProjectManager/Physics/ZIPMesh.js');
+
+   // havok
+   var _Havok = Module.require('assets/lib/HavokPhysics_umd.js');
+   const Physics = {
+      havok: null,
+      world: null,
+      ids: new Map(),
+      eventHandler: new Map(),
+  }
 
    // engine
    var Ammo;
@@ -121,57 +132,12 @@
 		CF_HAS_COLLISION_SOUND_TRIGGER : 1024
 	};
 
-   var CollisionFilterGroups =
-	{
-		DefaultFilter : 1,
-		StaticFilter : 2,
-		KinematicFilter : 4,
-		DebrisFilter : 8,
-		SensorTrigger : 16,
-		CharacterFilter : 32,
-		AllFilter : -1 //all bits sets: DefaultFilter | StaticFilter | KinematicFilter | DebrisFilter | SensorTrigger
-	};
-
-   const vs = `
-   // an attribute will receive data from a buffer
-   attribute vec3 aPos;
-   attribute vec3 aColor;
-
-   uniform mat4 MVP;
-   varying vec3 vertexColor;
-
-   void main(void) {
-      gl_Position = MVP * vec4(aPos, 1.0);
-      vertexColor = aColor;
-   }
-   `;
-
-   const fs = `
-   precision highp float;
-   varying vec3 vertexColor;
-
-   void main(){
-      gl_FragColor = vec4(vertexColor, 1.0);
-   }
-   `;
-
-   var positionLoc;
-   var colorLoc;
-   var program;
-   var MVP;
-   var VBO = [];
-   var VAO;
-   var gl;
-   var TheLines = []; var TheLinesCount = 0;
-   var TheColors = []; var TheColorsCount = 0;
-
    const init = async () => {
-
-      const getOptions = ()=> {
+      const getHavokOptions = ()=> {
          var options = {}
          options['locateFile'] = (path)=> {
             if (path.endsWith(".wasm")) {
-               let buf = getFile("assets/lib/ammo.wasm.wasm", true);
+               const buf = Module.FS.readFile('assets/lib/HavokPhysics.wasm', { encoding: 'binary' });
                let blob = new Blob([buf], {type: "application/wasm"});
                return URL.createObjectURL(blob)
             }
@@ -181,138 +147,22 @@
          return options;
       }
 
-      Ammo = await _Ammo(getOptions());
+    Physics.havok = await _Havok(getHavokOptions());
+      // Create a new Havok physics world with default gravity (–9.81 m/s² on Y)
+    Physics.world = new Physics.havok.HP_World_Create()[1];
+    
+    Physics.havok.HP_World_SetGravity(Physics.world, [0, -9.81, 0]);
 
-      // let m_axis_sweep = new Ammo.btAxisSweep3(new Ammo.btVector3(-1000, -1000, -1000), new Ammo.btVector3(1000, 1000, 1000));
-      // collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
-      // dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
-      // solver = new Ammo.btSequentialImpulseConstraintSolver();
-      // physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, m_axis_sweep, solver, collisionConfiguration);
-      // physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
-      // let s = physicsWorld.getSolverInfo()
-      // s.m_numIterations = 4;
-      // s.m_splitImpulse = true;
-      // s.m_splitImpulsePenetrationThreshold = -0.00001;
-      
-      collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
-      dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
-      broadphase = new Ammo.btDbvtBroadphase();
-      solver = new Ammo.btSequentialImpulseConstraintSolver();
-      physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-      physicsWorld.setGravity(new Ammo.btVector3(0, Number(gravity), 0));
-      // physicsWorld.getBroadphase().getOverlappingPairCache().setInternalGhostPairCallback(new Ammo.btGhostPairCallback());
-      // let s = physicsWorld.getSolverInfo()
-      // s.m_numIterations = 4;
-      // s.m_splitImpulse = true;
-      // s.m_splitImpulsePenetrationThreshold = -0.00001;
-      // resusable
-      // TRANSFORM_AUX = new Ammo.btTransform();
-
-      // var fp = Ammo.Runtime.addFunction(detectCollision);
-      // physicsWorld.setInternalTickCallback(fp);
-
-      if (Module.canvas && false){
-
-         try {
-            gl = Module.canvas.getContext('webgl2', {});
-            if (!gl) gl = Module.canvas.getContext('webgl', {}); 
-        }catch(ex){
-            console.log(ex)
-        }
-
-         var createShader =(gl, sourceCode, type)=> {
-            // Compiles either a shader of type gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
-            var shader = gl.createShader( type );
-            gl.shaderSource( shader, sourceCode );
-            gl.compileShader( shader );
-          
-            if ( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) ) {
-              var info = gl.getShaderInfoLog( shader );
-              throw 'Could not compile WebGL program. \n\n' + info;
-            }
-            return shader;
-          }
-
-         program = gl.createProgram();
-
-         // Attach shaders
-         gl.attachShader(program, createShader(gl, vs, gl.VERTEX_SHADER));
-         gl.attachShader(program, createShader(gl, fs, gl.FRAGMENT_SHADER));
-
-         gl.linkProgram(program);
-
-         if ( !gl.getProgramParameter( program, gl.LINK_STATUS) ) {
-            var info = gl.getProgramInfoLog(program);
-            console.log( 'Could not compile WebGL program. \n\n' + info );
-            return;
-         }
-
-         positionLoc = gl.getAttribLocation(program, "aPos");
-         colorLoc = gl.getAttribLocation(program, "aColor");
-         MVP = gl.getUniformLocation(program, "MVP");
-
-         VBO.push(gl.createBuffer());
-         VBO.push(gl.createBuffer());
-         VAO = gl.createVertexArray();
-
-         gl.bindVertexArray(VAO);
-         gl.bindBuffer(gl.ARRAY_BUFFER, VBO[0]);
-         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(), gl.STATIC_DRAW);
-         gl.bindBuffer(gl.ARRAY_BUFFER, VBO[1]);
-         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(), gl.STATIC_DRAW);
-
-         debugDrawer = new Ammo.DebugDrawer();
-         debugDrawer.DebugDrawMode = 1;
-         debugDrawer.drawLine = function (from, to, color) {
-            const heap = Ammo.HEAPF32;
-            const r = heap[(color + 0) / 4];
-            const g = heap[(color + 4) / 4];
-            const b = heap[(color + 8) / 4];
-
-            const fromX = heap[(from + 0) / 4];
-            const fromY = heap[(from + 4) / 4];
-            const fromZ = heap[(from + 8) / 4];
-
-            const toX = heap[(to + 0) / 4];
-            const toY = heap[(to + 4) / 4];
-            const toZ = heap[(to + 8) / 4];
-
-            //   console.log("drawLine", from, to, color);
-            // draws a simple line of pixels between points but stores them for later draw
-            var lineFrom = [fromX, fromY, fromZ];
-            var lineTo = [toX, toY, toZ];
-            TheLines.push(...lineFrom, ...lineTo);
-            TheLinesCount += 2;
-
-            var colorFrom = [r, g, b];
-            var colorTo = [r, g, b];
-            TheColors.push(...colorFrom, ...colorTo);
-            TheColorsCount += 2;
-         };
-         debugDrawer.drawContactPoint = function (pointOnB, normalOnB, distance, lifeTime, color) {
-         //   console.log("drawContactPoint")
-         };
-         debugDrawer.reportErrorWarning = function(warningString) {
-         //   console.warn(warningString);
-         };
-         debugDrawer.draw3dText = function(location, textString) {
-         //   console.log("draw3dText", location, textString);
-         };
-         debugDrawer.setDebugMode = function(debugMode) {
-           this.DebugDrawMode = debugMode;
-         };
-         debugDrawer.getDebugMode = function() {
-           return this.DebugDrawMode;
-         };
-   
-         physicsWorld.setDebugDrawer(debugDrawer);
-
-      }
-
+    HavokDebugger = new _HavokDebugger(Physics.havok, Physics.world, allList);
       addFOVBox();
       addZIPBox();
 
       ammoInitalised = true;
+
+      Physics.havok.HP_World_SetIdealStepTime(Physics.world, 0);
+
+      // requestAnimationFrame(renderLoop);
+
    }
 
    let MVPf = mat4.create();
@@ -362,138 +212,203 @@
    const MAX_ACCUM = 0.25;
    let alpha = 1;
    let rawDelta = 1 / 60;
+   let filteredDelta = 1 / 60;
    let accumulator = 0;
    let prevTime=performance.now() * 0.001;
-   const render = (t) => {
-      let now = performance.now() * 0.001;
 
-      let delta = now - prevTime;
-      prevTime = now;
-      // console.log('Rendering Physics')
+   const renderLoop = (delta) => {
+      // processRemovals();         
+
       if (!ammoInitalised) return;
 
-      for (var [key, _u] of renderList) {
-         try {
-            _u.preUpdate(1);            
-         } catch (error) {
-            // console.error(error)
-         }
-      }
-      
-      // let currentFps = 1 / Module.fps.currentFps;
-      // if (isNaN(currentFps) || currentFps == Infinity) currentFps = 1 / Module.fps.maxFps;
-      // try {
-      //    physicsWorld.stepSimulation(rawDelta, 0, fixedFPS);         
-      // } catch (error) {
-      //    console.error(error)
-      // }
-      accumulator += rawDelta;
-      if (accumulator > MAX_ACCUM) accumulator = MAX_ACCUM;
+      Physics.havok.HP_World_Step(Physics.world, delta);
 
-      let simulated = false;
-      while (accumulator >= FIXED_DT)
+      processTriggerEvents();
+
+         // let num = physicsWorld.stepSimulation(delta, 0, FIXED_DT);
+         // let simulated = num > 0;
+         // let a = physicsWorld.getLocalTime() / FIXED_DT;
+         // // let a = (simulated) ? 1 : physicsWorld.getLocalTime() / FIXED_DT;
+         for (var [key, _u] of renderList) {
+            try {
+               if (_u.updateState != undefined) _u.updateState(1, true);            
+            } catch (error) {
+               // console.error(error)
+            }
+         }         
+   }
+
+   const render = (t) => {
+      renderLoop(rawDelta);
+   }
+
+   let inputPtr = null;
+   let resultPtr = null;
+
+   const Raycast = (from,to,body = null, maxResults = 1)=>
+   {
+      // RayCastInput layout (in bytes):
+      const RAYCAST_INPUT_SIZE    = 48; // placeholder: 52 bytes?
+      const OFFSET_INPUT_FROM     = 0;      // Vector3 (float32×3) + pad
+      const OFFSET_INPUT_TO       = 12;     // next Vector3
+      const OFFSET_INPUT_FILTER   = 12 + 12;     // FilterInfo (uint32×2)
+      const OFFSET_INPUT_FLAGS    = 12 + 12 + 4 + 4;     // bool32
+      const OFFSET_INPUT_IGNORE   = 12 + 12 + 4 + 4 + 1;     // HP_BodyId (pointer-sized, 64-bit)
+
+      // RayCastResult layout (in bytes):
+      const RAYCAST_RESULT_SIZE   = 64;
+      // = 4 + 60 = 64 bytes (placeholder)
+      const OFFSET_RESULT_FRACTION   = 0;
+      const OFFSET_RESULT_CP_POS     = 8 + 8 + 8 + 16;   // Vector3 (float32×3)
+      const OFFSET_RESULT_CP_NORMAL  = 8 + 8 + 8 + 16 + 12;   // Vector3 (float32×3)
+
+      if (inputPtr == null)
       {
-         physicsWorld.stepSimulation(FIXED_DT, 0);   
-         accumulator -= FIXED_DT;               
-         simulated = true;
+         // --- 2) Allocate buffers in WASM memory ---
+         inputPtr  = Physics.havok._malloc(RAYCAST_INPUT_SIZE);
+         resultPtr = Physics.havok._malloc(RAYCAST_RESULT_SIZE);
       }
-      
-      let a = accumulator / FIXED_DT;
-      for (var [key, _u] of renderList) {
-         try {
-            _u.update(a, simulated);            
-         } catch (error) {
-            console.error(error)
+
+      // --- 3) Write the RayCastInput ---
+      // from:
+      Physics.havok.HEAPF32.set(from, (inputPtr + OFFSET_INPUT_FROM) / 4);
+      // to:
+      Physics.havok.HEAPF32.set(to,   (inputPtr + OFFSET_INPUT_TO)   / 4);
+      // filterInfo: hit everything (membership=0xFFFF, mask=0xFFFF)
+      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_FILTER) / 4 + 0] = 0xFFFF;
+      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_FILTER) / 4 + 1] = 0xFFFF;
+      // hitTriggers = false → write 0 as a 32-bit int
+      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_FLAGS) / 4] = 0;
+      // ignoreBody = NULL (0)
+      // Assuming a 64-bit pointer on HEAPU32+HEAPU32:
+      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_IGNORE) / 4    ] = body !== null ? Number(body) : 0;
+      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_IGNORE) / 4 + 1] = 0;
+
+      // --- 4) Call the raw raycast ---
+      const hitCount = Physics.havok.HP_World_CastRay(
+         Physics.world,
+          inputPtr,
+          resultPtr,
+          1  // maxResults = 1
+      );
+
+      let hit = null;
+      if (hitCount > 0) {
+          // fraction
+          const frac = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_FRACTION) / 4];
+
+          // contactPoint.position
+          const px = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_POS)    / 4 + 0];
+          const py = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_POS)    / 4 + 1];
+          const pz = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_POS)    / 4 + 2];
+
+          // contactPoint.normal
+          const nx = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_NORMAL) / 4 + 0];
+          const ny = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_NORMAL) / 4 + 1];
+          const nz = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_NORMAL) / 4 + 2];
+
+          hit = {
+          from,
+          fraction: frac,
+          position: [px, py, pz],
+          normal:   [nx, ny, nz]
+          };
+      }
+
+      // --- 5) Clean up ---
+      // HavokModule.havok._free(inputPtr);
+      // HavokModule.havok._free(resultPtr);
+
+      if (hit == null){
+          return {from};
+      }
+
+      return hit;
+   }
+
+   const processTriggerEvents = ()=>
+   {
+
+      // 1) Get the first event
+      let [res, ptr] = Physics.havok.HP_World_GetTriggerEvents(Physics.world);
+
+      // 2) Helper to read a 64-bit ID (little-endian) from memory
+      function readU64(addr) {
+         const lo = BigInt(Physics.havok.HEAPU32[ addr       / 4 ]);
+         const hi = BigInt(Physics.havok.HEAPU32[(addr + 4) / 4 ]);
+         return hi;
+      }
+
+      // 3) Offsets in bytes within TriggerEvent
+      const OFF_TYPE    = 0;   // 32-bit EventType
+      const OFF_BODYA   = 4;   // 64-bit HP_BodyId
+      const OFF_SHAPEA  = 12;  // 64-bit HP_ShapeId
+      const OFF_BODYB   = 20;  // 64-bit HP_BodyId
+      const OFF_SHAPEB  = 28;  // 64-bit HP_ShapeId
+      const EVENT_SIZE  = 36;  // total bytes (4 + 8*4)
+
+      // 4) Iterate while we have a valid event
+      while (res === Physics.havok.Result.RESULT_OK && ptr) {
+         // Read the event fields
+         const type   = Physics.havok.HEAPU32[ ptr / 4 ];
+         const bodyA  = readU64(ptr + OFF_BODYA);
+         const shapeA = readU64(ptr + OFF_SHAPEA);
+         const bodyB  = readU64(ptr + OFF_BODYB);
+         const shapeB = readU64(ptr + OFF_SHAPEB);
+
+         // Callback
+         let evt = { type, bodyA, shapeA, bodyB, shapeB };
+
+         let idA = bodyA;
+         let idB = bodyB;
+
+         let isSame = idA == idB;
+
+         if (isSame){
+            if (Physics.eventHandler.has(idA)){
+               Physics.eventHandler.get(idA)(evt)
+            }            
+         } else {
+            if (Physics.eventHandler.has(idA)){
+               Physics.eventHandler.get(idA)(evt)
+            }
+
+            if (Physics.eventHandler.has(idB)){
+               Physics.eventHandler.get(idB)(evt)
+            }
          }
+
+         // Move to the next event
+         ptr = Physics.havok.HP_World_GetNextTriggerEvent(Physics.world, ptr);
       }
+   }
 
-      processRemovals();
-
+   const SetID = (id, key)=>
+   {
+      Physics.ids.set(id[0],key);
    }
 
    const debugDraw = ()=> {
       try {
          _debugDraw();
       } catch (error) {
-         // console.error(error)
+         console.error(error)
       }
    }
    
    const _debugDraw = ()=> {
-      if (!ammoInitalised || !debugEnabled) return;
+      if (!HavokDebugger || !debugEnabled) return;
+
+      let lines = HavokDebugger.getVertexBuffer(allList);
+
+      for (var line of lines)
+      {
+         // scene.addTriangle(line.p1, line.p2, line.p3, line.colour);
+         scene.addLine(line.p1, line.p2, line.colour);
+         scene.addLine(line.p2, line.p3, line.colour);
+         scene.addLine(line.p3, line.p1, line.colour);
+      }
     
-      physicsWorld.debugDrawWorld();
-
-      for (var [idx, el] of zip_objects){
-         try {
-            if (el.getDebugLines){
-               let dl = el.getDebugLines();
-               TheLines.push(...dl.TheLines);
-               TheColors.push(...dl.TheColors);
-               TheLinesCount += dl.TheLinesCount;
-               TheColorsCount += dl.TheColorsCount;
-            }            
-         } catch (error) {
-            
-         }
-      }
-
-      // for (var [idx, el] of fov_objects){
-      //    try {
-      //       if (el.getDebugLines){
-      //          let dl = el.getDebugLines();
-      //          TheLines.push(...dl.TheLines);
-      //          TheColors.push(...dl.TheColors);
-      //          TheLinesCount += dl.TheLinesCount;
-      //          TheColorsCount += dl.TheColorsCount;
-      //       }            
-      //    } catch (error) {
-            
-      //    }
-      // }
-      
-      if (TheLines.length == 0) {
-         TheLines = [];
-         TheColors = [];
-         return;
-      }
-
-      let vm = mat4.clone(Module.camera.view);
-      let pm = mat4.clone(Module.camera.projection);
-      mat4.multiply(MVPf, pm, vm);
-
-      gl.useProgram(program);
-      gl.uniformMatrix4fv(MVP, false , MVPf);
-
-      gl.bindVertexArray(VAO);
-      // util::CheckGlError("bind");
-
-      // vertices
-      gl.bindBuffer(gl.ARRAY_BUFFER, VBO[0]);
-
-      let lines = Float32Array.from(TheLines);
-      let colors = Float32Array.from(TheColors);
-
-      gl.bufferData(gl.ARRAY_BUFFER, lines, gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(positionLoc);
-      gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
-
-      gl.drawArrays(gl.LINES, 0, TheLinesCount);
-
-      // colors
-      gl.bindBuffer(gl.ARRAY_BUFFER, VBO[1]);
-
-      gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(colorLoc);
-      gl.vertexAttribPointer(colorLoc, 3, gl.FLOAT, false, 0, 0);
-
-      gl.drawArrays(gl.LINES, 0, TheColorsCount);
-
-      // gl.bindBuffer(gl.ARRAY_BUFFER, 0);
-      // gl.bindVertexArray(0);
-
-      TheLines = []; TheLinesCount = 0;
-      TheColors = []; TheColorsCount = 0;
    }
 
    const addObject = (args) => {
@@ -531,9 +446,11 @@
 
       for (var [key, val] of objectIndexes){
          try {
-            if (val.type=="rigidBody") physicsWorld.removeRigidBody(val.physicsBody);
-            else physicsWorld.removeCollisionObject(val.physicsBody);
-            Ammo.destroy(val.physicsBody);            
+            Physics.havok.HP_World_RemoveBody(val.RigidBody.body)
+            Physics.havok.HP_Body_Release(val.RigidBody.body);
+            // if (val.type=="rigidBody") physicsWorld.removeRigidBody(val.physicsBody);
+            // else physicsWorld.removeCollisionObject(val.physicsBody);
+            // Ammo.destroy(val.physicsBody);            
          } catch (error) {
             
          }
@@ -566,17 +483,17 @@
       idx=0;
       indexKey.clear();
 
+      HavokDebugger = null;
+      if (inputPtr) Physics.havok._free(inputPtr);
+      if (resultPtr) Physics.havok._free(resultPtr);
 
-      Ammo.destroy(collisionConfiguration); collisionConfiguration = null;
-      Ammo.destroy(dispatcher); dispatcher = null;
-      Ammo.destroy(broadphase); broadphase = null;
-      Ammo.destroy(solver); solver = null;
-      Ammo.destroy(physicsWorld); physicsWorld = null;
+      try {
+         Physics.havok.HP_World_Release(Physics.havok.world);         
+      } catch (error) {
+      }
 
-      Ammo = null;
-
-      // addFOVBox();
-
+      Physics.havok = null;
+      Physics.world = null;
    }
 
    const add = (args)=> {
@@ -588,7 +505,7 @@
          
          case 'RigidBody':  obj = RigidBody(args); break;
          case 'RaycastVehicle':  obj = RaycastVehicle(args); break;
-         case 'KinematicCharacterController':  obj = KinematicCharacterController(args); break;
+         // case 'KinematicCharacterController':  obj = KinematicCharacterController(args); break;
          case 'FOVMesh':  obj = FOVMesh(args); break;
          case 'FOVMeshObject':  obj = FOVMesh(args); break;
          case 'ZIPMesh':  obj = ZIPMesh(args); break;
@@ -646,43 +563,6 @@
    }
 
    const resetFOV = ()=> {
-      return;
-      try {
-         FOVBox_r.reset();
-      } catch (error) {
-         // console.log(error)
-
-      }
-
-      try {
-         for (var [key, el] of allList) {
-            if (el.item.type == "FOVMesh"){
-               let ks = el.item.key.split("_")
-               // let key = ks[0];
-               // let meshid = ks[1];
-               let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
-
-               el.render_fov_visible = fov_enabled && el.render_fov_visible
-               if (el.render_fov_visible) 
-               {
-                  el.parent.mesh.set(meshid, "visible", false);
-               } else {
-                  el.parent.mesh.set(meshid, "visible", true);
-               }
-            } else if (el.item.type == "FOVMeshObject"){
-               let meshid = el.item.key.substring(el.item.key.lastIndexOf("_")+1);
-               let key = el.item.key.replace("_"+meshid, "");
-
-               el.render_fov_visible = fov_enabled && el.render_fov_visible
-               let obj = scene.getObject(key);
-               if (obj) {
-                  obj.setParameter('visible', !el.render_fov_visible);
-               }
-            }
-         }
-      } catch (error) {
-         // console.log(error)
-      }
 
    }
 
@@ -728,7 +608,9 @@
       fovs: { get: () => { return fov_objects; }, set: (v) => {} },
       zips: { get: () => { return zip_objects; }, set: (v) => {} },
       rawDelta: { get: () => { return rawDelta; }, set: (v) => {rawDelta=v;} },
-
+      filteredDelta: { get: () => { return filteredDelta; }, set: (v) => {filteredDelta=v;} },
+      Havok: { get: () => { return Physics; }, set: (v) => {} },
+      
    })
 
    return Object.assign(_physics, {
@@ -758,6 +640,9 @@
       isReady : ()=> {return (ammoInitalised)},
 
       scheduleCollisionObjectRemoval,
-      scheduleDestroyRemoval
+      scheduleDestroyRemoval,
+
+      Raycast,
+      SetID
    })
 }

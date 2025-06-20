@@ -53,6 +53,8 @@ import AmmoWASM from './scripts/lib/ammo.wasm.wasm';
 import ThreeNebula from './scripts/lib/three-nebula.min';
 
 import AmmoWorker from './scripts/lib/ammo.worker.js';
+import HavokJS from './scripts/lib/HavokPhysics_umd.js';
+import HavokWASM from './scripts/lib/HavokPhysics.wasm';
 
 // Physics
 import PhysicsEngine from './scripts/ProjectManager/Physics/engine';
@@ -133,6 +135,8 @@ export const scripts : any = {
 
   [`${LIBS}/ammo.wasm.wasm`]: AmmoWASM,
   [`${LIBS}/ammo.worker.js`]: AmmoWorker,
+  [`${LIBS}/HavokPhysics_umd.js`]: HavokJS,
+  [`${LIBS}/HavokPhysics.wasm`]: HavokWASM,
   [`${LIBS}/three-nebula.min.js`]: ThreeNebula,
 
   [`${PHYSICS}/`]: null, // Folder to create

@@ -428,6 +428,7 @@ let _render = function (t) {
 
   // Render Scenegraph
   Module.ProjectManager.render();
+  Module.ProjectManager.Physics.debugDraw();
 
   return shouldRender && !Module.ProjectManager.disablePaint;
   // Module.ProjectManager.disablePaint
