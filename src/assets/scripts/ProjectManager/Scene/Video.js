@@ -61,6 +61,7 @@ module.exports = (payload) => {
     if (media !== null) {
         media.zip_id = zip_id;
         Module.videoids.set(media, media);
+        scene.useExternalTexture(child.key, media.textureId, 1, 1);
     }
 
     let srcAsset = sceneprops.assetIndex.get(liveData.src);
@@ -396,8 +397,14 @@ module.exports = (payload) => {
                 }
             }
         },
-        pause: () => { if (media) media.pause(); },
-        stop: () => { if (media) media.stop(), addToRedraw("currentTime");},
+        pause: () => { if (media) media.pause(); 
+            // console.log("pause")
+
+        },
+        stop: () => { if (media) media.stop(), addToRedraw("currentTime");
+            // console.log("stop")
+
+        },
 
         addToBucket,
         insertIntoBucket,

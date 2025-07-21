@@ -10,6 +10,7 @@ module.exports = (payload) => {
   const redrawAddMethod = payload.addToRedraw;
   const addToUpdated = payload.addToUpdated;
   let sceneprops = payload.sceneprops;
+  let Instances = payload.Instances;
 
   var loadingState = 'none';
   var loadingCallback = payload.loadingCallback;
@@ -488,7 +489,8 @@ module.exports = (payload) => {
     parent,
     item: {
       type: child.type,
-      key: child.key,
+      key: String(child.key),
+      ikey: (child.ikey == undefined) ? String(child.key): String(child.ikey),
       title: child.title,
       id: child.id,
     },
@@ -500,6 +502,8 @@ module.exports = (payload) => {
     links: new Map(),
     meshlinks: new Map(),
   };
+
+  Instances.add(object.item.ikey, object.item.key);
 
   let autoscaleObject = false;
   let autospivotObject = false;
@@ -1102,7 +1106,7 @@ module.exports = (payload) => {
         //   }
 
         // } else{
-          obj = scene.addObject(String(child.key), path + "@" + zip_id);
+          obj = scene.addObject(String(object.item.key), path + "@" + zip_id, object.item.ikey);
         // }
 
         isLoading = 1;
@@ -1272,16 +1276,18 @@ module.exports = (payload) => {
 
             if (videos.includes(option)) {
               // get texture id from video object
-              let v = (zip_id != "default" && payload.opt && payload.opt.prefix) ? payload.opt.prefix + "_" + value : value;
-              const video = Module.ProjectManager.getObject(v);
-              if (video) {
-                const textureID =
-                  video.textureId == null || video.textureId == ''
-                    ? 0
-                    : video.textureId;
+              // let v = (zip_id != "default" && payload.opt && payload.opt.prefix) ? payload.opt.prefix + "_" + value : value;
+              // const video = Module.ProjectManager.getObject(v);
+              // if (video) {
+              //   const textureID =
+              //     video.textureId == null || video.textureId == ''
+              //       ? 0
+              //       : video.textureId;
 
-                obj.setParameter(Number(meshid), option, textureID);
-              } else obj.setParameter(Number(meshid), option, 0);
+              //   obj.setParameter(Number(meshid), option, textureID);
+              // } else obj.setParameter(Number(meshid), option, 0);
+
+              obj.setParameter(Number(meshid), "albedo_texture", value);
             } else if (type == 'object') {
               if (rgbs.includes(option)) {
                 obj.setParameter(
@@ -1384,6 +1390,7 @@ module.exports = (payload) => {
             getLastValueInMap(getProperties(row.type))
           );
           renderVisibility = true;
+          renderTransformation = true;
 
           break;
         case 'frame':
@@ -1435,7 +1442,16 @@ module.exports = (payload) => {
       }
 
       parentOpts.transform = transformOut;
-      obj.setTransformMatrix(transformOut);
+      if (object.front_facing){
+        let newPosition = mat4.getTranslation([0,0,0], transformOut);
+        let newScale = mat4.getScaling([0,0,0], transformOut);
+        let newRot = quat.fromEuler([0,0,0,1], ...object.rotate);
+        let frontMat = mat4.fromRotationTranslationScale(mat4.create(), newRot, newPosition, newScale);
+
+        obj.setTransformMatrix(frontMat);
+      } else {
+        obj.setTransformMatrix(transformOut);
+      }
 
       renderTransformation = true;
 
@@ -1861,6 +1877,8 @@ module.exports = (payload) => {
           removeFOV(); 
       //   });
       // }
+
+      Instances.remove(object.item.ikey, object.item.key);
 
       if (animationTimer) animationTimer.stop();
 

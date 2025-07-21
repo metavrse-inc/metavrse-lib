@@ -168,6 +168,7 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
       var module = {
       exports: {}
       }, exports = module.exports;
+      //# sourceURL=${prefix+filePath}
       ${script}
       return module.exports;}('${prefix+filePath}'))`;
 
@@ -274,9 +275,9 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
         groups: meshGroups.size(),
         triangles: object.getParameterInt('number_of_triangles'),
         vertices: object.getParameterInt('number_of_vertices'),
-        positions: object.getParameterInt('number_of_positions'),
-        normals: object.getParameterInt('number_of_normals'),
-        uvs: object.getParameterInt('number_of_uvs'),
+        // positions: object.getParameterInt('number_of_positions'),
+        // normals: object.getParameterInt('number_of_normals'),
+        // uvs: object.getParameterInt('number_of_uvs'),
       };
     } catch (e) {
       console.log(e);
@@ -289,9 +290,9 @@ export const cherryFacade = (cherryViewer: CherryViewer) => {
       groups: 0,
       triangles: 0,
       vertices: 0,
-      positions: 0,
-      normals: 0,
-      uvs: 0,
+      // positions: 0,
+      // normals: 0,
+      // uvs: 0,
     };
   };
 

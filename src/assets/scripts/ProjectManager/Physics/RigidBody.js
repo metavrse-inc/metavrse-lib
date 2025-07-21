@@ -27,6 +27,7 @@ module.exports = (payload) => {
     //havok
     let havokBody = null;
     let havokShape = null;
+    let havokContainer = null;
 
     let updateHandlers = new Map();
 
@@ -70,7 +71,8 @@ module.exports = (payload) => {
         object_position: (_d['object_position'] !== undefined) ? [..._d['object_position']] : [0, 0, 0],
         object_rotate: (_d['object_rotate'] !== undefined) ? [..._d['object_rotate']] : [0, 0, 0, 1],
         object_scale: (_d['object_scale'] !== undefined) ? [..._d['object_scale']] : [1, 1, 1],
-        controller: (_d['controller'] !== undefined) ? _d['controller'] : [],        
+        controller: (_d['controller'] !== undefined) ? _d['controller'] : [],   
+        visible: (_d['visible'] !== undefined) ? _d['visible'] : true,   
     };
 
     let props = {};
@@ -95,8 +97,10 @@ module.exports = (payload) => {
 
     const deleteBody = ()=> {
         try {
-            Physics.havok.HP_World_RemoveBody(RB.body)
-            Physics.havok.HP_Body_Release(RB.body);
+            HavokSystem.havok.HP_World_RemoveBody(HavokSystem.world, havokBody);
+            HavokSystem.havok.HP_Shape_Release(havokShape);
+            HavokSystem.havok.HP_Shape_Release(havokContainer);
+            HavokSystem.havok.HP_Body_Release(havokBody);
             // if (body){
             //     PhysicsWorld.removeRigidBody(body);
             //     Ammo.destroy(body);
@@ -110,7 +114,7 @@ module.exports = (payload) => {
 
             
         } catch (error) {
-            
+
         }
     }
 
@@ -139,6 +143,7 @@ module.exports = (payload) => {
                 _addObject(args);
             // })
         } catch (error) {
+            console.log(error)
         }
     }
     const _addObject = (args) => {
@@ -526,7 +531,7 @@ module.exports = (payload) => {
             //   (i.e. each consecutive 3 floats is one vertex, and each group-of-3 vertices is a separate triangle),
             //   then numVertices = buffer.length/3, and numTriangles = numVertices/3.
             // We will treat buffer as (xyz)(xyz)(xyz) per triangle, so:
-            const f32 = (buffer instanceof ArrayBuffer) ? new Float32Array(buffer) : new Float32Array(buffer);
+            const f32 = new Float32Array(buffer);
             const numFloats   = f32.length;          // should be 9 * numTriangles
             const numVertices = numFloats / 3;       // each 3 floats is 1 vertex
             const numTriangles = numVertices / 3;    // each 3 vertices is 1 triangle
@@ -675,6 +680,8 @@ module.exports = (payload) => {
         // }
 
         havokBody = bodyId;
+        havokShape = shapeId;
+        havokContainer = scaledShapeId;
 
         Physics.SetID(bodyId, key);
         // havokShape = 
@@ -741,6 +748,7 @@ module.exports = (payload) => {
         position: vec3.create(),
         btScales: null,
         btTransform: null,
+        finalScales: vec3.create()
     }
 
     render = (opts) => {
@@ -822,6 +830,20 @@ module.exports = (payload) => {
                         value: [newPosition, newRotation]
                     }
                 ])
+                
+                vec3.multiply(scales, scales, params.scale);
+                if (!vec3.exactEquals(scales, updateMath.finalScales))
+                {
+                    updateMath.finalScales = [...scales];
+
+                    RB.set([                    
+                        {
+                            prop: "scale",
+                            value: scales
+                        }
+                    ])
+                }
+
 
                 
                 /*
@@ -1001,7 +1023,6 @@ module.exports = (payload) => {
         params[param] = val;
         addToRedraw(redraw);
         addToUpdated(child.key, 'changed', { prop : param, value: val });
-
     }
 
     let propdata = {
@@ -1100,7 +1121,16 @@ module.exports = (payload) => {
                         if (resSet !== HavokSystem.havok.Result.RESULT_OK) {
                             console.error("Failed to set mass properties:", resSet);
                         }
-        
+                    }else if (opts.prop == "scale"){
+                        // create new contianer shape
+                        const newContainer = wrapShapeWithScale(havokShape, opts.value);
+                        // set new 
+                        HavokSystem.havok.HP_Body_SetShape(havokBody, newContainer);
+                        
+                        // release old shape
+                        HavokSystem.havok.HP_Shape_Release(havokContainer);
+
+                        havokContainer = newContainer;
                     }else if (opts.prop == "setDamping"){
                         HavokSystem.havok.HP_Body_SetLinearDamping(havokBody, opts.value[0]);
                         HavokSystem.havok.HP_Body_SetAngularDamping(havokBody, opts.value[1]);
@@ -1183,6 +1213,7 @@ module.exports = (payload) => {
         props: { get: () => { return propdata; }, set: (v) => { } },
         code: { get: () => { return getProperty('code')[1]; }, set: (v) => { setProperty('code', v); }, },
         controller: { get: () => { return getProperty('controller')[1]; }, set: (v) => { setProperty('controller', v); } },
+        visible: { get: () => { return getProperty('visible'); }, set: (v) => { setProperty('visible', v); } },
     })
     
     Object.assign(object, {

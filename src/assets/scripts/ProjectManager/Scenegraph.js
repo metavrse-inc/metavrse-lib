@@ -81,6 +81,36 @@ module.exports = () => {
     worldControllers: new Map(),
   };
 
+  const objectInstances = new Map();
+
+  const Instances = {
+    add: (parent, child)=>{
+      if (!objectInstances.has(parent))
+      {
+        objectInstances.set(parent, new Map());
+      }
+
+      objectInstances.get(parent).set(child, 1);
+    },
+
+    remove: (parent, child)=>
+    {
+      if (!objectInstances.has(parent)) return;
+
+      if (!objectInstances.get(parent).has(child)) return;
+
+      objectInstances.get(parent).delete(child);
+    },
+
+    has: (parent)=>{
+      return objectInstances.has(parent);
+    },
+
+    get: (parent)=>{
+      return objectInstances.get(parent);
+    }
+  }
+
   Module.sceneprops = sceneprops;
 
   let worldControllerkey = '';
@@ -122,7 +152,57 @@ module.exports = () => {
     if (!redraws.has(key)) redraws.set(key, obj);
   };
 
-  const addToUpdated = (key, type, response) => {
+  const addToUpdated = (key, type, response) => 
+  {
+    const props = [
+      'ao_texture',
+      'ao_texture_channel',
+      'specular_texture',
+      'metalness_texture',
+      'metalness_texture_channel',
+      'roughness_texture',
+      'roughness_texture_channel',
+      'albedo_texture',
+      'emissive_texture',
+      'normal_texture',
+      'opacity_texture',
+      'opacity_texture_channel',
+      'ambient_texture',
+      'diffuse_texture',
+      'clearcoat_texture',
+      'transmission_texture',
+      'sheen_color_texture',
+      'sheen_roughness_texture',
+      'specular_glossiness_texture',
+      'specular_glossiness_diffuse_texture',
+      
+      'front_facing',
+      'render_back_faces',
+    ];
+
+    if (response.prop && (props.includes(response.prop) || props.includes(response.prop + '_channel'))) 
+    {
+      let obj = Module.ProjectManager.getObject(key);
+  
+      let parent = (obj) ? obj.item.ikey : null;
+  
+      if (parent && Instances.has(parent)) {
+  
+        let instances = Instances.get(parent);
+
+        for (var [child,_c] of instances)
+        {
+          _addToUpdated(child, type, response);
+        }
+      } else {
+        _addToUpdated(key, type, response);
+      }
+    } else {
+      _addToUpdated(key, type, response);
+    }
+
+  }
+  const _addToUpdated = (key, type, response) => {
     let objList = updatedList.has(key) ? updatedList.get(key) : new Map();
     let types = objList.has(type) ? objList.get(type) : [];
 
@@ -726,6 +806,7 @@ module.exports = () => {
         addToUpdated,
         sceneprops,
         opt,
+        Instances
       };
 
       switch (child.type) {
@@ -1237,6 +1318,7 @@ module.exports = () => {
       addToUpdated,
       sceneprops,
       opt,
+      Instances
     };
 
     var obj;
@@ -2195,6 +2277,7 @@ module.exports = () => {
     selectScene,
 
     reset: () => {
+      objectInstances.clear();
       isResetting = true;
       Physics.isResetting = true;
       for (var [key, obj] of sceneprops.sceneIndex){

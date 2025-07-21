@@ -23,6 +23,12 @@ export type CherrySurface = {
     a: number
   ) => Uint8Array;
   render_to_png: () => Uint8Array;
+  setGizmoMatrix: (matrix: any) => void;
+  getGizmoDelta: () => any;
+  setGizmoVisiblity: (value:boolean)=> void;
+  setGizmoSnap: (value:boolean)=> void;
+  setGizmoOperation: (value:Number)=> void;
+
   /** @deprecated Use Module.FS / Viewer.FS to write file into scenegraph */
   writeFile: (title: string, data: any) => any;
 };

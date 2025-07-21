@@ -40,8 +40,8 @@ const createTree = (flattenArray: any[], parent = ''): any[] => {
 
   flattenArray.forEach((c) => {
     if (parent === c.parent) {
-      const { key, skey, title, type, id, visible } = c;
-      const newNode = { key, skey, title, type, visible } as any;
+      const { key, ikey, skey, title, type, id, visible } = c;
+      const newNode = { key, ikey, skey, title, type, visible } as any;
       if (id) {
         newNode.id = id;
       }

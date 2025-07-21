@@ -357,8 +357,8 @@ module.exports = (opt) => {
 
       flattenArray.forEach((c) => {
         if (parent === c.parent) {
-          const { key, skey, title, type, id, visible } = c;
-          const newNode = { key, skey, title, type, visible };
+          const { key, ikey, skey, title, type, id, visible } = c;
+          const newNode = { key, ikey, skey, title, type, visible };
           if (id) {
             newNode.id = id;
           }

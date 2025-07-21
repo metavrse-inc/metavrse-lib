@@ -159,7 +159,7 @@ module.exports = () => {
 
       ammoInitalised = true;
 
-      Physics.havok.HP_World_SetIdealStepTime(Physics.world, 0);
+      // Physics.havok.HP_World_SetIdealStepTime(Physics.world, 0);
 
       // requestAnimationFrame(renderLoop);
 

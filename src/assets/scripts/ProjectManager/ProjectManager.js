@@ -41,8 +41,34 @@ module.exports = () => {
   // project archive
   let archive = new Module.zip();
 
+  let gizmoHandlers = new Map();
+
+  const addGizmoHandler = (handler)=>
+  {
+    gizmoHandlers.set(handler, handler);
+  }
+
+  const removeGizmoHandler = (handler)=>
+  {
+    gizmoHandlers.delete(handler);
+  }
+
+  const updateGizmoHandlers = (type)=>
+  {
+    for (var [h,f] of gizmoHandlers)
+    {
+      try {
+        f(type);
+      } catch (error) {
+        
+      }
+    }
+  }
+
   const reset = () => {
     try {
+      if (Scenegraph.getObjects().size == 0) return;
+
       isPlaying = false;
       // redraw = {};
       isDirty = true;
@@ -101,6 +127,7 @@ module.exports = () => {
 
       try {
         Scenegraph.reset();
+        surface.reset();
       } catch (error) {
       console.log(error)
 
@@ -135,23 +162,34 @@ module.exports = () => {
       }
 
       try {
-        let rmdir = async (path)=>{
-          let accepted = ['.','..'];
-          let files = Module.FS.readdir(path);
-          for (var name of files){
-            if (accepted.includes(name)) continue;
-            Module.FS.unlink(path + "/" + name);
+        function wipeFS(dir = '.') {
+          // Helper to produce "dir/child" without double slashes
+          const join = (parent, child) =>
+            parent === '/' ? `/${child}` : `${parent.replace(/\/$/, '')}/${child}`;
+        
+          // Read directory contents
+          const entries = Module.FS.readdir(dir);
+          for (const entry of entries) {
+            if (entry === '.' || entry === '..') continue;          // skip meta-entries
+        
+            const fullPath = join(dir, entry);
+            const stat     = Module.FS.stat(fullPath);
+        
+            if (Module.FS.isDir(stat.mode)) {                       // recurse into sub-dirs
+              if (entry === 'assets' || entry === 'dev' || entry === 'proc') continue;
+
+              // console.log('removing dir', fullPath)
+              wipeFS(fullPath);
+              Module.FS.rmdir(fullPath);                            // remove now-empty dir
+            } else {
+              // console.log('----removing file', fullPath)
+              Module.FS.unlink(fullPath);                           // delete file / symlink
+            }
           }
-          Module.FS.rmdir(path);
         }
 
-        let accepted = ['.','..','tmp','home','dev','proc','assets','files'];
-        let files = Module.FS.readdir('./');
-        for (var name of files){
-          if (accepted.includes(name)) continue;
-          rmdir(name);
-        }
-        
+        wipeFS('.');
+
       } catch (error) {
         console.log(error)
       }
@@ -540,5 +578,9 @@ module.exports = () => {
     clearChangeHandlers: Scenegraph.clearChangeHandlers,
 
     getObjects: Scenegraph.getObjects,
+
+    addGizmoHandler,
+    removeGizmoHandler,
+    updateGizmoHandlers
   });
 }

@@ -16,7 +16,7 @@ type RequiredProperties =
   | 'cast_shadow'
   | 'visible';
 
-type OptionalProperties = 'controller' | 'code' | 'autoscale' | 'pivot' | 'hud' | 'render_fov_lod' | 'render_back_faces' | 'render_fov_visible' | 'frame';
+type OptionalProperties = 'controller' | 'ikey' | 'code' | 'autoscale' | 'pivot' | 'hud' | 'render_fov_lod' | 'render_back_faces' | 'render_fov_visible' | 'frame';
 
 export type ObjectEntity = Pick<
   Required<Entity & { type: 'object' }>,
@@ -28,4 +28,5 @@ export type SelectedObject = {
   object: any | null;
   meshId: number | null;
   key: string | null;
+  ikey: string | null;
 }

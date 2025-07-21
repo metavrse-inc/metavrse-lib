@@ -8,6 +8,10 @@ import { HTMLHudNode } from '../nodes/HTMLHudNode';
 import { ConfigurationNode } from '..';
 
 export type CherryProjectManager = {
+  // gimzo
+  addGizmoHandler: (handler: any) => void;
+  removeGizmoHandler: (handler: any) => void;
+  updateGizmoHandlers: (type: number) => void;
   // File methods
   loadURL: (url: string, password: string) => void;
   loadNewURL: CherryLoadNewUrl;

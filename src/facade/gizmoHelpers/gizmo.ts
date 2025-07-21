@@ -170,15 +170,18 @@ export const manipulateGizmoPosition = (
       return finalGroupPosition;
     }
   }
-  const [scaleX, scaleY, scaleZ] = calculateScalesGizmo(
-    extentsTarget,
-    extentsGizmo,
-    target
-  );
+  let scaleX = 1;
+  let scaleY = 1;
+  let scaleZ = 1;
+  // const [scaleX, scaleY, scaleZ] = calculateScalesGizmo(
+  //   extentsTarget,
+  //   extentsGizmo,
+  //   target
+  // );
 
-  if (!scaleX || !scaleY || !scaleZ) {
-    return;
-  }
+  // if (!scaleX || !scaleY || !scaleZ) {
+  //   return;
+  // }
 
   const scale = vec3.fromValues(scaleX, scaleY, scaleZ);
   mat4.scale(gizmoMatrix, gizmoMatrix, scale);
@@ -200,11 +203,17 @@ export const manipulateGizmoPosition = (
     mat4.multiply(gizmoMatrix, gizmoMatrix, matrix);
   }
 
+  mat4.multiply(gizmoMatrix, obj?.groupMat as mat4 || mat4.create(), gizmoMatrix);
+
+
   let gizmoCalculatedXYZ = vec3.create();
   if (obj && obj.parentOpts && obj.parentOpts.transform) {
     const fm = mat4.clone(gizmoMatrix);
     mat4.multiply(fm, obj.parentOpts.transform, fm);
     mat4.getTranslation(gizmoCalculatedXYZ, fm);
+  } else if (obj?.parent && obj.parent.parentOpts && obj.parent.parentOpts.transform) {
+    let parentPosition = mat4.getTranslation([0,0,0], obj.parent.parentOpts.transform);
+    gizmoCalculatedXYZ = vec3.add(gizmoCalculatedXYZ, parentPosition, position);
   } else {
     gizmoCalculatedXYZ = position;
   }
@@ -219,8 +228,9 @@ export const resetGizmo = (
   hideGizmo: () => void
 ): void => {
   resetGizmo()
-  gizmo.setParameter('visible', false);
-  gizmoRotate.setParameter('visible', false);
+  viewer.getSurface().setGizmoVisiblity(false);
+  // gizmo.setParameter('visible', false);
+  // gizmoRotate.setParameter('visible', false);
   hideGizmo()
   viewer.ProjectManager.isDirty = true;
 };

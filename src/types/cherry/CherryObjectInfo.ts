@@ -5,7 +5,7 @@ export type CherryObjectInfo = {
   groups: number;
   triangles: number;
   vertices: number;
-  positions: number;
-  normals: number;
-  uvs: number;
+  // positions: number;
+  // normals: number;
+  // uvs: number;
 };

@@ -79,7 +79,7 @@ module.exports = (payload) => {
         ? d['skybox']['show']
         : true,
 
-    color: d['color'] !== undefined ? [...d['color']] : [0, 0, 0],
+    color: d['color'] !== undefined ? [...d['color']] : [15, 15, 15],
     transparent: d['transparent'] != undefined ? d['transparent'] : false,
     skyboxRotation:
       d['skyboxRotation'] !== undefined ? [...d['skyboxRotation']] : [0, 0, 0],
@@ -136,7 +136,7 @@ module.exports = (payload) => {
     'shadow-rotation':
       d['shadow'] && d['shadow']['rotation'] != undefined
         ? [...d['shadow']['rotation']]
-        : [0, 0, 0],
+        : [120, 0, 25],
 
     'shadow-darkness':
       d['shadow'] && d['shadow']['darkness'] != undefined
@@ -150,7 +150,7 @@ module.exports = (payload) => {
 
     controller: d['controller'] || '',
     dpr: d['dpr'] !== undefined ? d['dpr'] : 0.25,
-    dprFixed: d['dprFixed'] !== undefined ? d['dprFixed'] : false,
+    dprFixed: d['dprFixed'] !== undefined ? d['dprFixed'] : true,
     resolution: d['resolution'] !== undefined ? d['resolution'] : 1080,
     fps: d['fps'] !== undefined ? d['fps'] : 30,
     fxaa: d['fxaa'] !== undefined ? d['fxaa'] : 1,
@@ -174,9 +174,13 @@ module.exports = (payload) => {
 
     //
     render_method: d['render_method'] !== undefined ? d['render_method'] : 0,
+
+    bloom_bias: d['bloom_bias'] !== undefined ? d['bloom_bias'] : 0.045, 
+    bloom_radius: d['bloom_radius'] !== undefined ? d['bloom_radius'] : 0.005,
+    exposure: d['exposure'] !== undefined ? d['exposure'] : 1.0, 
   };
 
-  let liveData = JSON.parse(JSON.stringify(world));
+  // let liveData = JSON.parse(JSON.stringify(world));
 
   let shadow_rotation = quat.create();
 
@@ -331,7 +335,7 @@ module.exports = (payload) => {
           break;
         case 'shadow-direction':
           v = getLastValueInMap(getProperties(row.type));
-          scene.setShadowsLightDirection(v[0], v[1], v[2]);
+          // scene.setShadowsLightDirection(v[0], v[1], v[2]);
           break;
         case 'shadow-rotation':
           v = getLastValueInMap(getProperties(row.type));
@@ -454,6 +458,18 @@ module.exports = (payload) => {
           v = getLastValueInMap(getProperties(row.type));
           scene.setRenderPipelineType(v);
           break;
+        case 'bloom_bias':
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setBloomBias(v);
+          break;
+        case 'bloom_radius':
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setBloomRadius(v);
+          break;
+        case 'exposure':
+          v = getLastValueInMap(getProperties(row.type));
+          scene.setExposure(v);
+          break;        
       }
     }
 
@@ -545,6 +561,17 @@ module.exports = (payload) => {
 
   setProperty('zip_size', world.zip_size);
   setProperty('zip_enabled', world.zip_enabled);
+
+  setProperty('bloom_bias', world.bloom_bias);
+  setProperty('bloom_radius', world.bloom_radius);
+  setProperty('exposure', world.exposure);
+  setProperty('resolution', world.resolution);
+
+  addToRedraw('bloom_bias');
+  addToRedraw('bloom_radius');
+  addToRedraw('exposure');
+  addToRedraw('resolution');
+
 
   addToRedraw('fxaa');
   addToRedraw('hudscale');
@@ -793,13 +820,12 @@ module.exports = (payload) => {
 
     resolution: {
       get: () => {
-        return world.resolution;
+        return getProperty('resolution')[1];
       },
       set: (v) => {
-        world.resolution = v;
+        setProperty('resolution', v);
       },
     },
-    
 
     fxaa: {
       get: () => {
@@ -912,6 +938,33 @@ module.exports = (payload) => {
       },
       set: (v) => {
         setProperty('orientation', v);
+      },
+    },
+
+    bloom_bias: {
+      get: () => {
+        return getProperty('bloom_bias')[1];
+      },
+      set: (v) => {
+        setProperty('bloom_bias', v);
+      },
+    },
+
+    bloom_radius: {
+      get: () => {
+        return getProperty('bloom_radius')[1];
+      },
+      set: (v) => {
+        setProperty('bloom_radius', v);
+      },
+    },
+
+    exposure: {
+      get: () => {
+        return getProperty('exposure')[1];
+      },
+      set: (v) => {
+        setProperty('exposure', v);
       },
     },
   });

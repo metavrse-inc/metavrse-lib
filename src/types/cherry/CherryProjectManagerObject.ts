@@ -59,6 +59,7 @@ export type GetterSetterPropertyType =
   | 'color'
   | 'transparent'
   | 'skyboxRotation'
+  | 'skyboxEnvRotation'
   | 'shadow'
   | 'controller'
   | 'dpr'
@@ -212,6 +213,7 @@ export type CherryProjectManagerObject = {
 
   skybox: Skybox;
   skyboxRotation: Vector3;
+  skyboxEnvRotation: Vector3;
   shadow: Shadow;
   dpr: number;
   fps: number;

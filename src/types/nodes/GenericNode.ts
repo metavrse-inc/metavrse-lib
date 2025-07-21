@@ -2,6 +2,7 @@ import { CherryKey } from '..';
 
 export type GenericNode<NodeType extends string> = {
   key: CherryKey;
+  ikey?: CherryKey;
   type: NodeType;
   title: string;
   visible: boolean;

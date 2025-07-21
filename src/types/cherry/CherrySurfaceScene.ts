@@ -24,4 +24,10 @@ export type CherrySurfaceScene = {
   getWorkerObjectQueueSize: () => number;
   getTextureQueue: () => number;  
   setFSZip: (name: string, zip: any)=> void;
+  setBloomBias: (value: number) => void;  
+  setBloomRadius: (value: number) => void;  
+  setExposure: (value: number) => void;  
+  toggleAxis: (value: boolean) => void;  
+  toggleDebug: (value: boolean) => void;  
+
 };

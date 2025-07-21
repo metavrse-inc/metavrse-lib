@@ -51,4 +51,9 @@ export type World = {
   lod_enabled: boolean;
   zip_size: Vector3;
   zip_enabled: boolean;
+
+  bloom_bias: number;
+  bloom_radius: number;
+  exposure: number;
+
 };

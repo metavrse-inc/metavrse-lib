@@ -5,7 +5,7 @@ module.exports = class HavokVisualDebugger {
 
     enabled = false;
     colours = { 
-        "static": [0.5, 0.5, 0.5, 1.0],
+        "static": [0.0, 1, 0.0, 1.0],
         "dynamic": [1.0, 0.2, 0.2, 1.0],
         "kinematic": [0.2, 1.0, 0.2, 1.0],
         "constraint": [0.2, 0.2, 1.0, 1.0],
@@ -28,14 +28,14 @@ module.exports = class HavokVisualDebugger {
      * Pull fresh wire‑frame lines from Havok.  Expensive – only call once per
      * render update when enabled === true.
      */
-    extract() {
+    extract(b) {
         // if (!this.enabled) {
         //     return this.lastFrame;
         // }
 
         const lines = [];
 
-        this.extractRigidBodies(lines);
+        this.extractRigidBodies(b, lines);
         // TODO: this.extractConstraints(lines);
         // TODO: this.extractContacts(lines);
 
@@ -47,7 +47,7 @@ module.exports = class HavokVisualDebugger {
      * RIGID‑BODY VISUALISATION        *
      ***********************************/
 
-    extractRigidBodies(out) {
+    extractRigidBodies(b, out) {
         // hp.HP_World_GetNumBodies(world) -> [Result, number]
         // const [res, num] = this.hk.HP_World_GetNumBodies(this.world);
         // if (res !== this.hk.Result.RESULT_OK) {
@@ -56,9 +56,11 @@ module.exports = class HavokVisualDebugger {
         // }
 
         // for (let i = 0; i < num; ++i) {
-        for (var [key, obj] of this.bodies) {
+        for (var [key, obj] of b) {
             // const body = this.bodies[i];
             if (!obj || !obj.RigidBody) continue;
+
+            if (obj.visible != undefined && !obj.visible) continue;
 
             let bodies = [obj.RigidBody.body];
             
@@ -77,6 +79,7 @@ module.exports = class HavokVisualDebugger {
             for (var body of bodies)
             {
                 // const body = obj.RigidBody.body;
+                if (!body) continue;
 
 
                 // Get body transform (world space)
@@ -129,6 +132,12 @@ module.exports = class HavokVisualDebugger {
         }
         const [vPtr, vCount, tPtr, tCount] = info;
 
+        if (vCount <= 0 || tCount <= 0)
+        {
+            this.hk.HP_DebugGeometry_Release(dbgId);
+            return;
+        }
+
         // Build Float32Array / Uint32Array views into the WASM heap
         const vBuf = new Float32Array(this.hk.HEAPF32.buffer, vPtr, vCount * 3);
         const tBuf = new Uint32Array(this.hk.HEAPU32.buffer, tPtr, tCount * 3);
@@ -174,8 +183,8 @@ module.exports = class HavokVisualDebugger {
      ***********************************/
 
     getVertexBuffer(bodies) {
-        this.bodies = bodies;
-        const { lines } = this.extract();
+        // this.bodies = bodies;
+        const { lines } = this.extract(bodies);
         // const data = [];
         // for (const l of lines) {
         //     data.push(...l.start, ...(l.colour ?? [1, 1, 1, 1]));

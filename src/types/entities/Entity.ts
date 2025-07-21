@@ -10,6 +10,7 @@ import { CherryAnimationFrame } from '../cherry/CherryAnimationFrame';
 
 export type Entity = {
   key: CherryKey;
+  ikey?: CherryKey;
 
   skey?: CherryKey;
   position?: Vector3;

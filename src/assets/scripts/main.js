@@ -430,6 +430,20 @@ let _render = function (t) {
   Module.ProjectManager.render();
   Module.ProjectManager.Physics.debugDraw();
 
+  const World = Module.ProjectManager.getObject('world');
+  if (World != undefined) {
+    if (!World.transparent) 
+    {
+      Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
+      Module.getSurface().setColor(World.color[0] / 255,
+        World.color[1] / 255,
+        World.color[2] / 255, 1)
+    } else {
+      Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
+      Module.getSurface().setColor(0,0,0,0);
+    }
+  }
+
   return shouldRender && !Module.ProjectManager.disablePaint;
   // Module.ProjectManager.disablePaint
 
@@ -546,6 +560,9 @@ Module.onDestroy = function () {
 };
 
 Module.onMouseEvent = function (event, button, x, y) {
+  let consumed = surface.onevent(0, event, 0, button, x, y);
+  if (consumed) return;
+
   requestAnimationFrame(()=>{
     // mouseQue.push([event, button, x, y])
     var resp = true;
@@ -593,6 +610,10 @@ Module.onScroll = function (y) {
 };
 
 Module.onTouchEvent = function (event, touches, pointer, x, y) {
+
+  let consumed = surface.onevent(1, event, touches, pointer, x, y);
+  if (consumed) return;
+
   // touchQue.push([event, touches, pointer, x, y]);
   requestAnimationFrame(()=>{
     var resp = true;
