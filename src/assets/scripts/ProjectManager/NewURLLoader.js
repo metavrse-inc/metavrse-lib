@@ -146,6 +146,8 @@ module.exports = (opt) => {
       if (response.status === 304) {
         let loadLocal = async (fullpath, status)=>{
           try {
+            // options.onProjectLoadingStart && options.onProjectLoadingStart();
+
             let zip = await idb.getItem(fullpath);
             const data = new Uint8Array(zip);
             Module.FS.writeFile(
@@ -153,7 +155,7 @@ module.exports = (opt) => {
               data
             );
 
-            options.onProjectLoadingStart && options.onProjectLoadingStart();
+            await sleep(1000);
 
             options.onDownloadProgress &&
               options.onDownloadProgress({
@@ -218,6 +220,8 @@ module.exports = (opt) => {
           
         if (!isIOS) idb.setItem(fullpath + 'project.zip', data);
   
+        await sleep(1000);
+
         callback(fullpath + 'project.zip', response.status);
 
       }
