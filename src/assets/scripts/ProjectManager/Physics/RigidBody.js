@@ -101,6 +101,10 @@ module.exports = (payload) => {
             HavokSystem.havok.HP_Shape_Release(havokShape);
             HavokSystem.havok.HP_Shape_Release(havokContainer);
             HavokSystem.havok.HP_Body_Release(havokBody);
+
+            havokBody = null;
+            havokShape = null;
+            havokContainer = null;
             // if (body){
             //     PhysicsWorld.removeRigidBody(body);
             //     Ammo.destroy(body);
@@ -197,6 +201,7 @@ module.exports = (payload) => {
         let currentShape = false;
         let shapePath = "";
         var buffer = [];
+        var index = [];
         // geometry = new Ammo.btBoxShape(new Ammo.btVector3(size[0] * 0.5, size[1] * 0.5, size[2] * 0.5));
         switch (params.shape_type) {            
             case 'cylinder':
@@ -224,37 +229,73 @@ module.exports = (payload) => {
                     // let mesh = new Ammo.btTriangleMesh(true, true);
                     let triangles = om.triangles;
                     let verts = om.vertices;
-                    
-                    let tris = triangles.size();
-                    // console.log(tris)
-                    if (tris > 0){
-                        buffer = new Float32Array(tris * 3);
-                        let pos = 0;
-                        let push = (...args)=>
-                        {
-                            for (let arg of args){
-                                buffer[pos++] = arg;
+
+                    let pos = 0;
+                    let push = (...args)=>
+                    {
+                        for (let arg of args){
+                            buffer[pos++] = arg;
+                        }
+                    }
+
+                    let ipos = 0;
+                    let ipush = (...args)=>
+                    {
+                        for (let arg of args){
+                            index[ipos++] = arg;
+                        }
+                    }
+
+                    if (om.type == 0)
+                    {
+
+                        let tris = triangles.size();
+                        let vs = verts.size();
+                        // console.log(tris)
+                        if (tris > 0){
+                            // buffer = new Float32Array(tris * 3);
+                            buffer = new Float32Array(vs * 3);
+                            index = new Uint32Array(tris);
+                            for (let i = 0; i < tris; i++){
+                                let i1 = triangles.get(i);
+                                ipush(i1);
                             }
-                        }
-
-                        for (let i = 0; i < tris; i+=3){
-                            let i1 = triangles.get(i);
-                            let i2 = triangles.get(i + 1);
-                            let i3 = triangles.get(i + 2);
-
-                            push(verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3);
-                            push(verts.get(i2).p1, verts.get(i2).p2, verts.get(i2).p3);
-                            push(verts.get(i3).p1, verts.get(i3).p2, verts.get(i3).p3);
-                        }
+                            
+                            for (let i = 0; i < vs; i++){
+                                let i1 = verts.get(i);
+                                push(i1.p1,i1.p2,i1.p3);
+                            }
     
-                        mesh = null;            
-                     
-                        // don't break on error, run default
+                            // for (let i = 0; i < tris; i+=3){
+                            //     let i1 = triangles.get(i);
+                            //     let i2 = triangles.get(i + 1);
+                            //     let i3 = triangles.get(i + 2);
+    
+                            //     push(verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3);
+                            //     push(verts.get(i2).p1, verts.get(i2).p2, verts.get(i2).p3);
+                            //     push(verts.get(i3).p1, verts.get(i3).p2, verts.get(i3).p3);
+                            // }
+        
+                            // mesh = null;            
+                         
+                            // don't break on error, run default
+                            break;
+                        }
+                    } else {
+                        let vs = verts.size();
+                        buffer = new Float32Array(vs*3);
+                        for (let i1 = 0; i1 < vs; i1++)
+                        {
+                            push(verts.get(i1).p1, verts.get(i1).p2, verts.get(i1).p3);
+                        }
+
                         break;
                     }
+                    
 
                 } catch (error) {
                     buffer = [];
+                    index = [];
                 }
 
             case 'bounding-box':
@@ -323,7 +364,7 @@ module.exports = (payload) => {
             friction,
         }
 
-        createBody(options, buffer);
+        createBody(options, buffer, index);
      }
 
      function wrapShapeWithScale(shapeId, scale) {
@@ -379,7 +420,7 @@ module.exports = (payload) => {
         }
     }
 
-    const createBody = (options, buffer)=>
+    const createBody = (options, buffer, index = [])=>
     {
         const HavokModule = HavokSystem.havok;
         const worldId = HavokSystem.world;
@@ -491,8 +532,10 @@ module.exports = (payload) => {
             // Define a capsule along local Y-axis: same pattern as cylinder.
             const halfHeight = size[1] * 0.5;
             const radius     = size[0] * 0.5;
-            const pointA = [ 0, +halfHeight - radius * 0.5 - 0.1 , 0 ];
-            const pointB = [ 0, -(halfHeight - radius * 0.5 - 0.1), 0 ];
+            // const pointA = [ 0, +halfHeight - radius * 0.5 - 0.1 , 0 ];
+            // const pointB = [ 0, -(halfHeight - radius * 0.5 - 0.1), 0 ];
+            const pointA = [ 0, +halfHeight, 0 ];
+            const pointB = [ 0, -halfHeight, 0 ];
             const [res, id] = HavokModule.HP_Shape_CreateCapsule(pointA, pointB, radius);
             if (res !== HavokModule.Result.RESULT_OK) {
                 console.error("HP_Shape_CreateCapsule failed:", res);
@@ -531,6 +574,7 @@ module.exports = (payload) => {
             //   (i.e. each consecutive 3 floats is one vertex, and each group-of-3 vertices is a separate triangle),
             //   then numVertices = buffer.length/3, and numTriangles = numVertices/3.
             // We will treat buffer as (xyz)(xyz)(xyz) per triangle, so:
+            /*
             const f32 = new Float32Array(buffer);
             const numFloats   = f32.length;          // should be 9 * numTriangles
             const numVertices = numFloats / 3;       // each 3 floats is 1 vertex
@@ -555,6 +599,32 @@ module.exports = (payload) => {
                 vertsPtr, numVertices,
                 idxPtr,   numTriangles
             );
+            */
+
+            const f32 = new Float32Array(buffer);
+            const numFloats   = f32.length;
+            const numVertices   = numFloats / 3;
+
+            const indices = new Uint32Array(index);
+            const numIndices   = indices.length;
+            const numTriangles   = numIndices / 3;
+
+            //  a) Allocate WASM memory for vertices:
+            const vertsByteSize = numFloats * Float32Array.BYTES_PER_ELEMENT;
+            const vertsPtr = HavokModule._malloc(vertsByteSize);
+            HavokModule.HEAPF32.set(f32, vertsPtr / 4);
+
+            // allocate index
+            const idxByteSize = numIndices * Uint32Array.BYTES_PER_ELEMENT;
+            const idxPtr = HavokModule._malloc(idxByteSize);
+            HavokModule.HEAPU32.set(indices, idxPtr / 4);
+
+            //  c) Call HP_Shape_CreateMesh(verticesPtr, numVertices, trianglesPtr, numTriangles)
+            const [res, id] = HavokModule.HP_Shape_CreateMesh(
+                vertsPtr, numVertices,
+                idxPtr,   numTriangles
+            );
+
             if (res !== HavokModule.Result.RESULT_OK) {
                 console.error("HP_Shape_CreateMesh failed:", res);
                 HavokModule._free(vertsPtr);
