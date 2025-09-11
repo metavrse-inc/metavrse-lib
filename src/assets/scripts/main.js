@@ -377,10 +377,10 @@ let _render = function (t) {
     if (width != canvas.width || height != canvas.height) {
       canvas.width = width;
       canvas.height = height;
-      requestAnimationFrame(()=>{
+      // requestAnimationFrame(()=>{
         Module.onSurfaceChanged(0, width, height);
         surface.onSurfaceChanged(width, height);
-      })
+      // })
     }
   } else if (Module.setFixedSize && false) {
     const World = Module.ProjectManager.getObject('world');
@@ -563,7 +563,7 @@ Module.onMouseEvent = function (event, button, x, y) {
   let consumed = surface.onevent(0, event, 0, button, x, y);
   if (consumed) return;
 
-  requestAnimationFrame(()=>{
+  // requestAnimationFrame(()=>{
     // mouseQue.push([event, button, x, y])
     var resp = true;
     if (
@@ -588,11 +588,11 @@ Module.onMouseEvent = function (event, button, x, y) {
       Module.controls.onMouseEvent(event, button, x, y);
     Module.ProjectManager.isDirty = true;
 
-  })
+  // })
 };
 
 Module.onScroll = function (y) {
-  requestAnimationFrame(()=>{
+  // requestAnimationFrame(()=>{
     var res = true;
     if (
       Module.ProjectManager.projectRunning &&
@@ -606,7 +606,7 @@ Module.onScroll = function (y) {
     if (res == undefined || res) Module.controls.onScroll(y);
     Module.ProjectManager.isDirty = true;
 
-  })
+  // })
 };
 
 Module.onTouchEvent = function (event, touches, pointer, x, y) {
@@ -615,7 +615,7 @@ Module.onTouchEvent = function (event, touches, pointer, x, y) {
   if (consumed) return;
 
   // touchQue.push([event, touches, pointer, x, y]);
-  requestAnimationFrame(()=>{
+  // requestAnimationFrame(()=>{
     var resp = true;
     if (
       Module.ProjectManager.projectRunning &&
@@ -640,7 +640,7 @@ Module.onTouchEvent = function (event, touches, pointer, x, y) {
       Module.controls.onTouchEvent(event, touches, pointer, x, y);
     Module.ProjectManager.isDirty = true;
 
-  })
+  // })
 };
 
 Module.onSurfaceChanged = function (rotation, width, height) {
@@ -709,7 +709,8 @@ Module.onSurfaceChanged = function (rotation, width, height) {
 
   }
 
-  requestAnimationFrame(run)
+  // requestAnimationFrame(run)
+  run();
 
 };
 
@@ -747,7 +748,8 @@ Module.onKeyEvent = function (
       Module.Handlers.onKeyEvent(event);
   }
 
-    requestAnimationFrame(run);
+    // requestAnimationFrame(run);
+    run();
 };
 
 Module.onTextureCallback = (status) => {
