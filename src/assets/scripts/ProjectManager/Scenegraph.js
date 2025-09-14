@@ -228,7 +228,7 @@ module.exports = () => {
   let streamLoader = false;
 
   const render = (opts) => {
-    if (Module.ProjectManager.projectRunning) Physics.render();        
+    // if (Module.ProjectManager.projectRunning) Physics.render();        
 
     let clearnow = false;
     if (Module.ProjectManager.projectRunning && launched){
