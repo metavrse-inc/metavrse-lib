@@ -221,7 +221,7 @@ module.exports = () => {
 
       if (!ammoInitalised) return;
 
-      Physics.havok.HP_World_Step(Physics.world, filteredDelta);
+      Physics.havok.HP_World_Step(Physics.world, rawDelta);
 
       processTriggerEvents();
 
