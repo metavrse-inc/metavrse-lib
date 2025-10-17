@@ -78,31 +78,45 @@
     
                 zips.set(url, zip_object);
 
-                URLLoader.fetchData(full_url, "", options, async (fullpath, status) => {
-                    if (!fullpath) {
-                        console.error('No data found!');
-                        reject();
-                        return;
-                    }
+                try {
+                    URLLoader.fetchData(full_url, "", options, async (fullpath, status) => {
+                        if (!fullpath) {
+                            console.error('No data found!');
+                            reject();
+                            return;
+                        }
+                        
+                        let zip_object = zips.get(url);
+
+                        if (status == "404")
+                        {
+                            console.error('Invalid url');
+                            zip_object.ready = true;
+                            if (options.onFinished) await options.onFinished(zip_object);
+                            resolve(zip_object);
+                            return;
+                        }
+            
+                        if (zip_object.ready && status == "304"){
+                            if (options.onFinished) await options.onFinished(zip_object);
+                            reject();
+                            return;
+                        }
         
-                    let zip_object = zips.get(url);
-    
-                    if (zip_object.ready && status == "304"){
+                        zip_object.ready = true;
+        
+                        if (zip_object.archive == undefined) zip_object.archive = new Module.zip();
+                        // zip_object.archive.close();
+                        zip_object.archive.open(fullpath);
+                        scene.setFSZip(url, zip_object.archive);
+        
                         if (options.onFinished) await options.onFinished(zip_object);
-                        resolve(zip_object)
-                        return;
-                    }
-    
-                    zip_object.ready = true;
-    
-                    if (zip_object.archive == undefined) zip_object.archive = new Module.zip();
-                    // zip_object.archive.close();
-                    zip_object.archive.open(fullpath);
-                    scene.setFSZip(url, zip_object.archive);
-    
-                    if (options.onFinished) await options.onFinished(zip_object);
-                    resolve(zip_object);
-                })
+                        resolve(zip_object);
+                    })                    
+                } catch (error) {
+                    console.error(error)
+                    reject();
+                }
             } else {
                 let alreadyExists = async ()=>{
                     let zip_object = zips.get(url);

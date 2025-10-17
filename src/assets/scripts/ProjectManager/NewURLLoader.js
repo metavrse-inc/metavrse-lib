@@ -123,107 +123,112 @@ module.exports = (opt) => {
     }
 
     const internalFetch1 = async (internalHeaders) => {
-      let urlO = new URL(url);
-
-
-      const response = await fetch(urlO, {
-        headers: internalHeaders
-      });
-
-      if (response.status === 404) {
-        options.onProjectNotFound && options.onProjectNotFound();
-      }
-
-      if (response.status === 401) {
-        options.onIncorrectPassword &&
-          options.onIncorrectPassword(password);
-      }
-
-      if (response.status === 403) {
-        options.onLimitsExceeded && options.onLimitsExceeded();
-      }
-
-      if (response.status === 304) {
-        let loadLocal = async (fullpath, status)=>{
-          try {
-            // options.onProjectLoadingStart && options.onProjectLoadingStart();
-
-            let zip = await idb.getItem(fullpath);
-            const data = new Uint8Array(zip);
-            Module.FS.writeFile(
-              fullpath,
-              data
-            );
-
-            await sleep(1000);
-
-            options.onDownloadProgress &&
-              options.onDownloadProgress({
-                total: 100,
-                loaded: 100,
+      try {
+        
+        let urlO = new URL(url);
+  
+  
+        const response = await fetch(urlO, {
+          headers: internalHeaders
+        });
+  
+        if (response.status === 404) {
+          options.onProjectNotFound && options.onProjectNotFound();
+        }
+  
+        if (response.status === 401) {
+          options.onIncorrectPassword &&
+            options.onIncorrectPassword(password);
+        }
+  
+        if (response.status === 403) {
+          options.onLimitsExceeded && options.onLimitsExceeded();
+        }
+  
+        if (response.status === 304) {
+          let loadLocal = async (fullpath, status)=>{
+            try {
+              // options.onProjectLoadingStart && options.onProjectLoadingStart();
+  
+              let zip = await idb.getItem(fullpath);
+              const data = new Uint8Array(zip);
+              Module.FS.writeFile(
+                fullpath,
+                data
+              );
+  
+              await sleep(1000);
+  
+              options.onDownloadProgress &&
+                options.onDownloadProgress({
+                  total: 100,
+                  loaded: 100,
+                });
+  
+              callback(fullpath, status);
+            } catch (e) {
+              internalFetch1({
+                ...internalHeaders,
+                'If-Modified-Since': undefined,
               });
-
-            callback(fullpath, status);
-          } catch (e) {
-            internalFetch1({
-              ...internalHeaders,
-              'If-Modified-Since': undefined,
-            });
-          }
-        }
-
-        await loadLocal(fullpath + 'project.zip', response.status);
-      }
-
-      if (response.status === 200) {
-        const contentLength = +response.headers.get('content-length');
-        const lastModified = response.headers.get('last-modified');
-        let receivedLength = 0;
-        // console.log(contentLength)
-        // console.log(...response.headers)
-  
-        const reader = response.body.getReader();
-  
-        let data = new Uint8Array(contentLength);
-        
-        while (true) {
-          const { done, value } = await reader.read();
-          let _data = new Uint8Array(value);
-          
-          if (contentLength == 0){
-            data = concatenate([data,_data]);
-          } else {
-            data.set(_data, receivedLength);
+            }
           }
   
-          receivedLength += _data.byteLength;
-  
-          options.onDownloadProgress &&
-                                  options.onDownloadProgress({
-                                    total: (contentLength > 0) ? contentLength : receivedLength,
-                                    loaded: receivedLength,
-                                  });
-          // console.log(`${receivedLength}/${contentLength}`);
-        
-          if (done) {
-            // console.log("Stream complete", data);
-            break;
-          }
+          await loadLocal(fullpath + 'project.zip', response.status);
         }
   
-        if (!isIOS && lastModified != undefined) localStorage.setItem(lsKey, lastModified);
-  
-        Module.FS.writeFile(
-          fullpath + 'project.zip',
-          data
-        );
+        if (response.status === 200) {
+          const contentLength = +response.headers.get('content-length');
+          const lastModified = response.headers.get('last-modified');
+          let receivedLength = 0;
+          // console.log(contentLength)
+          // console.log(...response.headers)
+    
+          const reader = response.body.getReader();
+    
+          let data = new Uint8Array(contentLength);
           
-        if (!isIOS) idb.setItem(fullpath + 'project.zip', data);
+          while (true) {
+            const { done, value } = await reader.read();
+            let _data = new Uint8Array(value);
+            
+            if (contentLength == 0){
+              data = concatenate([data,_data]);
+            } else {
+              data.set(_data, receivedLength);
+            }
+    
+            receivedLength += _data.byteLength;
+    
+            options.onDownloadProgress &&
+                                    options.onDownloadProgress({
+                                      total: (contentLength > 0) ? contentLength : receivedLength,
+                                      loaded: receivedLength,
+                                    });
+            // console.log(`${receivedLength}/${contentLength}`);
+          
+            if (done) {
+              // console.log("Stream complete", data);
+              break;
+            }
+          }
+    
+          if (!isIOS && lastModified != undefined) localStorage.setItem(lsKey, lastModified);
+    
+          Module.FS.writeFile(
+            fullpath + 'project.zip',
+            data
+          );
+            
+          if (!isIOS) idb.setItem(fullpath + 'project.zip', data);
+    
+          await sleep(1000);
   
-        await sleep(1000);
-
-        callback(fullpath + 'project.zip', response.status);
-
+          callback(fullpath + 'project.zip', response.status);
+  
+        }
+      } catch (error) {
+          callback(fullpath + 'project.zip', 404);
       }
 
 

@@ -733,6 +733,8 @@ module.exports = () => {
       sceneprops.sceneIndex.set(obj.item.key, obj); // index obj
       let d = getZIPData(zip);
 
+      if (!d) return;
+
       let addPrefix = (leaf)=> {
         for (var node of leaf) {
           if (node.key) node.key = obj.item.key + "_" + node.key;
@@ -1023,9 +1025,13 @@ module.exports = () => {
       },
 
       onFinished: async (zip_object)=> {
-        const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
-        await loadPathsZip(assets, leaf, leaf.url);
-        ZIPManager.callbacks.run(leaf.url);
+        try {
+          const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
+          await loadPathsZip(assets, leaf, leaf.url);
+          ZIPManager.callbacks.run(leaf.url);          
+        } catch (error) {
+          
+        }
 
         if (cb) cb.onFinished(zip_object)
       }
@@ -1084,9 +1090,13 @@ module.exports = () => {
             },
 
             onFinished: async (zip_object)=> {
-              const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
-              await loadPathsZip(assets, leaf, item_.url);
-              ZIPManager.callbacks.run(item_.url);
+              try {
+                const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
+                await loadPathsZip(assets, leaf, item_.url);
+                ZIPManager.callbacks.run(item_.url);                
+              } catch (error) {
+                
+              }
             }
           }
 
@@ -1160,11 +1170,18 @@ module.exports = () => {
 
             onFinished: async (zip_object)=> {
               let launchAdd = async ()=> {
-                const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
-                await loadPathsZip(assets, leaf, item_.url);
-                requestAnimationFrame(()=>{
-                  ZIPManager.callbacks.run(item_.url);
-                })
+                if (zip_object.ready)
+                {
+                  try {
+                    const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
+                    await loadPathsZip(assets, leaf, item_.url);
+                    requestAnimationFrame(()=>{
+                      ZIPManager.callbacks.run(item_.url);
+                    })                  
+                  } catch (error) {
+                    
+                  }
+                }
               }
 
               if (!launch || launched) await launchAdd();
@@ -1270,11 +1287,17 @@ module.exports = () => {
   const getZIPData = (archive)=> {
     // parse scene
     const readJsonFile = (filename) => {
-      return JSON.parse(archive.fopens(filename));
+      try {
+        let f = JSON.parse(archive.fopens(filename));
+        return f;
+      } catch (error) {
+        return null;        
+      }
     };
 
     // Read json files form zip
     const project = readJsonFile('project.json');
+    if (!project) return null;
 
     const { startingScene } = project;
     const entities = readJsonFile(`scenes/${startingScene}/entities.json`);
@@ -1436,10 +1459,10 @@ module.exports = () => {
         }
         break;
       case 'light':
-        if (opt.zip_id) {          
-        }else{
+        // if (opt.zip_id) {          
+        // }else{
           obj = LightModel(payload);
-        }
+        // }
         break;
       case 'hud':
         obj = HudModel(payload);
@@ -1754,143 +1777,6 @@ module.exports = () => {
       await sleep(50);
 
     }
-
-    // test new list of zips
-    // TODO: clean up and move to Loader
-    if (streamLoader){
-      function concatenate(uint8arrays) {
-        const totalLength = uint8arrays.reduce(
-          (total, uint8array) => total + uint8array.byteLength,
-          0
-        );
-      
-        const result = new Uint8Array(totalLength);
-      
-        let offset = 0;
-        uint8arrays.forEach((uint8array) => {
-          result.set(uint8array, offset);
-          offset += uint8array.byteLength;
-        });
-      
-        return result;
-      }
-  
-      function splitBufToArr(buf) {
-          let bufArr = [];
-          let start = 0;
-          for (var x = 0; x < buf.length; x++) {
-            // Split using delimeter bytes [28,31,28,31,28]
-            if (
-              x+4 < buf.length && 
-              buf[x] == 28 &&
-              buf[x+1] == 31 &&
-              buf[x+2] == 28 &&
-              buf[x+3] == 31 &&
-              buf[x+4] == 28
-            ){
-              const chunk = buf.subarray(start, x);
-              x += 4;
-              start = x + 1;
-              bufArr.push(chunk);
-            }
-          }
-          
-          if (start < buf.length){
-             const chunk = buf.subarray(start);
-              bufArr.push(chunk);
-          }
-          return bufArr;
-  
-      }
-  
-      let urls = [];
-      for (var zip of zipstoload){
-        urls.push(zip.url);
-      }
-      let full_url = Module.ProjectManager.published_url_stream;
-  
-      var headers = {
-        'Content-Type': 'application/json'
-      };
-      Object.assign(headers, Module.ProjectManager.getHeaders());
-  
-      URLLoader.zips.set(full_url, 0)
-  
-      const response = await fetch(full_url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(urls)
-      })
-  
-      const contentLength = +response.headers.get('content-length');
-      // const lastModified = response.headers.get('last-modified');
-      let receivedLength = 0;
-  
-      const reader = response.body.getReader();
-  
-      let data = new Uint8Array(contentLength);
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        let _data = new Uint8Array(value);
-        
-        if (contentLength == 0){
-          data = concatenate([data,_data]);
-        } else {
-          data.set(_data, receivedLength);
-        }
-  
-        receivedLength += _data.byteLength;
-  
-        let perc = receivedLength/contentLength;
-        // console.log(`${receivedLength}/${contentLength}`);
-  
-        URLLoader.zips.set(full_url, perc)
-  
-        URLLoader.onProgress();
-  
-        if (done) {
-          // console.log("Stream complete", data);
-          let parts = splitBufToArr(data);
-          
-          let x=0;
-          for (var zip of zipstoload){
-            const fullpath = zip.url.replace(/[^\w\s]/gi, '') + '/';
-            if (Module.FS) Module.FS.createPath('/', fullpath, true, true);
-  
-            Module.FS.writeFile(
-              fullpath + 'project.zip',
-              parts[x]
-            );
-  
-            let zip_object = {
-                ready: true,
-                pending : new Map(),
-                archive: new Module.zip(),
-                loaded: 0,
-            }
-  
-            zip_object.archive.open(fullpath + 'project.zip');
-            scene.setFSZip(zip.url, zip_object.archive);
-  
-            ZIPManager.zips.set(zip.url, zip_object);
-  
-            const assets = JSON.parse(zip_object.archive.fopens('assets.json'));
-            await loadPathsZip(assets, zip.leaf, zip.url);
-            requestAnimationFrame(()=>{
-              ZIPManager.callbacks.run(zip.url);
-            })
-  
-            x++;
-          }
-          break;
-        }
-      }
-    }
-    // test new list of zips
-
-
-
 
     // Load world controller
     // TODO: Change version check so it use semver library

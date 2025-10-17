@@ -27,6 +27,7 @@ module.exports = () => {
       world: null,
       ids: new Map(),
       eventHandler: new Map(),
+      TRIGGER_BIT : 1 << 14,
   }
 
    // engine
@@ -245,85 +246,154 @@ module.exports = () => {
    let inputPtr = null;
    let resultPtr = null;
 
-   const Raycast = (from,to,body = null, maxResults = 1)=>
-   {
-      // RayCastInput layout (in bytes):
-      const RAYCAST_INPUT_SIZE    = 48; // placeholder: 52 bytes?
-      const OFFSET_INPUT_FROM     = 0;      // Vector3 (float32×3) + pad
-      const OFFSET_INPUT_TO       = 12;     // next Vector3
-      const OFFSET_INPUT_FILTER   = 12 + 12;     // FilterInfo (uint32×2)
-      const OFFSET_INPUT_FLAGS    = 12 + 12 + 4 + 4;     // bool32
-      const OFFSET_INPUT_IGNORE   = 12 + 12 + 4 + 4 + 1;     // HP_BodyId (pointer-sized, 64-bit)
+   function Raycast(from, to, body = null, maxResults = 1) {
+      // 1) Create collector
+      const [cRes, collector] = Physics.havok.HP_QueryCollector_Create(1);
+      if (cRes !== Physics.havok.Result.RESULT_OK) {
+         console.error("collector failed", cRes);
+         return null;
+      }
 
-      // RayCastResult layout (in bytes):
-      const RAYCAST_RESULT_SIZE   = 64;
-      // = 4 + 60 = 64 bytes (placeholder)
-      const OFFSET_RESULT_FRACTION   = 0;
-      const OFFSET_RESULT_CP_POS     = 8 + 8 + 8 + 16;   // Vector3 (float32×3)
-      const OFFSET_RESULT_CP_NORMAL  = 8 + 8 + 8 + 16 + 12;   // Vector3 (float32×3)
+      let hitTriggers = false;
 
-      if (inputPtr == null)
+      const RaycastInput = [
+         from,
+         to,
+         [0xFFFF & ~Physics.TRIGGER_BIT, 0xFFFF],
+         hitTriggers,
+         body !== null ? body : [BigInt(0)]  // 32-bit
+      ];
+
+      // 3) Cast
+      const rCast = Physics.havok.HP_World_CastRayWithCollector(Physics.world, collector, RaycastInput);
+      if (rCast !== Physics.havok.Result.RESULT_OK) {
+         // No hits or error; still check count
+      }
+
+      // 4) How many hits?
+      const [nRes, count] = Physics.havok.HP_QueryCollector_GetNumHits(collector);
+      if (nRes !== Physics.havok.Result.RESULT_OK || count <= 0) {
+         Physics.havok.HP_QueryCollector_Release(collector);
+         return {from};
+      }
+
+      let best = {from};
+
+      for (let i = 0; i < count; i++) 
       {
-         // --- 2) Allocate buffers in WASM memory ---
-         inputPtr  = Physics.havok._malloc(RAYCAST_INPUT_SIZE);
-         resultPtr = Physics.havok._malloc(RAYCAST_RESULT_SIZE);
+         const [gRes, hit] = Physics.havok.HP_QueryCollector_GetCastRayResult(collector, i);
+         if (gRes !== Physics.havok.Result.RESULT_OK) continue;
+
+         const fraction = hit[0];
+         const cp = hit[1];
+
+         const hitBody   = cp[0];
+         const hitShape  = cp[1];
+         const hitPos    = cp[3];
+         const hitNormal = cp[4];
+
+         // check if ghost
+         let isTrigger = false;
+         if (Physics.ids.has(hitBody[0]))
+         {
+            let k = Physics.ids.get(hitBody[0]);
+            if (k)
+            {
+               let o2 = allList.get(k);
+               isTrigger = o2.ghost;
+            }
+         }
+
+         if (!isTrigger || hitTriggers) {
+            best = {
+               fraction,
+               from,
+               position: hitPos,
+               normal:   hitNormal
+            };
+            break;
+         }
+
       }
 
-      // --- 3) Write the RayCastInput ---
-      // from:
-      Physics.havok.HEAPF32.set(from, (inputPtr + OFFSET_INPUT_FROM) / 4);
-      // to:
-      Physics.havok.HEAPF32.set(to,   (inputPtr + OFFSET_INPUT_TO)   / 4);
-      // filterInfo: hit everything (membership=0xFFFF, mask=0xFFFF)
-      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_FILTER) / 4 + 0] = 0xFFFF;
-      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_FILTER) / 4 + 1] = 0xFFFF;
-      // hitTriggers = false → write 0 as a 32-bit int
-      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_FLAGS) / 4] = 0;
-      // ignoreBody = NULL (0)
-      // Assuming a 64-bit pointer on HEAPU32+HEAPU32:
-      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_IGNORE) / 4    ] = body !== null ? Number(body) : 0;
-      Physics.havok.HEAPU32[(inputPtr + OFFSET_INPUT_IGNORE) / 4 + 1] = 0;
+      Physics.havok.HP_QueryCollector_Release(collector);
+      return best;
 
-      // --- 4) Call the raw raycast ---
-      const hitCount = Physics.havok.HP_World_CastRay(
-         Physics.world,
-          inputPtr,
-          resultPtr,
-          1  // maxResults = 1
-      );
+   }
 
-      let hit = null;
-      if (hitCount > 0) {
-          // fraction
-          const frac = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_FRACTION) / 4];
-
-          // contactPoint.position
-          const px = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_POS)    / 4 + 0];
-          const py = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_POS)    / 4 + 1];
-          const pz = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_POS)    / 4 + 2];
-
-          // contactPoint.normal
-          const nx = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_NORMAL) / 4 + 0];
-          const ny = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_NORMAL) / 4 + 1];
-          const nz = Physics.havok.HEAPF32[(resultPtr + OFFSET_RESULT_CP_NORMAL) / 4 + 2];
-
-          hit = {
-          from,
-          fraction: frac,
-          position: [px, py, pz],
-          normal:   [nx, ny, nz]
-          };
+   function Shapecast(from, to, bulletShapeId, hitTriggers = false, ignoreBodyId = 0) {
+      // 1) Create collector
+      const [cRes, collector] = Physics.havok.HP_QueryCollector_Create(10);
+      if (cRes !== Physics.havok.Result.RESULT_OK) {
+         console.error("collector failed", cRes);
+         return null;
       }
 
-      // --- 5) Clean up ---
-      // HavokModule.havok._free(inputPtr);
-      // HavokModule.havok._free(resultPtr);
+      const shapeCastInput = [
+         bulletShapeId,
+         from[1],
+         from[0],
+         to[0],
+         hitTriggers,
+         [BigInt(ignoreBodyId)]  // 32-bit
+      ];
 
-      if (hit == null){
-          return {from};
+      // 3) Cast
+      const rCast = Physics.havok.HP_World_ShapeCastWithCollector(Physics.world, collector, shapeCastInput);
+      if (rCast !== Physics.havok.Result.RESULT_OK) {
+         // No hits or error; still check count
       }
 
-      return hit;
+      // 4) How many hits?
+      const [nRes, count] = Physics.havok.HP_QueryCollector_GetNumHits(collector);
+      if (nRes !== Physics.havok.Result.RESULT_OK || count <= 0) {
+         Physics.havok.HP_QueryCollector_Release(collector);
+         return null;
+      }
+
+      let best = null;
+
+      for (let i = 0; i < count; i++) 
+      {
+         const [gRes, hit] = Physics.havok.HP_QueryCollector_GetShapeCastResult(collector, i);
+         if (gRes !== Physics.havok.Result.RESULT_OK) continue;
+
+         const fraction = hit[0];
+         const cp = hit[2];
+
+         const hitBody   = cp[0];
+         const hitShape  = cp[1];
+         const hitPos    = cp[3];
+         const hitNormal = cp[4];
+
+         // check if ghost
+         let isTrigger = false;
+         if (Physics.ids.has(hitBody[0]))
+         {
+            let k = Physics.ids.get(hitBody[0]);
+            if (k)
+            {
+               let o2 = allList.get(k);
+               isTrigger = o2.ghost;
+            }
+         }
+
+         if (!isTrigger || hitTriggers) {
+            best = {
+               fraction,
+               bodyId:  hitBody,
+               shapeId: hitShape,
+               position: hitPos,
+               normal:   hitNormal
+            };
+            break;
+         }
+
+      }
+
+      Physics.havok.HP_QueryCollector_Release(collector);
+      return best;
+
    }
 
    const processTriggerEvents = ()=>
@@ -643,6 +713,7 @@ module.exports = () => {
       scheduleDestroyRemoval,
 
       Raycast,
+      Shapecast,
       SetID
    })
 }

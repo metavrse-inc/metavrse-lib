@@ -690,6 +690,13 @@ module.exports = (payload) => {
             const mask = HavokModule.EventType.TRIGGER_ENTERED 
                     | HavokModule.EventType.TRIGGER_EXITED;
             HavokModule.HP_Body_SetEventMask(bodyId, mask);
+
+            // Tag with TRIGGER_BIT so we can exclude via post-filter
+            const [giRes, filter] = HavokModule.HP_Shape_GetFilterInfo(shapeId);
+            const membership = giRes === HavokModule.Result.RESULT_OK ? filter[0] : 0;
+            const mask2       = giRes === HavokModule.Result.RESULT_OK ? filter[1] : 0xFFFF;
+
+            HavokModule.HP_Shape_SetFilterInfo(shapeId, [membership | Physics.TRIGGER_BIT, mask2]);
         }
         else if (mass === 0) {
             HavokModule.HP_Body_SetMotionType(bodyId, HavokModule.MotionType.STATIC);
