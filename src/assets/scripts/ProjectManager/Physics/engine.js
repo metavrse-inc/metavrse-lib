@@ -240,6 +240,8 @@ module.exports = () => {
    }
 
    const render = (t) => {
+      if (!Module.ProjectManager.launched) return;
+
       renderLoop(rawDelta);
    }
 

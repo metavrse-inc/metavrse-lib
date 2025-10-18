@@ -5,7 +5,7 @@ type RequiredProperties = 'key' | 'shape_type'  | 'position'
 | 'scale'
 | 'groupMat';
 
-type OptionalProperties = 'controller' | 'code' | 'type' | 'visible' | 'ghost' | 'props' | 'mass' | 'shape_file';
+type OptionalProperties = 'controller' | 'code' | 'type' | 'visible' | 'ghost' | 'props' | 'mass' | 'friction' | 'shape_file';
 
 export type RigidBodyEntity = Pick<
   Required<Entity & { type: 'RigidBody' }>,

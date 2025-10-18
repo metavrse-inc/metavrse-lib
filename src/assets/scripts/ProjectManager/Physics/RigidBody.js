@@ -58,6 +58,7 @@ module.exports = (payload) => {
     let params = {
         "mass": (_d["mass"] !== undefined) ? Number(_d['mass']) : 0,
         "ghost": (_d["ghost"] !== undefined) ? _d['ghost'] : false,
+        "friction": (_d["friction"] !== undefined) ? _d['friction'] : 0.1,
 
         // shapes
         "shape_type": (_d["shape_type"] !== undefined) ? _d['shape_type'] : "bounding-box",
@@ -174,7 +175,7 @@ module.exports = (payload) => {
         _object = so;
         var ghost = Boolean(params.ghost || false)
         var mass = params.mass;
-        var friction = Number(args.friction || 0.1)
+        var friction = Number(params.friction || 0.1)
   
         extents = so.getParameterVec3("extent");
         center = so.getParameterVec3("center");
@@ -714,24 +715,58 @@ module.exports = (payload) => {
             // Build default mass properties from the shape (density=1.0):
             const [resMP, mp] = HavokModule.HP_Shape_BuildMassProperties(shapeId);
             if (resMP !== HavokModule.Result.RESULT_OK) {
-            console.error("HP_Shape_BuildMassProperties failed:", resMP);
+                console.error("HP_Shape_BuildMassProperties failed:", resMP);
             } else {
-            // mp = [ centerOfMass: Vector3, massValue: number, inertia: Vector3, inertiaOrient: Quaternion ]
-            // Overwrite mp[1] with our desired mass; scale inertia accordingly:
-            const originalMass = mp[1];
-            if (originalMass > 0) {
-                const scaleFactor = mass / originalMass;
-                mp[1] = mass;
-                // Scale inertia vector by same factor:
-                mp[2][0] *= scaleFactor;
-                mp[2][1] *= scaleFactor;
-                mp[2][2] *= scaleFactor;
-            } else {
-                mp[1] = mass;
+                // mp = [ centerOfMass: Vector3, massValue: number, inertia: Vector3, inertiaOrient: Quaternion ]
+                // Overwrite mp[1] with our desired mass; scale inertia accordingly:
+                // const originalMass = mp[1];
+                // const originalInertia = mp[2]; // [ ix, iy, iz ]
+                // const inertia = 0;
+
+                // let inertiaScale = 1;
+
+                // if (originalMass > 0) {
+                //     mp[1]   = originalMass;
+                // } else {
+                    mp[1] = mass;
+                // }
+
+                mp[2][0] = 1;
+                mp[2][1] = 1;
+                mp[2][2] = 1;
+                // Now apply to the body:
+                HavokModule.HP_Body_SetMassProperties(bodyId, mp);
             }
-            // Now apply to the body:
-            HavokModule.HP_Body_SetMassProperties(bodyId, mp);
-            }
+
+
+            // const [resMP, massProps] = HavokSystem.havok.HP_Shape_BuildMassProperties(shapeId);
+            // if (resMP !== HavokSystem.havok.Result.RESULT_OK) {
+            //     console.error("Failed to build mass properties:", resMP);
+            //     continue;
+            // }
+
+            // // 3) Extract the original mass and inertia vector:
+            // const originalMass    = massProps[1];
+            // const originalInertia = massProps[2]; // [ ix, iy, iz ]
+
+            // const newMass = opts.value[0];
+            // const inertia = opts.value[1];
+
+            // // 4) Compute scale factor to adjust inertia for new mass:
+            // let inertiaScale = 1;
+            // if (originalMass > 0) {
+            //     inertiaScale = newMass / originalMass;
+            // }
+
+            // // 5) Overwrite massValue and scale the inertia vector:
+            // massProps[1]   = newMass;
+            // massProps[2][0] = originalInertia[0] * inertiaScale * inertia;
+            // massProps[2][1] = originalInertia[1] * inertiaScale * inertia;
+            // massProps[2][2] = originalInertia[2] * inertiaScale * inertia;
+            // // massProps[3] (inertia orientation) remains unchanged
+
+            // // 6) Reapply to the body:
+            // const resSet = HavokSystem.havok.HP_Body_SetMassProperties(havokBody, massProps);
         }
         
         // 6) ADD BODY TO THE WORLD (startAsleep = false)
@@ -970,10 +1005,10 @@ module.exports = (payload) => {
         const latest = currentState;
 
         // LATEST
-        // interpPos = [...latest.position];
-        // interpRot = [...latest.rotation];
-        let interpPos = vec3.lerp([0,0,0], prev.position, latest.position, latest.alpha);
-        let interpRot = quat.slerp([0,0,0], prev.rotation, latest.rotation, latest.alpha);
+        interpPos = [...latest.position];
+        interpRot = [...latest.rotation];
+        // let interpPos = vec3.lerp([0,0,0], prev.position, latest.position, latest.alpha);
+        // let interpRot = quat.slerp([0,0,0], prev.rotation, latest.rotation, latest.alpha);
 
         // let mp = false;
         // let mr = false;
@@ -995,7 +1030,7 @@ module.exports = (payload) => {
         quat.set(finalRotation, ...params.object_rotate);
         quat.multiply(finalRotation, physics_transformation.rotation, finalRotation);
         // physics
-        mat4.fromRotationTranslationScale(m4, finalRotation, physics_transformation.position, scales);
+        mat4.fromRotationTranslationScale(m4, finalRotation, physics_transformation.position, [1,1,1]);
 
         // physics transformation
         let q2 = updateMath.q2;
@@ -1004,7 +1039,10 @@ module.exports = (payload) => {
         mat4.fromRotationTranslation(m42, q2, params.position);
         mat4.invert(m42, m42)
 
-        mat4.multiply(m4, m42, m4);
+        mat4.multiply(m4, m4, m42);
+
+        mat4.scale(m4, m4, scales);
+
 
         // adjust matrix directly
         _object.setTransformMatrix(m4);
@@ -1233,6 +1271,15 @@ module.exports = (payload) => {
                           );
         
                         HavokSystem.havok.HP_Body_SetActivationState(havokBody, HavokSystem.havok.ActivationState.ACTIVE);
+
+                    }else if(opts.prop == "applyForce" ){
+                        HavokSystem.havok.HP_Body_ApplyImpulse(
+                            havokBody,
+                            opts.value[0],   // apply at center of mass
+                            opts.value[1],       // [fx, fy, fz]
+                          );
+        
+                        HavokSystem.havok.HP_Body_SetActivationState(havokBody, HavokSystem.havok.ActivationState.ACTIVE);
         
                     // }else if (Reflect.has(body, opts.prop)){       
                     //     let fnArgs = getParamNames(Reflect.get(body, opts.prop));
@@ -1278,6 +1325,7 @@ module.exports = (payload) => {
     Object.defineProperties(object, {
         // orientation: { get: () => { return (Module.ProjectManager.projectRunning) ? world.orientation : 0; }, set: (v) => { world.orientation = v; } },
         mass: { get: () => { return getProperty('mass'); }, set: (v) => { setProperty('mass', v, "mass"); } },
+        friction: { get: () => { return getProperty('friction'); }, set: (v) => { setProperty('friction', v, "friction"); } },
         position: { get: () => { return getProperty('position'); }, set: (v) => { setProperty('position', v, "transform"); } },
         scale: { get: () => { return getProperty('scale'); }, set: (v) => { setProperty('scale', v, "transform"); } },
         rotate: { get: () => { return getProperty('rotate'); }, set: (v) => { setProperty('rotate', v, "transform"); } },

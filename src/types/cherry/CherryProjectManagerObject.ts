@@ -85,6 +85,7 @@ export type GetterSetterPropertyType =
   | 'shape_type'
   | 'shape_file'
   | 'mass'
+  | 'friction'
   | 'ghost'
 
   //  HTML Hud

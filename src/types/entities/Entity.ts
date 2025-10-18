@@ -74,6 +74,7 @@ export type Entity = {
 
   // physics
   mass?: number;
+  friction?: number;
   shape_type?: string;
   shape_file?: CherryKey;
   ghost?: boolean;
