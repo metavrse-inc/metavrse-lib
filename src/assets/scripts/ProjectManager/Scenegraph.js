@@ -178,6 +178,8 @@ module.exports = () => {
       
       'front_facing',
       'render_back_faces',
+      'cast_shadow',
+      'show_shadow',
     ];
 
     if (response.prop && (props.includes(response.prop) || props.includes(response.prop + '_channel'))) 

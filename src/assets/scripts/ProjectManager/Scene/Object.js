@@ -361,8 +361,8 @@ module.exports = (payload) => {
     autoscale: d['autoscale'] !== undefined ? d['autoscale'] : 1,
     visible: d['visible'] !== undefined ? d['visible'] : true,
     controller: d['controller'] !== undefined ? d['controller'] : null,
-    show_shadow: true,
-    cast_shadow: true,
+    show_shadow: d['show_shadow'] !== undefined ? d['show_shadow'] : true,
+    cast_shadow: d['cast_shadow'] !== undefined ? d['cast_shadow'] : true,
     front_facing: d['front_facing'] !== undefined ? d['front_facing'] : false,
 
     meshes: d['data'] != undefined ? JSON.parse(JSON.stringify(d['data'])) : {},
