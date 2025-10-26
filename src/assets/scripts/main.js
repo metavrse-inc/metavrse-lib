@@ -273,6 +273,8 @@ let _render = function (t) {
   // }
 
   let frames = (Module['fps']['maxFps'] > 30) ? 1 : 2;
+  let currentRate = Module.getTiming();
+  if (currentRate != frames) Module.setTiming(frames);
   xx++;
   let shouldRender = true;
   if (xx >= frames) xx = 0;

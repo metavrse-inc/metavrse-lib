@@ -303,6 +303,11 @@ module.exports = (payload) => {
           v = getLastValueInMap(getProperties(row.type));
           if (Module.ProjectManager.projectRunning) Module['fps']['maxFps'] = v;
 
+          let rate = 1;
+          if (v == 30) rate = 2;
+
+          Module.setTiming(rate);
+
           Module['fps']['startTime'] = null;
           Module['fps']['frame'] = -1;
           break;
