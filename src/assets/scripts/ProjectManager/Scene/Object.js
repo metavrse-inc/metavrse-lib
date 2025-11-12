@@ -373,6 +373,11 @@ module.exports = (payload) => {
     render_fov_lod: d['render_fov_lod'] !== undefined ? d['render_fov_lod'] : true,
 
     lod: 2,
+
+    debug_nodes: false,
+    show_joints: true,
+    show_joints_axis: false,
+    show_bones: true,
   };
 
   customAnimations = d['animations'] !== undefined ? [...d['animations']] : [];
@@ -1060,7 +1065,212 @@ module.exports = (payload) => {
       
     }
   }
+
   let _obj = undefined;
+  let _nodes = [];
+  let _bones = [];
+
+  let _debug_highlight = new Map();
+
+  const debug_highlight = {
+    add: (id, color)=>{
+      _debug_highlight.set(id, color);
+      addToUpdated(object.item.key, 'changed', {
+        prop: 'debug_highlight',
+        value: object.item,
+      });
+    },
+    remove: (id)=>{
+      addToUpdated(object.item.key, 'changed', {
+          prop: 'debug_highlight',
+          value: object.item,
+        });
+      _debug_highlight.delete(id);
+    },
+    get: (id)=>{      
+      return _debug_highlight.set(id);
+    },
+    clear: ()=>{
+      addToUpdated(object.item.key, 'changed', {
+          prop: 'debug_highlight',
+          value: object.item,
+        });
+      _debug_highlight.clear();
+    }
+  }
+
+  var getNodeMatrix = (id)=> {
+      let bone = _obj.getNode(id);
+
+      let transform = [...bone.node_to_world];
+      mat4.multiply(transform, parentOpts.transform, transform);
+
+      return transform;
+  }
+
+  var draw_line = (p1, p2, color = [1,1,0,1])=>{
+    scene.addLine(p1, p2, color);
+  }
+
+  function getModelScale(modelMat) {
+    const sx = Math.hypot(modelMat[0], modelMat[1], modelMat[2]);
+    const sy = Math.hypot(modelMat[4], modelMat[5], modelMat[6]);
+    const sz = Math.hypot(modelMat[8], modelMat[9], modelMat[10]);
+    return (sx + sy + sz) / 3.0;
+  }
+
+  function drawJointBall(center, color, radius = 0.02, segments = 16) {
+    const modelScale = getModelScale(parentOpts.transform);
+    radius = radius * modelScale;
+    const twoPi = Math.PI * 2.0;
+    const step = twoPi / segments;
+
+    const p0 = vec3.create();
+    const p1 = vec3.create();
+
+    // --- Circle in XY plane ---
+    for (let i = 0; i < segments; ++i) {
+      const a0 = i * step;
+      const a1 = (i + 1) * step;
+
+      vec3.set(p0, Math.cos(a0) * radius, Math.sin(a0) * radius, 0);
+      vec3.set(p1, Math.cos(a1) * radius, Math.sin(a1) * radius, 0);
+      vec3.add(p0, p0, center);
+      vec3.add(p1, p1, center);
+      draw_line(p0, p1, color);
+    }
+
+    // --- Circle in XZ plane ---
+    for (let i = 0; i < segments; ++i) {
+      const a0 = i * step;
+      const a1 = (i + 1) * step;
+
+      vec3.set(p0, Math.cos(a0) * radius, 0, Math.sin(a0) * radius);
+      vec3.set(p1, Math.cos(a1) * radius, 0, Math.sin(a1) * radius);
+      vec3.add(p0, p0, center);
+      vec3.add(p1, p1, center);
+      draw_line(p0, p1, color);
+    }
+
+    // --- Circle in YZ plane ---
+    for (let i = 0; i < segments; ++i) {
+      const a0 = i * step;
+      const a1 = (i + 1) * step;
+
+      vec3.set(p0, 0, Math.cos(a0) * radius, Math.sin(a0) * radius);
+      vec3.set(p1, 0, Math.cos(a1) * radius, Math.sin(a1) * radius);
+      vec3.add(p0, p0, center);
+      vec3.add(p1, p1, center);
+      draw_line(p0, p1, color);
+    }
+  }
+
+  var draw_bone = (joint_index, parent_joint_index)=>
+  {
+      // Assuming state.ozz.model_matrices is an array of Float32Array(16)
+      const m0 = [...getNodeMatrix(joint_index)];
+      const m1 = [...getNodeMatrix(parent_joint_index)];
+
+      // Extract translation and axes (gl-matrix is column-major, same as GLM)
+      const p0 = vec3.fromValues(m0[12], m0[13], m0[14]); // column 3
+      const p1 = vec3.fromValues(m1[12], m1[13], m1[14]);
+      const ny = vec3.fromValues(m1[4], m1[5], m1[6]);   // column 1 (local Y)
+      const nz = vec3.fromValues(m1[8], m1[9], m1[10]);  // column 2 (local Z)
+      
+      const nx = vec3.create();
+      vec3.cross(nx, ny, nz);
+      vec3.normalize(nx, nx);
+
+      // Inputs: p0, p1 are vec3s (arrays of 3 floats)
+      const dir = vec3.create();
+      vec3.sub(dir, p1, p0);
+      vec3.normalize(dir, dir);
+
+      // Pick any non-parallel vector to build a perpendicular basis
+      const up = (Math.abs(dir[1]) < 0.99)
+          ? vec3.fromValues(0, 1, 0)
+          : vec3.fromValues(1, 0, 0);
+
+      // Create orthogonal basis
+      const right = vec3.create();
+      vec3.cross(right, up, dir);
+      vec3.normalize(right, right);
+
+      const forward = vec3.create();
+      vec3.cross(forward, dir, right);
+      vec3.normalize(forward, forward);
+
+      // Bone length * 0.1
+      const len = vec3.distance(p0, p1) * 0.1;
+
+      // Midpoint at 0.66 along the bone
+      const pmid = vec3.create();
+      vec3.scaleAndAdd(pmid, p0, dir, 0.66 * vec3.distance(p0, p1));
+
+      // Compute corner offsets
+      const p2 = vec3.create();
+      vec3.scaleAndAdd(p2, pmid, right, len);
+
+      const p3 = vec3.create();
+      vec3.scaleAndAdd(p3, pmid, forward, len);
+
+      const p4 = vec3.create();
+      vec3.scaleAndAdd(p4, pmid, right, -len);
+
+      const p5 = vec3.create();
+      vec3.scaleAndAdd(p5, pmid, forward, -len);
+
+      if (transformation.show_bones && _nodes[parent_joint_index].type == 5)
+      {
+        draw_line(p0, p2); draw_line(p0, p3); draw_line(p0, p4); draw_line(p0, p5);
+        draw_line(p1, p2); draw_line(p1, p3); draw_line(p1, p4); draw_line(p1, p5);
+        draw_line(p2, p3); draw_line(p3, p4); draw_line(p4, p5); draw_line(p5, p2);
+      }
+
+      // ball joint
+      if (transformation.show_joints)
+      {
+        let color = [1,0.75,0,1];
+        if (_debug_highlight.has(joint_index)) color = _debug_highlight.get(joint_index);
+        drawJointBall(p0, color);
+      }
+
+      // cross axes
+      if (transformation.show_joints_axis)
+      {
+        const py = vec3.create();
+        vec3.scaleAndAdd(py, p0, ny, 0.1);
+  
+        const pz = vec3.create();
+        vec3.scaleAndAdd(pz, p0, nz, 0.1);
+  
+        const px = vec3.create();
+        vec3.scaleAndAdd(px, p0, nx, 0.1);
+  
+        draw_line(p0, px, [1,0,0,1]);
+        draw_line(p0, py, [0,1,0,1]);
+        draw_line(p0, pz, [0,0,1,1]);
+      }
+  }
+
+  const render_nodes = ()=>
+  {
+    if (!transformation.debug_nodes || _bones.length == 0) return;
+
+    if (!transformation.show_bones && !transformation.show_joints && !transformation.show_joints_axis) return;
+
+    if (!_obj) return;
+
+    for (var x=0; x < _bones.length; x++)
+    {
+        var bone = _bones[x];
+
+        var id = bone.id;
+        var parent_index = bone.parent_index;
+        draw_bone(id, parent_index);
+    }
+
+  }
   const _render = (opts) => {
     opts = opts || {};
     // loop renderlist and draw out
@@ -1161,6 +1371,30 @@ module.exports = (payload) => {
       }
       getAnimationList();
 
+      // get nodes
+      let nodes = obj.getNodes();
+
+      for (var x=0; x < nodes.size(); x++)
+      {
+          let node = nodes.get(x);
+          _nodes.push({
+              id: node.id,
+              type: node.type,
+              parent_index: node.parent_index,
+              name: node.name
+          });
+
+          if (node.type == 5)
+          {
+            _bones.push({
+              id: node.id,
+              type: node.type,
+              parent_index: node.parent_index,
+              name: node.name
+            });
+          }
+      }
+
       if (World.lod_enabled && transformation.render_fov_lod){
         obj.setParameter("lod_level", transformation.lod)                                        
       }
@@ -1197,6 +1431,9 @@ module.exports = (payload) => {
     for (var i in renderList) {
       const row = renderList[i];
       switch (row.type) {
+        case 'render_nodes':
+          render_nodes();
+          break;
         case 'position':
         case 'rotate':
         case 'scale':
@@ -1279,15 +1516,11 @@ module.exports = (payload) => {
               // let v = (zip_id != "default" && payload.opt && payload.opt.prefix) ? payload.opt.prefix + "_" + value : value;
               // const video = Module.ProjectManager.getObject(v);
               // if (video) {
-              //   const textureID =
-              //     video.textureId == null || video.textureId == ''
-              //       ? 0
-              //       : video.textureId;
+              // console.log(object.item.key, meshid, value)
+                obj.setParameter(Number(meshid), option, value);
+              // } else obj.setParameter(Number(meshid), option, "");
 
-              //   obj.setParameter(Number(meshid), option, textureID);
-              // } else obj.setParameter(Number(meshid), option, 0);
-
-              obj.setParameter(Number(meshid), "albedo_texture", value);
+              // obj.setParameter(Number(meshid), "albedo_texture", value);
             } else if (type == 'object') {
               if (rgbs.includes(option)) {
                 obj.setParameter(
@@ -1514,6 +1747,10 @@ module.exports = (payload) => {
       for (let [key, value] of object.children) {
         value.render({ transform: parentOpts.transform });
       }
+    }
+
+    if (transformation.debug_nodes){
+      addToRedraw('render_nodes');
     }
   };
 
@@ -1801,6 +2038,58 @@ module.exports = (payload) => {
       get: () => { return getProperty('render_fov_lod')[1]; },
       set: (v) => { setProperty('render_fov_lod', v); },
     },
+
+    debug_nodes: { 
+      get: () => { return transformation.debug_nodes; },
+      set: (v) => { 
+        transformation.debug_nodes = v;
+        addToUpdated(object.item.key, 'changed', {
+          prop: 'render_nodes',
+          value: object.item,
+        });
+        addToRedraw('render_nodes');
+       },
+    },
+
+    show_bones: { 
+      get: () => { return transformation.show_bones; },
+      set: (v) => { 
+        addToUpdated(object.item.key, 'changed', {
+          prop: 'show_bones',
+          value: object.item,
+        });
+        transformation.show_bones = v; 
+      },
+    },
+
+    show_joints: { 
+      get: () => { return transformation.show_joints; },
+      set: (v) => { 
+        addToUpdated(object.item.key, 'changed', {
+          prop: 'show_joints',
+          value: object.item,
+        });
+        transformation.show_joints = v; 
+      },
+    },
+
+    show_joints_axis: { 
+      get: () => { return transformation.show_joints_axis; },
+      set: (v) => { 
+        addToUpdated(object.item.key, 'changed', {
+          prop: 'show_joints_axis',
+          value: object.item,
+        });
+        transformation.show_joints_axis = v; 
+      },
+    },
+
+    debug: { 
+      get: () => { return debug_highlight; },
+      set: (v) => {},
+    },
+    
+    
   });
 
   Object.assign(object, {
@@ -1865,6 +2154,14 @@ module.exports = (payload) => {
       } catch (error) {
           
       }
+    },
+
+    getNodes: ()=>{
+      return _nodes;
+    },
+
+    getBones: ()=>{
+      return _bones;
     },
 
     removeFOV,

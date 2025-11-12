@@ -59,6 +59,9 @@ export type Entity = {
   // Light
   color?: RGB;
   intensity?: number;
+  config?: number;
+  innerParam?: number;
+  outerParam?: number;
 
   // Camera
   target?: Vector3;

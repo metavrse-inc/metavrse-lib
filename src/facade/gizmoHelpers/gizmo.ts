@@ -160,7 +160,7 @@ export const manipulateGizmoPosition = (
   if (target.key) {
     obj = viewer.ProjectManager.getObject(target.key);
   }
-  if (obj?.item.type === 'object-group' || obj?.item.type === 'ZIPElement') {
+  if (obj?.item.type === 'object-group' || obj?.item.type === 'ZIPElement' || obj?.item.type === 'light') {
     let objectPosition = vec3.create();
     if (obj.parentOpts && obj.parentOpts.transform) {
       const finalGroupPosition = mat4.getTranslation(

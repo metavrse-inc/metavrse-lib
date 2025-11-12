@@ -7,6 +7,10 @@ type RequiredProperties =
   | 'position'
   | 'groupMat'
   | 'color'
+  | 'config'
+  | 'rotate'
+  | 'innerParam'
+  | 'outerParam'
   | 'intensity';
 
 export type LightEntity = Pick<

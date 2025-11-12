@@ -7,6 +7,10 @@ export const lightDefaults: Omit<LightEntity, 'key'> = {
   color: [255, 255, 255],
   groupMat: [...mat4.create()],
   intensity: 1,
+  config: 0,
+  innerParam: 0.5,
+  outerParam: 0.09,
+  rotate: [90, 0, 0],
   position: [1, 1, 1],
   visible: true,
 };

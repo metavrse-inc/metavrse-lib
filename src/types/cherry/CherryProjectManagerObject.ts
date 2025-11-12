@@ -49,6 +49,9 @@ export type GetterSetterPropertyType =
   // Light
   | 'color'
   | 'intensity'
+  | 'innerParam'
+  | 'outerParam'
+  | 'config'
 
   // Camera
   | 'target'

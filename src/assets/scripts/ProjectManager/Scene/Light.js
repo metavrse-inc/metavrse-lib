@@ -13,7 +13,7 @@ module.exports = (payload) => {
 
     const surface = Module.getSurface();
     const scene = surface.getScene();
-    const { mat4, vec3, vec4 } = Module.require('assets/gl-matrix.js');
+    const { mat4, vec3, vec4, quat } = Module.require('assets/gl-matrix.js');
 
     const addToUpdated = payload.addToUpdated;
 
@@ -43,14 +43,24 @@ module.exports = (payload) => {
         visible: (d['visible'] !== undefined) ? d['visible'] : true,
         groupMat: (d['groupMat']) || mat4.create(),
         position: (d['position'] !== undefined) ? [...d.position] : [1, 1, 1],
+        rotate: (d['rotate'] !== undefined) ? [...d.rotate] : [90, 0, 0],
         color: (d['color'] !== undefined) ? [...d.color] : [1, 1, 1],
         intensity: (d['intensity'] !== undefined) ? d['intensity'] : 1,
+        config: (d['config'] !== undefined) ? d['config'] : 0, // default sun light        
+        
+        // point light - config = 1
+        // spot light - config = 2
+        // area light - config = 3
+
+        innerParam: (d['innerParam'] !== undefined) ? d['innerParam'] : 0.5,
+        outerParam: (d['outerParam'] !== undefined) ? d['outerParam'] : 0.09,
     };
 
     let liveData = JSON.parse(JSON.stringify(transformation));
 
     //
     let finalPosition = [...liveData.position];
+    let finalDirection = [0,0,1];
     let finalVisibility = liveData.visible;
     let parentOpts = {};
 
@@ -148,9 +158,11 @@ module.exports = (payload) => {
             switch (row.type) {
                 case "position":
                 case "groupMat":
+                case "rotate":
                     if (!transformApplied){
                         liveData.position = [...getLastValueInMap(getProperties('position'))];
                         liveData.groupMat = mat4.fromValues(...getLastValueInMap(getProperties('groupMat')));
+                        liveData.rotate = getLastValueInMap(getProperties('rotate'));
                         renderTransformation = true;
 
                         transformApplied = true;
@@ -160,17 +172,34 @@ module.exports = (payload) => {
                     finalVisibility = getLastValueInMap(getProperties("visible"));
                     renderVisibility = true;
                     break;
-                case "color":
                 case "intensity":
+                    const vIntensity = getLastValueInMap(getProperties('intensity'));
+                    liveData.intensity = vIntensity;
+                    obj.setIntensity(vIntensity);
+                    break;
+                case "config":
+                    liveData.config = getLastValueInMap(getProperties('config'));
+                    obj.setType(liveData.config);
+                    break;
+
+                // float outerParam = lights[i][0].y; // linear/ outer cutoff angle / width
+                // float innerParam = lights[i][0].z; // quadratic /inner cutoff angle / height
+                case "innerParam":
+                    liveData.innerParam = getLastValueInMap(getProperties('innerParam'));
+                    obj.setConeAngle(liveData.innerParam);
+                    break;
+                case "outerParam":
+                    liveData.outerParam = getLastValueInMap(getProperties('outerParam'));
+                    obj.setRadius(liveData.outerParam);
+                    break;
+                case "color":
                     const vColor = getLastValueInMap(getProperties('color'));
                     liveData.color = [...vColor];
 
-                    const vIntensity = getLastValueInMap(getProperties('intensity'));
-                    liveData.intensity = vIntensity;
                     obj.setColor(
-                        (vColor[0] / 255) * vIntensity,
-                        (vColor[1] / 255) * vIntensity,
-                        (vColor[2] / 255) * vIntensity
+                        (vColor[0] / 255),
+                        (vColor[1] / 255),
+                        (vColor[2] / 255)
                     );
                     Module.ProjectManager.isDirty = true;
 
@@ -193,16 +222,37 @@ module.exports = (payload) => {
                 if (opts.transform) mat4.multiply(transformOut, opts.transform, transformOut);
                 else mat4.multiply(transformOut, object.parent.parentOpts.transform, transformOut);
 
-                var v4 = vec4.fromValues(liveData.position[0], liveData.position[1], liveData.position[2], 1);
-                vec4.transformMat4(v4, v4, transformOut);
 
-                finalPosition[0] = v4[0];
-                finalPosition[1] = v4[1];
-                finalPosition[2] = v4[2];
+                let q = quat.fromEuler([0,0,0,1], ...liveData.rotate);
+                let m = mat4.fromRotationTranslation(mat4.create(), q, liveData.position);
+
+                mat4.multiply(m, transformOut, m);
+                parentOpts.transform = m;
+
+                // var v4 = vec4.fromValues(liveData.position[0], liveData.position[1], liveData.position[2], 1);
+                // vec4.transformMat4(v4, v4, transformOut);
+
+                let newRotation = mat4.getRotation([0,0,0,1], m);
+                let v4 = mat4.getTranslation([0,0,0], m);
+
+                let direction = [0,0,1]; 
+                vec3.transformQuat(direction, direction, newRotation);
+
+                finalDirection = [...direction];
+                finalPosition = [...v4];
+
+                // finalPosition[0] = v4[0];
+                // finalPosition[1] = v4[1];
+                // finalPosition[2] = v4[2];
             }else{
+                let q = quat.fromEuler([0,0,0,1], ...liveData.rotate);
+                let direction = [0,0,1]; 
+                vec3.transformQuat(direction, direction, q);
+                finalDirection = [...direction];
                 finalPosition = [...liveData.position];
             }
 
+            obj.setDirection(...finalDirection);
             obj.setPosition(...finalPosition);
 
             renderTransformation = true;
@@ -230,13 +280,9 @@ module.exports = (payload) => {
             }
 
             if ((parentOpts.visible !== undefined && !parentOpts.visible) || !finalVisibility) {
-                obj.setColor(0, 0, 0);
+                obj.setIntensity(0);
             } else if (prevVisible != parentOpts.visible) {
-                obj.setColor(
-                    (liveData.color[0] / 255) * liveData.intensity,
-                    (liveData.color[1] / 255) * liveData.intensity,
-                    (liveData.color[2] / 255) * liveData.intensity
-                );
+                obj.setIntensity(liveData.intensity);                
             }
 
             for (let [key, handler] of updateHandlers) {
@@ -274,6 +320,10 @@ module.exports = (payload) => {
     setProperty("position", transformation.position);
     setProperty("color", transformation.color);
     setProperty("intensity", transformation.intensity);
+    setProperty("config", transformation.config);
+    setProperty("rotate", transformation.rotate);
+    setProperty("innerParam", transformation.innerParam);
+    setProperty("outerParam", transformation.outerParam);
     
     if (object.parent) object.parent.children.set(child.key, object);
 
@@ -284,6 +334,10 @@ module.exports = (payload) => {
         intensity: { get: () => { return getProperty('intensity')[1]; }, set: (v) => { setProperty('intensity', v); } },
         groupMat: { get: () => { return getProperty('groupMat')[1]; }, set: (v) => { setProperty('groupMat', v); } },
         visible: { get: () => { return getProperty('visible')[1]; }, set: (v) => { setProperty('visible', v); } },
+        config: { get: () => { return getProperty('config')[1]; }, set: (v) => { setProperty('config', v); } },
+        rotate: { get: () => { return getProperty('rotate')[1]; }, set: (v) => { setProperty('rotate', v); } },
+        innerParam: { get: () => { return getProperty('innerParam')[1]; }, set: (v) => { setProperty('innerParam', v); } },
+        outerParam: { get: () => { return getProperty('outerParam')[1]; }, set: (v) => { setProperty('outerParam', v); } },
 
         finalPosition: { get: () => { return finalPosition; }, set: (v) => { } },
         finalVisibility: { get: () => { return finalVisibility; }, set: (v) => { } },
