@@ -18,6 +18,7 @@ module.exports = (payload) => {
 
   const surface = Module.getSurface();
   const scene = surface.getScene();
+  const camera = Module.getSurface().getCamera();
   const { mat4, vec3, quat } = Module.require('assets/gl-matrix.js');
 
   const getLastItemInMap = (map) => Array.from(map)[map.size - 1];
@@ -178,6 +179,11 @@ module.exports = (payload) => {
     bloom_bias: d['bloom_bias'] !== undefined ? d['bloom_bias'] : 0.045, 
     bloom_radius: d['bloom_radius'] !== undefined ? d['bloom_radius'] : 0.005,
     exposure: d['exposure'] !== undefined ? d['exposure'] : 1.0, 
+
+    near: d['near'] !== undefined ? d['near'] : 0.01, 
+    far: d['far'] !== undefined ? d['far'] : 200.0, 
+    fov: d['fov'] !== undefined ? d['fov'] : 45, 
+
   };
 
   // let liveData = JSON.parse(JSON.stringify(world));
@@ -474,7 +480,19 @@ module.exports = (payload) => {
         case 'exposure':
           v = getLastValueInMap(getProperties(row.type));
           scene.setExposure(v);
-          break;        
+          break;   
+        case 'near':
+          v = getLastValueInMap(getProperties(row.type));
+          camera.setNear(v);
+          break;
+        case 'far':
+          v = getLastValueInMap(getProperties(row.type));
+          camera.setFar(v);
+          break;
+        case 'fov':
+          v = getLastValueInMap(getProperties(row.type));
+          camera.setFOV(v * Math.PI / 180);
+          break;
       }
     }
 
@@ -572,11 +590,19 @@ module.exports = (payload) => {
   setProperty('exposure', world.exposure);
   setProperty('resolution', world.resolution);
 
+  setProperty('near', world.near);
+  setProperty('far', world.far);
+  setProperty('fov', world.fov);
+
+
   addToRedraw('bloom_bias');
   addToRedraw('bloom_radius');
   addToRedraw('exposure');
   addToRedraw('resolution');
 
+  addToRedraw('near');
+  addToRedraw('far');
+  addToRedraw('fov');
 
   addToRedraw('fxaa');
   addToRedraw('hudscale');
@@ -970,6 +996,33 @@ module.exports = (payload) => {
       },
       set: (v) => {
         setProperty('exposure', v);
+      },
+    },
+
+    near: {
+      get: () => {
+        return getProperty('near')[1];
+      },
+      set: (v) => {
+        setProperty('near', v);
+      },
+    },
+
+    far: {
+      get: () => {
+        return getProperty('far')[1];
+      },
+      set: (v) => {
+        setProperty('far', v);
+      },
+    },
+
+    fov: {
+      get: () => {
+        return getProperty('fov')[1];
+      },
+      set: (v) => {
+        setProperty('fov', v);
       },
     },
   });

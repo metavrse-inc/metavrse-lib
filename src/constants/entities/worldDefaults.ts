@@ -46,5 +46,8 @@ export const worldDefaults: World = {
   resolution: 1080,
   bloom_bias: 0.045,
   bloom_radius: 0.005,
-  exposure: 1
+  exposure: 1,
+  near: 0.01,
+  far: 200,
+  fov: 45,
 };

@@ -160,8 +160,8 @@ module.exports = (payload) => {
             // treat as group
             so = {
                 getParameterVec3: (type)=> {
-                    if (type == "extent") return {f1: 2, f2: 2, f3: 2}
-                    else if (type == "center") return {f1: 1, f2: 1, f3: 1};
+                    if (type == "extent") return {f1: 1, f2: 1, f3: 1}
+                    else if (type == "center") return {f1: 0, f2: 0, f3: 0};
                 },
                 setTransformMatrix: (transform)=> {
                     parent.parentOpts.transform = transform;
@@ -354,6 +354,19 @@ module.exports = (payload) => {
         // if (ghost) PhysicsWorld.addRigidBody(body, group, -1);
         // else PhysicsWorld.addRigidBody(body, group, -1);
 
+        let mm = mat4.create();
+        mat4.fromRotationTranslationScale(mm, [0,0,0,1], [0,0,0], scales); 
+
+
+        const pivot = [center.f1, center.f2, center.f3];
+        const piv = mat4.create();
+
+        mat4.translate(piv,piv,pivot);
+        // mat4.invert(piv, piv); // used for pivot point
+        mat4.multiply(piv, mm, piv); // used for pivot point
+
+        let c = mat4.getTranslation([0,0,0], piv);
+
         let options = {
             key: object.idx,
             type: params.shape_type,
@@ -363,6 +376,7 @@ module.exports = (payload) => {
             mass,
             ghost,
             friction,
+            center : c
         }
 
         createBody(options, buffer, index);
@@ -434,6 +448,7 @@ module.exports = (payload) => {
             mass,
             ghost,
             friction,
+            center
         } = options;
         
         // 1) DECOMPOSE matrix → translation + quaternion
@@ -480,183 +495,168 @@ module.exports = (payload) => {
         switch (type) {
             case 'box': 
             case 'bounding-box': {
-            // HP_Shape_CreateBox(center: Vector3, rotation: Quaternion, extents: Vector3)
-            const center   = [0,0,0];
-            const rotation = [0,0,0,1];               // use world quaternion
-            // const extents = [size[0] * 0.5, size[1] * 0.5, size[2] * 0.5];
-            const extents  = size;
-            const [res, id] = HavokModule.HP_Shape_CreateBox(center, rotation, extents);
-            if (res !== HavokModule.Result.RESULT_OK) {
-                console.error("HP_Shape_CreateBox failed:", res);
-                return;
-            }
-            shapeId = id;
-            break;
-            }
-        
-            case 'sphere': {
-            // HP_Shape_CreateSphere(center: Vector3, radius: number)
-            const center = [0,0,0];
-            // assume size[0]==size[1]==size[2], so radius = (diameter * scale)/2
-            const radius = size[0] * 0.5;
-            const [res, id] = HavokModule.HP_Shape_CreateSphere(center, radius);
-            if (res !== HavokModule.Result.RESULT_OK) {
-                console.error("HP_Shape_CreateSphere failed:", res);
-                return;
-            }
-            shapeId = id;
-            break;
-            }
-        
-            case 'cylinder': {
-            // HP_Shape_CreateCylinder(pointA: Vector3, pointB: Vector3, radius: number)
-            // We define a cylinder aligned along the local Y-axis: 
-            //   pointA = [0, +halfHeight, 0], pointB = [0, -halfHeight, 0] in shape space.
-            // The body’s world transform (pos+quat) will place/orient it correctly.
-            const halfHeight = size[1] * 0.5;
-            const radius     = size[0] * 0.5;
-            //   const halfHeight = (size[1] * scale[1]) * 0.5;
-            //   const radius     = (size[0] * scale[0]) * 0.5; 
-            const pointA = [ 0, +halfHeight, 0 ];
-            const pointB = [ 0, -halfHeight, 0 ];
-            const [res, id] = HavokModule.HP_Shape_CreateCylinder(pointA, pointB, radius);
-            if (res !== HavokModule.Result.RESULT_OK) {
-                console.error("HP_Shape_CreateCylinder failed:", res);
-                return;
-            }
-            shapeId = id;
-            break;
-            }
-        
-            case 'capsule': {
-            // HP_Shape_CreateCapsule(pointA: Vector3, pointB: Vector3, radius: number)
-            // Define a capsule along local Y-axis: same pattern as cylinder.
-            const halfHeight = size[1] * 0.5;
-            const radius     = size[0] * 0.5;
-            // const pointA = [ 0, +halfHeight - radius * 0.5 - 0.1 , 0 ];
-            // const pointB = [ 0, -(halfHeight - radius * 0.5 - 0.1), 0 ];
-            const pointA = [ 0, +halfHeight, 0 ];
-            const pointB = [ 0, -halfHeight, 0 ];
-            const [res, id] = HavokModule.HP_Shape_CreateCapsule(pointA, pointB, radius);
-            if (res !== HavokModule.Result.RESULT_OK) {
-                console.error("HP_Shape_CreateCapsule failed:", res);
-                return;
-            }
-            shapeId = id;
-            break;
-            }
-        
-            case 'current-shape':
-            case 'custom-mesh': {
-            if (!buffer) {
-                console.warn("No buffer provided for custom-mesh; falling back to box.");
-                // Fallback to a unit box if no buffer:
-                const center   = [0,0,0];
-                const rotation = [0,0,0,1];
-                // const extents = [size[0] * 0.5, size[1] * 0.5, size[2] * 0.5];
+                // HP_Shape_CreateBox(center: Vector3, rotation: Quaternion, extents: Vector3)
+                const rotation = [0,0,0,1];               // use world quaternion
                 const extents  = size;
+                vec3.multiply(extents, extents, scale);
+
                 const [res, id] = HavokModule.HP_Shape_CreateBox(center, rotation, extents);
                 if (res !== HavokModule.Result.RESULT_OK) {
-                console.error("HP_Shape_CreateBox fallback failed:", res);
-                return;
+                    console.error("HP_Shape_CreateBox failed:", res);
+                    return;
                 }
                 shapeId = id;
                 break;
             }
         
-            // Build a TRIANGLE MESH shape:
-            //   • vertices: Float32Array buffer of length 3 * numVertices
-            //   • triangles: we must pass an indices array of ints, length 3 * numTriangles.
-            // Assume `buffer` is a Float32Array of xyz triplets.  
-            // If you already have an index buffer, adapt accordingly.  
-            // Here, we assume buffer is “raw vertex xyz data with no index”, so we must
-            //   generate a trivial index array [0,1,2, 3,4,5, …]. But Havok expects triangles
-            //   as triples of **vertex indices**. If buffer is already “flat vertex list per triangle”
-            //   (i.e. each consecutive 3 floats is one vertex, and each group-of-3 vertices is a separate triangle),
-            //   then numVertices = buffer.length/3, and numTriangles = numVertices/3.
-            // We will treat buffer as (xyz)(xyz)(xyz) per triangle, so:
-            /*
-            const f32 = new Float32Array(buffer);
-            const numFloats   = f32.length;          // should be 9 * numTriangles
-            const numVertices = numFloats / 3;       // each 3 floats is 1 vertex
-            const numTriangles = numVertices / 3;    // each 3 vertices is 1 triangle
-        
-            //  a) Allocate WASM memory for vertices:
-            const vertsByteSize = numFloats * Float32Array.BYTES_PER_ELEMENT;
-            const vertsPtr = HavokModule._malloc(vertsByteSize);
-            HavokModule.HEAPF32.set(f32, vertsPtr / 4);
-        
-            //  b) Build an index array [0,1,2, 3,4,5, ... , numVertices-3, numVertices-2, numVertices-1]
-            const indices = new Uint32Array(numVertices);
-            for (let i = 0; i < numVertices; ++i) {
-                indices[i] = i;
-            }
-            const idxByteSize = indices.length * Uint32Array.BYTES_PER_ELEMENT;
-            const idxPtr = HavokModule._malloc(idxByteSize);
-            HavokModule.HEAPU32.set(indices, idxPtr / 4);
-        
-            //  c) Call HP_Shape_CreateMesh(verticesPtr, numVertices, trianglesPtr, numTriangles)
-            const [res, id] = HavokModule.HP_Shape_CreateMesh(
-                vertsPtr, numVertices,
-                idxPtr,   numTriangles
-            );
-            */
-
-            const f32 = new Float32Array(buffer);
-            const numFloats   = f32.length;
-            const numVertices   = numFloats / 3;
-
-            const indices = new Uint32Array(index);
-            const numIndices   = indices.length;
-            const numTriangles   = numIndices / 3;
-
-            //  a) Allocate WASM memory for vertices:
-            const vertsByteSize = numFloats * Float32Array.BYTES_PER_ELEMENT;
-            const vertsPtr = HavokModule._malloc(vertsByteSize);
-            HavokModule.HEAPF32.set(f32, vertsPtr / 4);
-
-            // allocate index
-            const idxByteSize = numIndices * Uint32Array.BYTES_PER_ELEMENT;
-            const idxPtr = HavokModule._malloc(idxByteSize);
-            HavokModule.HEAPU32.set(indices, idxPtr / 4);
-
-            //  c) Call HP_Shape_CreateMesh(verticesPtr, numVertices, trianglesPtr, numTriangles)
-            const [res, id] = HavokModule.HP_Shape_CreateMesh(
-                vertsPtr, numVertices,
-                idxPtr,   numTriangles
-            );
-
-            if (res !== HavokModule.Result.RESULT_OK) {
-                console.error("HP_Shape_CreateMesh failed:", res);
-                HavokModule._free(vertsPtr);
-                HavokModule._free(idxPtr);
+            case 'sphere': {
+                // HP_Shape_CreateSphere(center: Vector3, radius: number)
+                const radius = size[0] * 0.5 * scale[0];
+                const [res, id] = HavokModule.HP_Shape_CreateSphere(center, radius);
+                if (res !== HavokModule.Result.RESULT_OK) {
+                    console.error("HP_Shape_CreateSphere failed:", res);
+                    return;
+                }
+                shapeId = id;
                 break;
             }
-            shapeId = id;
         
-            // Free the buffers now that shape is created:
-            HavokModule._free(vertsPtr);
-            HavokModule._free(idxPtr);
-            break;
+            case 'cylinder': {
+                // HP_Shape_CreateCylinder(pointA: Vector3, pointB: Vector3, radius: number)
+                const halfHeight = size[1] * 0.5 * scale[1];
+                const radius     = size[0] * 0.5 * scale[0];
+                const cx = center[0];
+                const cy = center[1];
+                const cz = center[2];
+
+                const pointA = [
+                    cx,
+                    cy + halfHeight,
+                    cz
+                ];
+
+                const pointB = [
+                    cx,
+                    cy - halfHeight,
+                    cz
+                ];
+                const [res, id] = HavokModule.HP_Shape_CreateCylinder(pointA, pointB, radius);
+                if (res !== HavokModule.Result.RESULT_OK) {
+                    console.error("HP_Shape_CreateCylinder failed:", res);
+                    return;
+                }
+                shapeId = id;
+                break;
+            }
+        
+            case 'capsule': {
+                // HP_Shape_CreateCapsule(pointA: Vector3, pointB: Vector3, radius: number)
+                const halfHeight = size[1] * 0.5 * scale[1];
+                const radius     = size[0] * 0.5 * scale[0];
+                const cx = center[0];
+                const cy = center[1];
+                const cz = center[2];
+
+                const pointA = [
+                    cx,
+                    cy + halfHeight,
+                    cz
+                ];
+
+                const pointB = [
+                    cx,
+                    cy - halfHeight,
+                    cz
+                ];
+                const [res, id] = HavokModule.HP_Shape_CreateCapsule(pointA, pointB, radius);
+                if (res !== HavokModule.Result.RESULT_OK) {
+                    console.error("HP_Shape_CreateCapsule failed:", res);
+                    return;
+                }
+                shapeId = id;
+                break;
+            }
+        
+            case 'current-shape':
+            case 'custom-mesh': {
+                if (!buffer) {
+                    console.warn("No buffer provided for custom-mesh; falling back to box.");
+                    // Fallback to a unit box if no buffer:
+                    const rotation = [0,0,0,1];
+                    const extents  = size;
+                    const [res, id] = HavokModule.HP_Shape_CreateBox(center, rotation, extents);
+                    if (res !== HavokModule.Result.RESULT_OK) {
+                    console.error("HP_Shape_CreateBox fallback failed:", res);
+                    return;
+                    }
+                    shapeId = id;
+                    break;
+                }
+            
+                // Build a TRIANGLE MESH shape:
+                const f32 = new Float32Array(buffer);
+                const numFloats   = f32.length;
+                const numVertices   = numFloats / 3;
+
+                for (let i = 0; i < numFloats; i += 3) {
+                    f32[i    ] *= scale[0]; // X
+                    f32[i + 1] *= scale[1]; // Y
+                    f32[i + 2] *= scale[2]; // Z
+                }
+
+                const indices = new Uint32Array(index);
+                const numIndices   = indices.length;
+                const numTriangles   = numIndices / 3;
+
+                //  a) Allocate WASM memory for vertices:
+                const vertsByteSize = numFloats * Float32Array.BYTES_PER_ELEMENT;
+                const vertsPtr = HavokModule._malloc(vertsByteSize);
+                HavokModule.HEAPF32.set(f32, vertsPtr / 4);
+                              
+                // allocate index
+                const idxByteSize = numIndices * Uint32Array.BYTES_PER_ELEMENT;
+                const idxPtr = HavokModule._malloc(idxByteSize);
+                HavokModule.HEAPU32.set(indices, idxPtr / 4);
+
+                //  c) Call HP_Shape_CreateMesh(verticesPtr, numVertices, trianglesPtr, numTriangles)
+                const [res, id] = HavokModule.HP_Shape_CreateMesh(
+                    vertsPtr, numVertices,
+                    idxPtr,   numTriangles
+                );
+
+                if (res !== HavokModule.Result.RESULT_OK) {
+                    console.error("HP_Shape_CreateMesh failed:", res);
+                    HavokModule._free(vertsPtr);
+                    HavokModule._free(idxPtr);
+                    break;
+                }
+                shapeId = id;
+            
+                // Free the buffers now that shape is created:
+                HavokModule._free(vertsPtr);
+                HavokModule._free(idxPtr);
+
+                break;
             }
         
             default: {
-            // Fallback to box if unknown type:
-            const center   = [0,0,0];
-            const rotation = [0,0,0,1];
-            // const extents = [size[0] * 0.5, size[1] * 0.5, size[2] * 0.5];
-        const extents  = size;
-            const [res, id] = HavokModule.HP_Shape_CreateBox(center, rotation, extents);
-            if (res !== HavokModule.Result.RESULT_OK) {
-                console.error("HP_Shape_CreateBox fallback failed:", res);
-                return;
-            }
-            shapeId = id;
-            break;
+                // Fallback to box if unknown type:
+                const rotation = [0,0,0,1];
+                const extents  = size;
+                vec3.multiply(extents, extents, scale);
+
+                const [res, id] = HavokModule.HP_Shape_CreateBox(center, rotation, extents);
+                if (res !== HavokModule.Result.RESULT_OK) {
+                    console.error("HP_Shape_CreateBox fallback failed:", res);
+                    return;
+                }
+                shapeId = id;
+                break;
             }
         }
 
-        const scaledShapeId = wrapShapeWithScale(shapeId, scale);
+        const scaledShapeId = shapeId;
+        // const scaledShapeId = wrapShapeWithScale(shapeId, scale);
     
         
         // 3) ASSIGN A SIMPLE PhysicsMaterial TO THE SHAPE (for friction)
@@ -948,12 +948,14 @@ module.exports = (payload) => {
                 {
                     updateMath.finalScales = [...scales];
 
-                    RB.set([                    
-                        {
-                            prop: "scale",
-                            value: scales
-                        }
-                    ])
+                reAdd();
+                    
+                    // RB.set([                    
+                    //     {
+                    //         prop: "scale",
+                    //         value: scales
+                    //     }
+                    // ])
                 }
 
 
@@ -1237,15 +1239,17 @@ module.exports = (payload) => {
                             console.error("Failed to set mass properties:", resSet);
                         }
                     }else if (opts.prop == "scale"){
-                        // create new contianer shape
-                        const newContainer = wrapShapeWithScale(havokShape, opts.value);
-                        // set new 
-                        HavokSystem.havok.HP_Body_SetShape(havokBody, newContainer);
+                        // // create new contianer shape
+                        // const newContainer = wrapShapeWithScale(havokShape, opts.value);
+                        // // set new 
+                        // HavokSystem.havok.HP_Body_SetShape(havokBody, newContainer);
                         
-                        // release old shape
-                        HavokSystem.havok.HP_Shape_Release(havokContainer);
+                        // // release old shape
+                        // HavokSystem.havok.HP_Shape_Release(havokContainer);
 
-                        havokContainer = newContainer;
+                        // havokContainer = newContainer;
+                        reAdd();
+
                     }else if (opts.prop == "setDamping"){
                         HavokSystem.havok.HP_Body_SetLinearDamping(havokBody, opts.value[0]);
                         HavokSystem.havok.HP_Body_SetAngularDamping(havokBody, opts.value[1]);

@@ -56,4 +56,8 @@ export type World = {
   bloom_radius: number;
   exposure: number;
 
+  near: number;
+  far: number;
+  fov: number;
+
 };
