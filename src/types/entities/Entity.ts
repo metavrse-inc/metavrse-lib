@@ -35,6 +35,8 @@ export type Entity = {
 
   frame?: CherryAnimationFrame;
 
+  animations?: Array<string>;
+
   // asset zip
   url?: string;
   async?: boolean;

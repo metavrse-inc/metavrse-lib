@@ -11,4 +11,5 @@ export type GenericNode<NodeType extends string> = {
   uiHighlighted?: boolean;
   id?: CherryKey; // Assets key
   skey?: CherryKey;
+  animations?: string[];
 };

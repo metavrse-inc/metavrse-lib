@@ -80,20 +80,6 @@ module.exports = (payload) => {
       animation_list.push(details);
     }
 
-    x--;
-    for (const canimation of customAnimations) {
-      let details = v_animations.get(canimation.track);
-      if (details == undefined || details.duration_ms == 0) continue;
-      x++;
-      details.id = x;
-      details.startTime = canimation.startTime;
-      details.endTime = canimation.endTime;
-      details.reverse = canimation.reverse;
-      details.name = canimation.name;
-      details.track = canimation.track;
-
-      animation_list.push(details);
-    }
   };
 
   const playAnimation = (animation) => {
@@ -1075,26 +1061,14 @@ module.exports = (payload) => {
   const debug_highlight = {
     add: (id, color)=>{
       _debug_highlight.set(id, color);
-      addToUpdated(object.item.key, 'changed', {
-        prop: 'debug_highlight',
-        value: object.item,
-      });
     },
     remove: (id)=>{
-      addToUpdated(object.item.key, 'changed', {
-          prop: 'debug_highlight',
-          value: object.item,
-        });
       _debug_highlight.delete(id);
     },
     get: (id)=>{      
       return _debug_highlight.set(id);
     },
     clear: ()=>{
-      addToUpdated(object.item.key, 'changed', {
-          prop: 'debug_highlight',
-          value: object.item,
-        });
       _debug_highlight.clear();
     }
   }
@@ -1369,6 +1343,19 @@ module.exports = (payload) => {
         if (loadingTimeout) clearTimeout(loadingTimeout)
         opt.ZIPElement.setQueItem(child.key, false)
       }
+
+      let id = (zip_id != "default") ? zip_id + "_" + String(child.id) : String(child.id);
+
+      let asset = Module.ProjectManager.getAsset(id);
+      let as = asset.animations || [];
+      for (var key of as)
+      {
+        let cur_path = ((key != "") ? getPathByVersion():"") + key;
+          if (cur_path != "") cur_path += '@' + zip_id;
+
+          _obj.addAnimation(cur_path);
+      }
+
       getAnimationList();
 
       // get nodes
@@ -1985,8 +1972,20 @@ module.exports = (payload) => {
         return customAnimations;
       },
       set: (v) => {
-        customAnimations = [...v];
+        // customAnimations = [...v];
+        for (var key of v)
+        {
+          let cur_path = ((key != "") ? getPathByVersion():"") + key;
+          if (cur_path != "") cur_path += '@' + zip_id;
+
+          _obj.addAnimation(cur_path);
+        }
+
         getAnimationList();
+        addToUpdated(object.item.key, 'changed', {
+          prop: 'animations',
+          value: [],
+        });
       },
     },
 
@@ -2056,7 +2055,7 @@ module.exports = (payload) => {
       set: (v) => { 
         addToUpdated(object.item.key, 'changed', {
           prop: 'show_bones',
-          value: object.item,
+          value: transformation.show_bones,
         });
         transformation.show_bones = v; 
       },
@@ -2067,7 +2066,7 @@ module.exports = (payload) => {
       set: (v) => { 
         addToUpdated(object.item.key, 'changed', {
           prop: 'show_joints',
-          value: object.item,
+          value: transformation.show_joints,
         });
         transformation.show_joints = v; 
       },
@@ -2078,7 +2077,7 @@ module.exports = (payload) => {
       set: (v) => { 
         addToUpdated(object.item.key, 'changed', {
           prop: 'show_joints_axis',
-          value: object.item,
+          value: transformation.show_joints_axis,
         });
         transformation.show_joints_axis = v; 
       },

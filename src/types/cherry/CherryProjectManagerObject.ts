@@ -28,6 +28,8 @@ export type GetterSetterPropertyType =
   | 'controller'
   | 'code'
 
+  | 'animations'
+
   | 'render_fov_lod' 
   | 'render_back_faces' 
   | 'render_fov_visible'

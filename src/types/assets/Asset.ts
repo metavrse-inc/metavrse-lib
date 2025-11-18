@@ -13,6 +13,7 @@ export type Asset = {
   extension?: Extensions;
   url?: String;
   async?: boolean;
+  animations?: string[];
   fileType?: string;
   intrinsics?: {
     originalHeight?: number;
