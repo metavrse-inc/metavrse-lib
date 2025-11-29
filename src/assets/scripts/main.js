@@ -434,16 +434,16 @@ let _render = function (t) {
 
   const World = Module.ProjectManager.getObject('world');
   if (World != undefined) {
-    // if (!World.transparent) 
-    // {
-    //   Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
-    //   Module.getSurface().setColor(World.color[0] / 255,
-    //     World.color[1] / 255,
-    //     World.color[2] / 255, 1)
-    // } else {
-    //   Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
-    //   Module.getSurface().setColor(0,0,0,0);
-    // }
+    if (!World.transparent) 
+    {
+      Module['canvas'].style.backgroundColor = 'rgba(1,1,1,1)';
+      Module.getSurface().setColor(World.color[0] / 255,
+        World.color[1] / 255,
+        World.color[2] / 255, 1)
+    } else {
+      Module['canvas'].style.backgroundColor = 'rgba(0,0,0,0)';
+      Module.getSurface().setColor(0,0,0,0);
+    }
   }
 
   return shouldRender && !Module.ProjectManager.disablePaint;
