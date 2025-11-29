@@ -248,9 +248,9 @@ module.exports = () => {
    let inputPtr = null;
    let resultPtr = null;
 
-   function Raycast(from, to, body = null, maxResults = 1) {
+   function Raycast(from, to, body = null, maxResults = 10) {
       // 1) Create collector
-      const [cRes, collector] = Physics.havok.HP_QueryCollector_Create(1);
+      const [cRes, collector] = Physics.havok.HP_QueryCollector_Create(maxResults);
       if (cRes !== Physics.havok.Result.RESULT_OK) {
          console.error("collector failed", cRes);
          return null;
@@ -280,6 +280,7 @@ module.exports = () => {
       }
 
       let best = {from};
+      let bestFraction = Infinity;
 
       for (let i = 0; i < count; i++) 
       {
@@ -307,13 +308,15 @@ module.exports = () => {
          }
 
          if (!isTrigger || hitTriggers) {
-            best = {
-               fraction,
-               from,
-               position: hitPos,
-               normal:   hitNormal
-            };
-            break;
+            if (fraction < bestFraction) {
+               bestFraction = fraction;
+               best = {
+                  fraction,
+                  from,
+                  position: hitPos,
+                  normal:   hitNormal
+               };
+            }
          }
 
       }
@@ -354,6 +357,7 @@ module.exports = () => {
       }
 
       let best = null;
+      let bestFraction = Infinity;
 
       for (let i = 0; i < count; i++) 
       {
@@ -381,14 +385,17 @@ module.exports = () => {
          }
 
          if (!isTrigger || hitTriggers) {
-            best = {
-               fraction,
-               bodyId:  hitBody,
-               shapeId: hitShape,
-               position: hitPos,
-               normal:   hitNormal
-            };
-            break;
+            // Only accept closest hit
+            if (fraction < bestFraction) {
+               bestFraction = fraction;
+               best = {
+                  fraction,
+                  bodyId:  hitBody,
+                  shapeId: hitShape,
+                  position: hitPos,
+                  normal:   hitNormal
+               };
+            }
          }
 
       }

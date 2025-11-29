@@ -91,7 +91,7 @@ module.exports = (payload) => {
     'shadow-level':
       d['shadow'] && d['shadow']['level'] != undefined
         ? d['shadow']['level']
-        : 2,
+        : 0,
     'shadow-enabled':
       d['shadow'] && d['shadow']['enabled'] != undefined
         ? d['shadow']['enabled']
